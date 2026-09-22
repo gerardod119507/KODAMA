@@ -1,0 +1,41 @@
+:root {
+  --forest: #16372B;
+  --bone: #F5F1E8;
+  --bg-dark: #0E1713;
+
+  --area-universidad: #245A8D;
+  --area-fractal: #8A5A00;
+  --area-startup: #6650A4;
+  --area-personal: #476A54;
+  --tipo-reunion: #9D3D2E;
+
+  --bg: var(--bone);
+  --fg: var(--forest);
+}
+
+[data-theme="dark"] {
+  --bg: var(--bg-dark);
+  --fg: var(--bone);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
