@@ -1,12 +1,18 @@
 name: Deploy Apps Script
 
-# Solo corre si un push a main tocó algo dentro de apps-script/. El resto
-# del repo (frontend, docs) no depende de este workflow.
+# Corre solo si un push a main tocó apps-script/ o este mismo archivo (así
+# un cambio al workflow, como una versión de clasp, dispara un run real en
+# vez de depender de "Re-run failed jobs" — ese botón vuelve a correr el
+# workflow tal como estaba en el commit que originó el run, no el de main
+# actual, así que nunca prueba un fix hecho después). "Run workflow" en la
+# pestaña Actions lo dispara a mano cuando ninguno de los dos cambió.
 on:
   push:
     branches: [main]
     paths:
       - 'apps-script/**'
+      - '.github/workflows/deploy-apps-script.yml'
+  workflow_dispatch: {}
 
 jobs:
   deploy:
@@ -18,15 +24,17 @@ jobs:
         with:
           node-version: '20'
 
-      # Versión exacta, no solo "@3": clasp cambió el formato de
-      # ~/.clasprc.json entre versiones mayores (v2 usa {"token":...}, v3
-      # usa {"tokens":...}), y un simple "@3" instalaría la última 3.x
-      # disponible el día que corra el workflow, no necesariamente la que
-      # generó el CLASPRC_JSON de Gerardo. Fijar el mismo número exacto que
-      # "clasp login" corrió localmente evita que un cambio de formato
-      # futuro rompa esto de nuevo sin avisar.
+      # @3: misma mayor que el "clasp login" local de Gerardo (clasp
+      # cambió el formato de ~/.clasprc.json entre mayores — v2 usa
+      # {"token":...}, v3 usa {"tokens":...} — por eso importa la mayor,
+      # no el parche exacto). Riesgo aceptado: un parche 3.x nuevo podría
+      # en teoría volver a cambiar el formato; el paso de abajo imprime la
+      # versión instalada en cada run para que se note enseguida si pasa.
       - name: Instalar clasp
-        run: npm install -g @google/clasp@3.4.1
+        run: npm install -g @google/clasp@3
+
+      - name: Verificar versión instalada
+        run: clasp --version
 
       # .clasprc.json (credenciales) y .clasp.json (scriptId) se arman acá,
       # a partir de los secrets del repo. Nunca quedan en el código fuente.
