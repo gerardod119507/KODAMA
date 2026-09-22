@@ -10,6 +10,33 @@ const HOJA_AREAS = 'Areas';
 const HOJA_BLOQUES = 'Bloques';
 const ZONA_HORARIA = 'America/La_Paz';
 
+// Mismo orden que los encabezados que crea asegurarHojaBloques().
+// Claves en ASCII (sin tildes) para que el JSON no dependa de codificación.
+const COLUMNAS_BLOQUES = [
+  'id', 'titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin',
+  'notas', 'creado', 'actualizado', 'archivado'
+];
+
+// ÚNICA fuente de verdad de qué acciones existen: el nombre acá tiene que
+// ser IDÉNTICO, carácter por carácter, al que manda el frontend (ver
+// KodamaApi.llamar(...) en js/*.js — grep 'action' o revisá "API (acciones
+// del Web App)" en CLAUDE.md). Agregar una acción nueva es agregar una
+// entrada acá, nunca un "case" suelto en otro lado.
+const ACCIONES = {
+  ping: function () {
+    return {
+      mensaje: 'pong',
+      zonaHoraria: SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone()
+    };
+  },
+  listarAreas: function () {
+    return listarAreas();
+  },
+  listarBloquesDia: function (peticion) {
+    return listarBloquesDia(peticion.fecha);
+  }
+};
+
 function doPost(e) {
   let peticion;
   try {
@@ -38,17 +65,14 @@ function doGet() {
 }
 
 function ejecutarAccion(peticion) {
-  switch (peticion.action) {
-    case 'ping':
-      return {
-        mensaje: 'pong',
-        zonaHoraria: SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone()
-      };
-    case 'listarAreas':
-      return listarAreas();
-    default:
-      throw new Error('accion_desconocida');
+  const manejador = ACCIONES[peticion.action];
+  if (!manejador) {
+    throw new Error(
+      'accion_desconocida: recibida "' + peticion.action + '", ' +
+      'acciones válidas: ' + Object.keys(ACCIONES).join(', ')
+    );
   }
+  return manejador(peticion);
 }
 
 function tokenEsValido(recibido) {
@@ -64,6 +88,25 @@ function listarAreas() {
     .slice(1)
     .filter(function (fila) { return fila[0]; })
     .map(function (fila) { return { nombre: fila[0], color: fila[1] }; });
+}
+
+function listarBloquesDia(fecha) {
+  if (!fecha) {
+    throw new Error('falta_fecha');
+  }
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
+  return hoja.getDataRange().getDisplayValues()
+    .slice(1)
+    .filter(function (fila) { return fila[0]; })
+    .map(filaABloque)
+    .filter(function (bloque) { return bloque.fecha === fecha && bloque.archivado !== 'TRUE'; })
+    .sort(function (a, b) { return a.inicio.localeCompare(b.inicio); });
+}
+
+function filaABloque(fila) {
+  const bloque = {};
+  COLUMNAS_BLOQUES.forEach(function (clave, indice) { bloque[clave] = fila[indice]; });
+  return bloque;
 }
 
 /**

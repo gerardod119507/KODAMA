@@ -9,6 +9,9 @@
 <body>
   <main>
     <h1>Conexión</h1>
+    <p id="bienvenida" class="nota" hidden>
+      Primera vez: pegá acá la URL del Web App y el token del Checkpoint 2.
+    </p>
     <p class="nota">Estos datos se guardan solo en este dispositivo. Nunca se suben al repositorio.</p>
 
     <form id="formulario">
@@ -27,7 +30,12 @@
     <p id="resultado" role="status"></p>
     <ul id="areas"></ul>
 
-    <p><a href="index.html">Volver</a></p>
+    <p id="continuar-envoltorio" hidden><a id="continuar" href="index.html">Continuar a KODAMA →</a></p>
+
+    <p><a href="index.html">Volver sin probar</a></p>
+
+    <hr class="separador" />
+    <button id="olvidar" type="button" class="fantasma">Olvidar conexión guardada</button>
   </main>
 
   <script src="js/api.js"></script>
