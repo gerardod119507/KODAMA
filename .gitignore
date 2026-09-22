@@ -1,0 +1,4 @@
+# Credenciales de clasp: se generan solo dentro del workflow de GitHub
+# Actions a partir de secrets, nunca deben quedar en el repo.
+.clasp.json
+.clasprc.json
