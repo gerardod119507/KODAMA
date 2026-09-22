@@ -1,0 +1,43 @@
+name: Deploy Apps Script
+
+# Solo corre si un push a main tocó algo dentro de apps-script/. El resto
+# del repo (frontend, docs) no depende de este workflow.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps-script/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar clasp
+        run: npm install -g @google/clasp@2
+
+      # .clasprc.json (credenciales) y .clasp.json (scriptId) se arman acá,
+      # a partir de los secrets del repo. Nunca quedan en el código fuente.
+      - name: Configurar credenciales
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          echo "$CLASPRC_JSON" > ~/.clasprc.json
+          printf '{"scriptId":"%s","rootDir":"apps-script"}' "$SCRIPT_ID" > .clasp.json
+
+      - name: Publicar código (clasp push)
+        run: clasp push --force
+
+      # -i apunta al despliegue que ya existe (creado a mano en el
+      # Checkpoint 2): crea una versión nueva del código y la asocia a ese
+      # mismo despliegue, así la URL del Web App nunca cambia.
+      - name: Actualizar el despliegue existente
+        env:
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
+        run: clasp deploy -i "$DEPLOYMENT_ID" -d "Auto-deploy ${{ github.sha }}"

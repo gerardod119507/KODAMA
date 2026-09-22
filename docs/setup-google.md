@@ -173,23 +173,39 @@ Si las dos pruebas dan ese resultado, el Checkpoint 2 está aprobado.
 
 ## Cuando cambiemos el código de Apps Script
 
-Guardar el código **no** actualiza lo que está publicado. Cada vez que pegues
-una versión nueva:
+**Ya no hace falta hacer nada de esto a mano.** Desde que se agregó el
+despliegue automático (ver "Despliegue de Apps Script (CI/CD)" en
+`CLAUDE.md`), cada vez que se mergea a `main` un cambio en `apps-script/`,
+un workflow de GitHub Actions pega el código nuevo y actualiza el
+despliegue existente solo. La URL del Web App no cambia. No hace falta
+volver a abrir el editor de Apps Script para esto.
 
-1. **Implementar** → **Administrar implementaciones**.
-2. Clic en el ícono del **lápiz** (Editar).
-3. En **Versión**, elegí **Versión nueva**.
-4. Clic en **Implementar**.
+El editor sigue siendo necesario solo para: generar el token (una vez, ver
+paso 38) y revisar el registro de ejecución (`Ver` → `Registros de
+ejecución`) si algo falla.
 
-La URL **no cambia** si hacés esto. Solo cambia si creás una *Nueva
-implementación* desde cero.
+### Cómo se armaron los secrets del despliegue automático (referencia)
+
+Esto ya está hecho — queda documentado por si hay que rehacerlo alguna vez
+(por ejemplo, si las credenciales vencen):
+
+1. En una computadora, con Node instalado: `npm install -g @google/clasp`,
+   después `clasp login`. Abre el navegador, pide autorizar la cuenta de
+   Google, y genera `~/.clasprc.json`.
+2. El contenido completo de ese archivo se pegó como el secret
+   `CLASPRC_JSON` del repo (`Settings` → `Secrets and variables` →
+   `Actions`).
+3. `SCRIPT_ID`: **Configuración del proyecto** en el editor de Apps Script
+   → **ID del proyecto de Secuencia de comandos**.
+4. `DEPLOYMENT_ID`: **Implementar** → **Administrar implementaciones** → el
+   ícono de información (ⓘ) junto al despliegue del paso 46 → **ID de
+   implementación**.
 
 ## Problemas comunes
 
 | Síntoma | Causa probable | Solución |
 |---|---|---|
-| "La respuesta no es JSON" | El acceso quedó en *Cualquier usuario con cuenta de Google* | Paso 45, volvé a implementar |
+| "La respuesta no es JSON" | El acceso quedó en *Cualquier usuario con cuenta de Google* | Paso 45, volvé a implementar a mano una vez (esto no lo toca el despliegue automático) |
 | "La respuesta no es JSON" | La URL termina en `/dev` en vez de `/exec` | Usá la URL del paso 48 |
-| `falta_hoja_areas` | No se ejecutó `configurarHojas` | Pasos 21 a 28 |
 | `no_autorizado` con el token correcto | El token se copió con un espacio de más | Copialo de nuevo desde Propiedades del script (paso 39) |
-| Cambiaste el código y no pasa nada | Falta publicar la versión nueva | Ver sección de arriba |
+| Cambiaste el código, lo mergeaste, y no pasa nada | Revisá la pestaña **Actions** del repo en GitHub: el workflow "Deploy Apps Script" tiene que terminar en verde | Si falla, el error suele estar en algún secret vencido o mal copiado |

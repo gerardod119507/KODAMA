@@ -4,35 +4,12 @@
  */
 
 function configurarHojas() {
-  const libro = SpreadsheetApp.getActiveSpreadsheet();
-  libro.setSpreadsheetTimeZone('America/La_Paz');
-
-  const areas = obtenerOCrearHoja(libro, HOJA_AREAS);
-  if (areas.getLastRow() === 0) {
-    areas.getRange(1, 1, 5, 2).setValues([
-      ['nombre', 'color'],
-      ['Universidad', '#245A8D'],
-      ['Academia Fractal', '#8A5A00'],
-      ['Startup', '#6650A4'],
-      ['Personal', '#476A54']
-    ]);
-    areas.setFrozenRows(1);
-  }
-
-  const bloques = obtenerOCrearHoja(libro, HOJA_BLOQUES);
-  if (bloques.getLastRow() === 0) {
-    // El formato de texto va ANTES de escribir nada: si no, Sheets convierte
-    // "2026-09-22" en fecha y "14:30" en hora, y se pierde el formato.
-    bloques.getRange('A:K').setNumberFormat('@');
-    bloques.getRange(1, 1, 1, 11).setValues([[
-      'id', 'título', 'área', 'tipo', 'fecha', 'inicio', 'fin',
-      'notas', 'creado', 'actualizado', 'archivado'
-    ]]);
-    bloques.setFrozenRows(1);
-  }
-
-  Logger.log('Listo. Hojas "%s" y "%s" configuradas, zona horaria America/La_Paz.',
-    HOJA_AREAS, HOJA_BLOQUES);
+  // Misma lógica que corre sola en cada POST (Code.gs). Esta función queda
+  // como atajo manual, por si querés forzar el chequeo sin esperar a que
+  // la app haga una petición.
+  asegurarEstructura();
+  Logger.log('Listo. Hojas "%s" y "%s" verificadas, zona horaria %s.',
+    HOJA_AREAS, HOJA_BLOQUES, ZONA_HORARIA);
 }
 
 function generarToken() {
@@ -46,8 +23,4 @@ function generarToken() {
   propiedades.setProperty(PROPIEDAD_TOKEN, token);
   Logger.log('Token creado y guardado en Propiedades del script. Copialo:');
   Logger.log(token);
-}
-
-function obtenerOCrearHoja(libro, nombre) {
-  return libro.getSheetByName(nombre) || libro.insertSheet(nombre);
 }

@@ -36,8 +36,12 @@ Además existen las **reuniones imprevistas**, que no son un área: son un
 
 - **Base de datos:** Google Sheets.
 - **API:** Google Apps Script publicado como Web App. El código fuente vive
-  en `apps-script/` en este repo; se copia manualmente al editor de Apps
-  Script (no hay despliegue automático).
+  en `apps-script/` en este repo. Un workflow de GitHub Actions lo despliega
+  solo con cada push a `main` que toque esa carpeta (`clasp push` +
+  `clasp deploy`) — ver "Despliegue de Apps Script (CI/CD)" más abajo. El
+  editor de Apps Script deja de ser donde se edita código; sigue siendo
+  necesario para tareas puntuales que no se pueden hacer por API (generar el
+  token, ver logs de ejecución).
 - **Frontend:** HTML + CSS + JavaScript vanilla. Sin frameworks, sin build
   step. Publicado en GitHub Pages.
 - **PWA** instalable en el celular (manifest + service worker) — checkpoint 7.
@@ -94,6 +98,56 @@ Se parte de cero.
   `curl` no verificaría CORS —solo una petición real desde el origen de
   GitHub Pages demuestra que el navegador puede hablar con el Web App.
 
+## Despliegue de Apps Script (CI/CD)
+
+`.github/workflows/deploy-apps-script.yml` corre en cada push a `main` que
+toque `apps-script/**`. Usa [`clasp`](https://github.com/google/clasp) (CLI
+oficial de Google) para:
+
+1. `clasp push --force` — sube el contenido de `apps-script/` al proyecto de
+   Apps Script, pisando lo que haya en el editor. El repo es la fuente de
+   verdad; el editor ya no se edita a mano.
+2. `clasp deploy -i "$DEPLOYMENT_ID"` — crea una versión nueva del script y
+   la asocia al **mismo despliegue** que ya existía. La URL del Web App está
+   atada al despliegue (no a la versión del código), así que nunca cambia.
+
+### Secrets del repo (`Settings` → `Secrets and variables` → `Actions`)
+
+- `SCRIPT_ID` — identifica el proyecto de Apps Script. Se genera un
+  `.clasp.json` con este valor dentro del workflow (nunca se commitea).
+- `DEPLOYMENT_ID` — identifica el despliegue existente (Web App), para que
+  `clasp deploy -i` actualice ese y no cree uno nuevo con otra URL.
+- `CLASPRC_JSON` — las credenciales OAuth que `clasp login` guarda en
+  `~/.clasprc.json` en una máquina local. El workflow reconstruye ese
+  archivo a partir del secret antes de correr `clasp push`/`clasp deploy`.
+  Son credenciales de la cuenta de Gerardo con permiso para editar el
+  script — por eso viven solo como secret, nunca en el repo.
+
+### Qué sigue siendo manual (no se puede automatizar por API)
+
+- **Generar el token** (`generarToken()` en Setup.gs): correrlo desde un
+  workflow público sin autenticación sería crear un secreto por un endpoint
+  no protegido — justo lo que el token existe para evitar. Se genera una
+  sola vez a mano, como en el Checkpoint 2.
+- **La primera creación del script y el primer despliegue**: `SCRIPT_ID` y
+  `DEPLOYMENT_ID` solo existen después de crear el proyecto y publicarlo una
+  vez desde la interfaz de Google (Checkpoint 2). El workflow actualiza un
+  despliegue que ya existe; no crea el primero.
+- **`clasp login`**: requiere el flujo interactivo de OAuth de Google en un
+  navegador. Se corre una vez en una computadora para generar el
+  `CLASPRC_JSON` que se pegó como secret.
+
+### Auto-creación de hojas
+
+`asegurarEstructura()` (Code.gs) corre en **cada** `POST` autorizado, antes
+de ejecutar la acción pedida: crea `Areas` (con las 4 áreas) y `Bloques`
+(con encabezados, en formato texto) si no existen, y fija la zona horaria
+del libro. Es idempotente — si una hoja ya tiene filas, no la toca. Motivo:
+con el despliegue automatizado, la idea es tocar el editor de Apps Script lo
+menos posible; si alguna vez hay que recrear el Sheet desde cero, la primera
+petición al Web App ya lo deja usable. `Horario` se suma a esta función
+recién en el Checkpoint 4, cuando se defina su estructura de columnas.
+
 ## Modelo de datos (Google Sheets)
 
 ### Hoja `Areas`
@@ -133,6 +187,19 @@ compleja: se materializan filas, no reglas.
 Todas se piden con `POST` (`action` + `token` + parámetros en el cuerpo).
 Respuesta uniforme: `{ ok: true, data: ... }` o `{ ok: false, error: "..." }`.
 
+**Fuente de verdad de los nombres:** el objeto `ACCIONES` en
+`apps-script/Code.gs`. Es lo único que decide qué `action` reconoce el
+backend — no hay un `switch` aparte ni una lista duplicada. Si el nombre
+que manda el frontend (`KodamaApi.llamar(url, token, 'nombreDeAccion', ...)`
+en `js/*.js`) no coincide **letra por letra** con una clave de `ACCIONES`,
+el backend responde `accion_desconocida` y el mensaje de error incluye la
+acción recibida y la lista de acciones válidas — no hace falta adivinar,
+revisar la respuesta alcanza. Agregar una acción nueva es agregar una
+entrada a `ACCIONES`, en un solo lugar.
+
+Esta tabla es una copia legible de `ACCIONES` — si alguna vez no coincide
+con el código, el código manda:
+
 - `ping` — sin parámetros. Devuelve `{ mensaje, zonaHoraria }`; confirma que
   el Web App responde.
 - `listarAreas` — sin parámetros. Devuelve un array de `{ nombre, color }`.
@@ -144,6 +211,16 @@ Respuesta uniforme: `{ ok: true, data: ... }` o `{ ok: false, error: "..." }`.
   creado, actualizado, archivado }`.
 
 Se agrega una acción por checkpoint; esta lista se mantiene al día.
+
+**Por qué pasó el bug de "accion_desconocida" después del Checkpoint 3:** la
+rama del despliegue automático (CI/CD) se había creado desde `main` *antes*
+de que el Checkpoint 3 (con `listarBloquesDia`) se mergeara. Su
+`apps-script/Code.gs` todavía no tenía esa acción. Si ese código se copió al
+editor de Apps Script después de tener el Checkpoint 3 andando, pisó
+`listarBloquesDia` con una versión anterior que no la reconocía — el
+frontend (ya en la versión del Checkpoint 3) seguía pidiéndola igual. La
+rama de CI/CD se actualizó (merge con `main`) para que esto no se repita: a
+partir de ahora, esa rama siempre incluye la última acción agregada.
 
 ## Caché local
 
@@ -253,6 +330,10 @@ drop, notificaciones, cola offline.
 
 ```
 KODAMA/
+├── .github/
+│   └── workflows/
+│       └── deploy-apps-script.yml  # clasp push + clasp deploy en cada push a main
+├── .gitignore               # .clasp.json / .clasprc.json (nunca al repo)
 ├── index.html              # vista principal (día/semana)
 ├── config.html             # URL del Web App + token, y prueba de conexión
 ├── manifest.webmanifest    # PWA (checkpoint 7)
@@ -277,7 +358,8 @@ KODAMA/
 │   ├── Bloques.gs             # CRUD de la hoja Bloques
 │   └── Horario.gs             # generador de clases fijas → filas
 ├── docs/
-│   └── setup-google.md      # pasos exactos para Sheet + Apps Script
+│   ├── setup-google.md      # pasos exactos para Sheet + Apps Script
+│   └── datos-prueba.md       # cómo cargar bloques de prueba a mano
 └── CLAUDE.md
 ```
 
