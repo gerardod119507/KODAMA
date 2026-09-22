@@ -2,10 +2,12 @@ const campoUrl = document.getElementById('url');
 const campoToken = document.getElementById('token');
 const resultado = document.getElementById('resultado');
 const listaAreas = document.getElementById('areas');
+const continuarEnvoltorio = document.getElementById('continuar-envoltorio');
 
 const configGuardada = KodamaApi.leerConfig();
 campoUrl.value = configGuardada.url;
 campoToken.value = configGuardada.token;
+document.getElementById('bienvenida').hidden = Boolean(configGuardada.url && configGuardada.token);
 
 function mostrar(mensaje) {
   resultado.textContent = mensaje;
@@ -23,6 +25,7 @@ function pintarAreas(areas) {
 document.getElementById('formulario').addEventListener('submit', async function (evento) {
   evento.preventDefault();
   listaAreas.replaceChildren();
+  continuarEnvoltorio.hidden = true;
   mostrar('Probando...');
   try {
     const respuesta = await KodamaApi.llamar(campoUrl.value, campoToken.value, 'listarAreas');
@@ -33,9 +36,22 @@ document.getElementById('formulario').addEventListener('submit', async function 
     KodamaApi.guardarConfig(campoUrl.value, campoToken.value);
     mostrar('Conexión correcta. Datos guardados en este dispositivo.');
     pintarAreas(respuesta.data);
+    continuarEnvoltorio.hidden = false;
   } catch (error) {
     mostrar('Error: ' + error.message);
   }
+});
+
+document.getElementById('olvidar').addEventListener('click', function () {
+  if (!confirm('¿Olvidar la URL y el token guardados en este dispositivo?')) {
+    return;
+  }
+  KodamaApi.guardarConfig('', '');
+  campoUrl.value = '';
+  campoToken.value = '';
+  listaAreas.replaceChildren();
+  continuarEnvoltorio.hidden = true;
+  mostrar('Conexión olvidada en este dispositivo.');
 });
 
 document.getElementById('probar-malo').addEventListener('click', async function () {

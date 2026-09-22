@@ -128,6 +128,23 @@ Define las clases fijas del semestre; una función de Apps Script la lee y
 genera una fila individual por cada clase en `Bloques`. Sin recurrencia
 compleja: se materializan filas, no reglas.
 
+## API (acciones del Web App)
+
+Todas se piden con `POST` (`action` + `token` + parámetros en el cuerpo).
+Respuesta uniforme: `{ ok: true, data: ... }` o `{ ok: false, error: "..." }`.
+
+- `ping` — sin parámetros. Devuelve `{ mensaje, zonaHoraria }`; confirma que
+  el Web App responde.
+- `listarAreas` — sin parámetros. Devuelve un array de `{ nombre, color }`.
+- `listarBloquesDia` — parámetro `fecha` (texto `YYYY-MM-DD`). Devuelve los
+  bloques de ese día no archivados, ordenados por `inicio`. Cada bloque usa
+  claves en ASCII —`titulo`, `area`, sin tildes— aunque en la hoja las
+  columnas se llamen `título`/`área`, para que el JSON no dependa de
+  codificación: `{ id, titulo, area, tipo, fecha, inicio, fin, notas,
+  creado, actualizado, archivado }`.
+
+Se agrega una acción por checkpoint; esta lista se mantiene al día.
+
 ## Caché local
 
 Solo para **lectura offline** (ver el último día/semana cargado sin
@@ -197,9 +214,26 @@ Checkpoint 1 es intencionalmente básico).
   definido arriba, se repite aquí porque aplica también a la mascota y sus
   estados).
 
-**Bocetos de la mascota:** no se crean todavía. En el **Checkpoint 3** se
-proponen 2 bocetos SVG del espíritu del bosque para que Gerardo elija antes
-de integrarlo en la app.
+**Bocetos de la mascota:** propuestos en `js/ui/espiritu.js` (`dormidoA` /
+`dormidoB`), visibles en el estado vacío de la vista de día mientras no haya
+una elección de Gerardo. Solo existe el estado **dormido** por ahora; los
+otros 3 estados se agregan una vez elegido el diseño base.
+
+**Forma por tipo de bloque** (`js/ui/iconos.js`): cuadrado = fijo, círculo =
+variable, triángulo = reunión. La forma es el canal accesible para el tipo;
+el color del ícono es el del área (o el color dedicado de Reunión cuando
+`tipo` es `reunión`, ver paleta arriba) — dos canales distintos para dos
+datos distintos, ninguno solo por color.
+
+**Contraste de los colores de área en modo oscuro:** los 5 valores de la
+paleta, usados como relleno de ícono, no llegan a 3:1 (mínimo WCAG para
+elementos gráficos) sobre el fondo oscuro `#0E1713` — el peor caso,
+Universidad, da 2.54:1. `css/styles.css` define variantes más claras (mismo
+matiz, más luminosidad) solo bajo `[data-theme="dark"]`, todas por encima de
+4.5:1. En modo claro se usan los valores de la paleta sin cambios (ya dan
+5.2–6.4:1 sobre `bone`). El modo oscuro todavía no tiene un botón que lo
+active (eso es el Checkpoint 7); los tokens ya están listos para cuando lo
+tenga.
 
 ## Alcance del MVP
 
@@ -226,11 +260,15 @@ KODAMA/
 ├── css/
 │   └── styles.css
 ├── js/
-│   ├── app.js               # bootstrap + router simple de vistas
+│   ├── app.js               # bootstrap de index.html (vista de día)
 │   ├── api.js                # fetch al Web App (POST text/plain)
 │   ├── config.js              # lógica de config.html
 │   ├── state.js               # estado en memoria + cache local (lectura)
-│   └── ui/                    # render de día, semana, formulario
+│   ├── fecha.js                # fecha "hoy" y formato legible en America/La_Paz
+│   └── ui/
+│       ├── dia.js                # render de la lista de bloques del día
+│       ├── iconos.js              # formas SVG por tipo de bloque
+│       └── espiritu.js            # bocetos SVG de la mascota
 ├── icons/                   # íconos PWA
 ├── apps-script/
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
