@@ -28,14 +28,62 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 34rem;
+  margin: 0 auto;
   padding: 1.5rem;
 }
 
 h1 {
   font-size: 1.5rem;
-  margin: 0;
+  margin: 0 0 1rem;
+}
+
+label {
+  display: block;
+  margin: 1rem 0 0.25rem;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 0.6rem;
+  font: inherit;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--fg);
+  border-radius: 6px;
+}
+
+button {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  color: var(--bone);
+  background: var(--forest);
+  border: 1px solid var(--forest);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button.secundario {
+  color: var(--fg);
+  background: transparent;
+  border-color: var(--fg);
+}
+
+.nota {
+  font-size: 0.9rem;
+}
+
+#resultado {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+ul {
+  padding-left: 1.2rem;
 }

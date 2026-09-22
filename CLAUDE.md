@@ -87,9 +87,12 @@ Se parte de cero.
   XSS.
 - **Cómo probar el Web App sin exponer el token:** nunca pegar el token en la
   barra de direcciones ni en un comando que quede en el historial de shell en
-  texto plano. En el checkpoint 2 se entrega un script de prueba que lee el
-  token desde una variable de entorno local (no versionada) o lo pide de
-  forma interactiva oculta (`read -s`), y lo envía por `POST` en el cuerpo.
+  texto plano. La prueba es `config.html`: el token se escribe en un campo
+  `type="password"`, viaja en el cuerpo del `POST` y se guarda solo en
+  `localStorage` del dispositivo. Se eligió una página en vez de un script de
+  terminal por dos motivos: Gerardo prueba desde el celular, y una prueba con
+  `curl` no verificaría CORS —solo una petición real desde el origen de
+  GitHub Pages demuestra que el navegador puede hablar con el Web App.
 
 ## Modelo de datos (Google Sheets)
 
@@ -217,6 +220,7 @@ drop, notificaciones, cola offline.
 ```
 KODAMA/
 ├── index.html              # vista principal (día/semana)
+├── config.html             # URL del Web App + token, y prueba de conexión
 ├── manifest.webmanifest    # PWA (checkpoint 7)
 ├── sw.js                   # service worker (checkpoint 7)
 ├── css/
@@ -224,11 +228,14 @@ KODAMA/
 ├── js/
 │   ├── app.js               # bootstrap + router simple de vistas
 │   ├── api.js                # fetch al Web App (POST text/plain)
+│   ├── config.js              # lógica de config.html
 │   ├── state.js               # estado en memoria + cache local (lectura)
 │   └── ui/                    # render de día, semana, formulario
 ├── icons/                   # íconos PWA
 ├── apps-script/
+│   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
 │   ├── Code.gs               # Web App: doPost, validación de token
+│   ├── Setup.gs               # configurarHojas() y generarToken(), un solo uso
 │   ├── Bloques.gs             # CRUD de la hoja Bloques
 │   └── Horario.gs             # generador de clases fijas → filas
 ├── docs/
