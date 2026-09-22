@@ -187,6 +187,19 @@ compleja: se materializan filas, no reglas.
 Todas se piden con `POST` (`action` + `token` + parámetros en el cuerpo).
 Respuesta uniforme: `{ ok: true, data: ... }` o `{ ok: false, error: "..." }`.
 
+**Fuente de verdad de los nombres:** el objeto `ACCIONES` en
+`apps-script/Code.gs`. Es lo único que decide qué `action` reconoce el
+backend — no hay un `switch` aparte ni una lista duplicada. Si el nombre
+que manda el frontend (`KodamaApi.llamar(url, token, 'nombreDeAccion', ...)`
+en `js/*.js`) no coincide **letra por letra** con una clave de `ACCIONES`,
+el backend responde `accion_desconocida` y el mensaje de error incluye la
+acción recibida y la lista de acciones válidas — no hace falta adivinar,
+revisar la respuesta alcanza. Agregar una acción nueva es agregar una
+entrada a `ACCIONES`, en un solo lugar.
+
+Esta tabla es una copia legible de `ACCIONES` — si alguna vez no coincide
+con el código, el código manda:
+
 - `ping` — sin parámetros. Devuelve `{ mensaje, zonaHoraria }`; confirma que
   el Web App responde.
 - `listarAreas` — sin parámetros. Devuelve un array de `{ nombre, color }`.
@@ -198,6 +211,16 @@ Respuesta uniforme: `{ ok: true, data: ... }` o `{ ok: false, error: "..." }`.
   creado, actualizado, archivado }`.
 
 Se agrega una acción por checkpoint; esta lista se mantiene al día.
+
+**Por qué pasó el bug de "accion_desconocida" después del Checkpoint 3:** la
+rama del despliegue automático (CI/CD) se había creado desde `main` *antes*
+de que el Checkpoint 3 (con `listarBloquesDia`) se mergeara. Su
+`apps-script/Code.gs` todavía no tenía esa acción. Si ese código se copió al
+editor de Apps Script después de tener el Checkpoint 3 andando, pisó
+`listarBloquesDia` con una versión anterior que no la reconocía — el
+frontend (ya en la versión del Checkpoint 3) seguía pidiéndola igual. La
+rama de CI/CD se actualizó (merge con `main`) para que esto no se repita: a
+partir de ahora, esa rama siempre incluye la última acción agregada.
 
 ## Caché local
 
@@ -335,7 +358,8 @@ KODAMA/
 │   ├── Bloques.gs             # CRUD de la hoja Bloques
 │   └── Horario.gs             # generador de clases fijas → filas
 ├── docs/
-│   └── setup-google.md      # pasos exactos para Sheet + Apps Script
+│   ├── setup-google.md      # pasos exactos para Sheet + Apps Script
+│   └── datos-prueba.md       # cómo cargar bloques de prueba a mano
 └── CLAUDE.md
 ```
 
