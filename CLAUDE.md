@@ -151,6 +151,53 @@ el único indicador (accesibilidad para daltonismo). Verificar contraste
 texto/fondo con WCAG AA (mínimo 4.5:1 para texto normal) en ambos temas,
 claro y oscuro.
 
+## Dirección visual
+
+Se aplica **desde el Checkpoint 3 en adelante** (el esqueleto del
+Checkpoint 1 es intencionalmente básico).
+
+- **Identidad:** de bosque, orgánica, sobria, cálida. Nada infantil ni de
+  plantilla genérica. La paleta de arriba ya apunta ahí; el resto del diseño
+  (tipografía, espaciado, formas) debe sostener esa sensación, no
+  contradecirla con componentes genéricos de "dashboard".
+- **Mascota:** un espíritu del bosque **original** de KODAMA — inspirado en
+  el imaginario de espíritus del bosque, pero con diseño propio, sin copiar
+  el estilo de Ghibli. Ilustración en **SVG propio** (nunca una imagen
+  externa ni una librería de íconos de terceros, por la regla de no sumar
+  dependencias sin justificar). 4 estados:
+  - **Tranquilo** — estado por defecto, nada pendiente.
+  - **Atento** — hay algo pendiente (ej. bloques sin confirmar).
+  - **Contento** — feedback tras una acción completada (ej. guardar una
+    reunión).
+  - **Dormido** — día libre o vista vacía.
+  - *Motivo de solo 4 estados:* cubren los momentos reales de la app sin
+    convertir la mascota en un sistema de animación aparte que haya que
+    mantener.
+- **Dónde aparece:** estados vacíos, confirmaciones, carga y encabezado.
+  **Nunca** debe estorbar la lectura del horario (ni superpuesta a bloques,
+  ni compitiendo por atención en la vista principal).
+- **Dinamismo:** transiciones cortas (150–250 ms), feedback inmediato al
+  tocar (ej. cambio de estado visual al presionar un botón), animación suave
+  de entrada para bloques nuevos en la vista. Todo dentro de
+  `prefers-reduced-motion: reduce` desactivado o reducido — motivo: parte de
+  la audiencia (incluido el propio Gerardo en algún momento) puede tener
+  sensibilidad al movimiento, y es una media query nativa del navegador, sin
+  librerías.
+- **Tokens de diseño:** colores, tipografía, espaciado, radios y sombras
+  viven como variables CSS (`:root`, ya empezado en `css/styles.css` con la
+  paleta). Todo componente nuevo consume tokens, nunca valores sueltos
+  (`padding: 13px` está prohibido si no sale de un token de espaciado).
+  Motivo: sin esto, mantener consistencia visual sin un framework de CSS se
+  vuelve inmanejable a medida que crecen las vistas.
+- **Accesibilidad:** contraste WCAG AA verificado (ya definido arriba); el
+  tipo de bloque se distingue por ícono o borde, nunca solo por color (ya
+  definido arriba, se repite aquí porque aplica también a la mascota y sus
+  estados).
+
+**Bocetos de la mascota:** no se crean todavía. En el **Checkpoint 3** se
+proponen 2 bocetos SVG del espíritu del bosque para que Gerardo elija antes
+de integrarlo en la app.
+
 ## Alcance del MVP
 
 1. Hojas `Areas` y `Bloques` (ver modelo de datos).
