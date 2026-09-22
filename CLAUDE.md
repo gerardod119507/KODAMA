@@ -101,20 +101,10 @@ Se parte de cero.
 ## Despliegue de Apps Script (CI/CD)
 
 `.github/workflows/deploy-apps-script.yml` corre en cada push a `main` que
-toque `apps-script/**`. Usa [`clasp`](https://github.com/google/clasp) (CLI
+toque `apps-script/**` **o el propio archivo del workflow**, y también se
+puede disparar a mano (`workflow_dispatch` — botón "Run workflow" en la
+pestaña **Actions**). Usa [`clasp`](https://github.com/google/clasp) (CLI
 oficial de Google) para:
-
-**Versión de clasp fijada en el workflow: `3.4.1` exacta** (no `@3`, no
-`@latest`). Motivo: clasp cambió el formato de `~/.clasprc.json` entre
-versiones mayores — v2 usa `{"token": {...}}`, v3 usa `{"tokens": {...}}` —
-y `clasp login` genera el archivo con el formato de la versión que corriste
-en tu máquina. Si el workflow instalara una versión mayor distinta a la que
-usaste para loguearte, `clasp push` falla leyendo el token
-(`Cannot read properties of undefined (reading 'access_token')`, el error
-del primer intento de despliegue). Si en el futuro actualizás tu `clasp`
-local (`npm install -g @google/clasp@algo-mas-nuevo` + `clasp login` de
-nuevo para regenerar `CLASPRC_JSON`), actualizá este mismo número en el
-workflow en el mismo PR — los dos tienen que coincidir siempre.
 
 1. `clasp push --force` — sube el contenido de `apps-script/` al proyecto de
    Apps Script, pisando lo que haya en el editor. El repo es la fuente de
@@ -122,6 +112,31 @@ workflow en el mismo PR — los dos tienen que coincidir siempre.
 2. `clasp deploy -i "$DEPLOYMENT_ID"` — crea una versión nueva del script y
    la asocia al **mismo despliegue** que ya existía. La URL del Web App está
    atada al despliegue (no a la versión del código), así que nunca cambia.
+
+**Versión de clasp: `@google/clasp@3`** (misma mayor que corre
+`clasp login` localmente). Motivo: clasp cambió el formato de
+`~/.clasprc.json` entre versiones mayores — v2 usa `{"token": {...}}`, v3
+usa `{"tokens": {...}}` — así que lo que importa es que la mayor coincida
+con la que generó `CLASPRC_JSON`; el número de parche no afecta el formato.
+Si el workflow instalara una mayor distinta a la que usaste para loguearte,
+`clasp push` falla leyendo el token
+(`Cannot read properties of undefined (reading 'access_token')`). Un paso
+del workflow imprime `clasp --version` en cada run, para notar enseguida si
+una mayor nueva (`@4`, etc.) alguna vez vuelve a cambiar el formato. Si en
+el futuro actualizás tu `clasp` local a otra mayor (`npm install -g
+@google/clasp@la-que-sea` + `clasp login` de nuevo para regenerar
+`CLASPRC_JSON`), actualizá el número acá y en el workflow en el mismo PR.
+
+**Por qué el workflow también se dispara con `.github/workflows/…yml` en
+los `paths`, y por qué existe `workflow_dispatch`:** "Re-run failed jobs" en
+GitHub Actions vuelve a correr el workflow **tal como estaba en el commit
+que originó ese run**, no el que está hoy en `main` — así que no sirve para
+probar un fix hecho en un PR posterior (así fue como el primer intento de
+fijar la versión de clasp pasó varios reintentos sin detectarse que nunca
+se estaba probando). Con el workflow en los `paths`, mergear un cambio al
+propio archivo dispara un run nuevo de verdad; `workflow_dispatch` da un
+botón para forzarlo a mano cuando ni `apps-script/` ni el workflow
+cambiaron.
 
 ### Secrets del repo (`Settings` → `Secrets and variables` → `Actions`)
 
