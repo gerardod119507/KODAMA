@@ -195,6 +195,14 @@ Esto ya está hecho — queda documentado por si hay que rehacerlo alguna vez
 2. El contenido completo de ese archivo se pegó como el secret
    `CLASPRC_JSON` del repo (`Settings` → `Secrets and variables` →
    `Actions`).
+   > **Importante:** el número de versión de `clasp` que instalaste en el
+   > paso 1 (`clasp --version`) tiene que coincidir con la versión fijada en
+   > `.github/workflows/deploy-apps-script.yml` (ver "Despliegue de Apps
+   > Script (CI/CD)" en `CLAUDE.md`). Versiones mayores distintas guardan
+   > `~/.clasprc.json` con formatos incompatibles entre sí. Si volvés a
+   > correr `clasp login` con una versión de `clasp` distinta a la del
+   > workflow, actualizá los dos juntos (el secret y el número en el
+   > workflow) en el mismo PR.
 3. `SCRIPT_ID`: **Configuración del proyecto** en el editor de Apps Script
    → **ID del proyecto de Secuencia de comandos**.
 4. `DEPLOYMENT_ID`: **Implementar** → **Administrar implementaciones** → el

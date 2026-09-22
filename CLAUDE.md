@@ -104,6 +104,18 @@ Se parte de cero.
 toque `apps-script/**`. Usa [`clasp`](https://github.com/google/clasp) (CLI
 oficial de Google) para:
 
+**Versión de clasp fijada en el workflow: `3.4.1` exacta** (no `@3`, no
+`@latest`). Motivo: clasp cambió el formato de `~/.clasprc.json` entre
+versiones mayores — v2 usa `{"token": {...}}`, v3 usa `{"tokens": {...}}` —
+y `clasp login` genera el archivo con el formato de la versión que corriste
+en tu máquina. Si el workflow instalara una versión mayor distinta a la que
+usaste para loguearte, `clasp push` falla leyendo el token
+(`Cannot read properties of undefined (reading 'access_token')`, el error
+del primer intento de despliegue). Si en el futuro actualizás tu `clasp`
+local (`npm install -g @google/clasp@algo-mas-nuevo` + `clasp login` de
+nuevo para regenerar `CLASPRC_JSON`), actualizá este mismo número en el
+workflow en el mismo PR — los dos tienen que coincidir siempre.
+
 1. `clasp push --force` — sube el contenido de `apps-script/` al proyecto de
    Apps Script, pisando lo que haya en el editor. El repo es la fuente de
    verdad; el editor ya no se edita a mano.
