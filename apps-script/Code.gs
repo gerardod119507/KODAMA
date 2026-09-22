@@ -9,6 +9,13 @@ const PROPIEDAD_TOKEN = 'KODAMA_TOKEN';
 const HOJA_AREAS = 'Areas';
 const HOJA_BLOQUES = 'Bloques';
 
+// Mismo orden que los encabezados que crea configurarHojas() en Setup.gs.
+// Claves en ASCII (sin tildes) para que el JSON no dependa de codificación.
+const COLUMNAS_BLOQUES = [
+  'id', 'titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin',
+  'notas', 'creado', 'actualizado', 'archivado'
+];
+
 function doPost(e) {
   let peticion;
   try {
@@ -41,6 +48,8 @@ function ejecutarAccion(peticion) {
       };
     case 'listarAreas':
       return listarAreas();
+    case 'listarBloquesDia':
+      return listarBloquesDia(peticion.fecha);
     default:
       throw new Error('accion_desconocida');
   }
@@ -62,6 +71,28 @@ function listarAreas() {
     .slice(1)
     .filter(function (fila) { return fila[0]; })
     .map(function (fila) { return { nombre: fila[0], color: fila[1] }; });
+}
+
+function listarBloquesDia(fecha) {
+  if (!fecha) {
+    throw new Error('falta_fecha');
+  }
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
+  if (!hoja) {
+    throw new Error('falta_hoja_bloques');
+  }
+  return hoja.getDataRange().getDisplayValues()
+    .slice(1)
+    .filter(function (fila) { return fila[0]; })
+    .map(filaABloque)
+    .filter(function (bloque) { return bloque.fecha === fecha && bloque.archivado !== 'TRUE'; })
+    .sort(function (a, b) { return a.inicio.localeCompare(b.inicio); });
+}
+
+function filaABloque(fila) {
+  const bloque = {};
+  COLUMNAS_BLOQUES.forEach(function (clave, indice) { bloque[clave] = fila[indice]; });
+  return bloque;
 }
 
 function responderJson(objeto) {
