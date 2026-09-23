@@ -215,6 +215,9 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
 - `tests/escritura.test.js` — las acciones de escritura del Checkpoint 5:
   crear/editar/archivar bloques y reglas, validaciones que fallan sin tocar
   la hoja, y que todas exijan token.
+- `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
+  incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
+  año, franja horaria, reparto lado a lado y recordar día/semana.
 
 **Qué NO cubren:** nada que necesite un navegador o el Sheet real (render
 del DOM, CSS, permisos de Google, que el despliegue efectivamente sirva la
@@ -359,6 +362,11 @@ con el código, el código manda:
   columnas se llamen `título`/`área`, para que el JSON no dependa de
   codificación: `{ id, titulo, area, tipo, fecha, inicio, fin, etiqueta,
   notas, creado, actualizado, archivado }`.
+- `listarBloquesRango` — parámetros `desde` y `hasta` (texto
+  `YYYY-MM-DD`, ambos incluidos). Mismo formato de bloque que
+  `listarBloquesDia`, sin archivados, ordenados por `fecha` y después
+  `inicio`. Falla con `rango_invalido` si una fecha está mal escrita o
+  `desde` es posterior a `hasta`. Lo usa la vista de semana.
 - `generarHorario` — sin parámetros. Lee la hoja `Horario`, crea/actualiza
   bloques fijos en `Bloques` (ver "Modelo de datos" para el algoritmo
   completo) y devuelve `{ creados, actualizados, archivados }`.
@@ -436,11 +444,39 @@ diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
   falla, **el diálogo queda abierto con todo lo escrito** y muestra el error
   del backend. Nunca se cierra ni se limpia un formulario que no se guardó.
 
-## Capas (vista de día)
+## Vista de semana (Checkpoint 6)
 
-Selector en la vista de día (`js/capas.js`): **General**, Universidad,
+`index.html` tiene dos modos, **Día** y **Semana** (`js/vista.js`). La
+elección se guarda en `localStorage` (`kodama.vista`); si nunca se eligió,
+una pantalla de 900px o más arranca en semana y el celular en día.
+
+- **Navegación:** `‹` / `›` mueven 1 día en modo día y 7 días en modo
+  semana; "Hoy" vuelve a la fecha actual. La semana va de lunes a domingo.
+  Las fechas se calculan en UTC puro (`KodamaFecha.sumarDias`,
+  `diasDeSemana`) por el mismo motivo que el generador: una fecha es un día
+  de calendario, no un instante.
+- **Grilla** (`js/ui/semana.js`): días en columnas, horas en filas. Cada
+  bloque se posiciona con variables CSS (`--min-inicio`, `--min-duracion`)
+  multiplicadas por el token `--escala-semana` — la escala vive en CSS, no
+  en el JS. Franja base **06:30–21:00** (el horario real va de 6:45 a
+  21:00); si un bloque cae afuera, la franja se estira sola a la media hora.
+- **Lado a lado, sin avisos:** los bloques que se pisan (misma regla de
+  cadena que la vista de día) se reparten el ancho; cada uno toma la
+  primera columna libre, así en A–B–C, C reusa el lugar de A si A ya
+  terminó.
+- **Celular en modo semana:** la grilla se desplaza de costado dentro de su
+  caja (la página nunca), con la columna de horas fija y arrancando en el
+  día de hoy.
+- Tocar un bloque abre el mismo editor del Checkpoint 5. Un bloque nuevo
+  desde la semana toma hoy si hoy está en la semana vista, si no el lunes.
+- Caché de lectura offline propia por rango
+  (`kodama.cache.rango.<desde>.<hasta>`), igual que la del día.
+
+## Capas (vista de día y de semana)
+
+Selector en la vista de día y de semana (`js/capas.js`): **General**, Universidad,
 Academia Fractal, Startup, Personal. Filtra client-side sobre los bloques
-que ya trajo `listarBloquesDia` — no pega otra vez al Web App, así que
+que ya trajo `listarBloquesDia` o `listarBloquesRango` — no pega otra vez al Web App, así que
 cambiar de capa es instantáneo. `General` muestra todo, sin filtrar. La
 capa elegida se guarda en `localStorage` (dispositivo), no en el Sheet.
 
@@ -559,7 +595,7 @@ KODAMA/
 ├── .gitignore               # .clasp.json / .clasprc.json (nunca al repo)
 ├── package.json             # sin dependencias: solo el comando de pruebas
 ├── tests/                   # pruebas con el runner de Node (ver "Pruebas automáticas")
-├── index.html              # vista de día + alta/edición de bloques
+├── index.html              # vista de día/semana + alta/edición de bloques
 ├── horario.html            # editor de las reglas del semestre
 ├── config.html             # URL del Web App + token, y prueba de conexión
 ├── manifest.webmanifest    # PWA (checkpoint 7)
@@ -573,9 +609,11 @@ KODAMA/
 │   ├── horario.js              # lógica de horario.html (editor de reglas)
 │   ├── state.js               # estado en memoria + cache local (lectura)
 │   ├── fecha.js                # fecha "hoy" y formato legible en America/La_Paz
-│   ├── capas.js                 # selector de capa (día): leer/guardar/filtrar
+│   ├── capas.js                 # selector de capa (día y semana): leer/guardar/filtrar
+│   ├── vista.js                 # modo día/semana, recordado en el dispositivo
 │   └── ui/
 │       ├── dia.js                # render de bloques (agrupa los que se pisan)
+│       ├── semana.js             # grilla de semana: días × horas
 │       ├── formulario.js          # diálogo de alta/edición de bloque
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota

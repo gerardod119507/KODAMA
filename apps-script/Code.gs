@@ -43,6 +43,9 @@ const ACCIONES = {
   listarBloquesDia: function (peticion) {
     return listarBloquesDia(peticion.fecha);
   },
+  listarBloquesRango: function (peticion) {
+    return listarBloquesRango(peticion.desde, peticion.hasta);
+  },
   generarHorario: function () {
     return generarHorario();
   },
@@ -139,6 +142,32 @@ function listarBloquesDia(fecha) {
     .map(filaABloque)
     .filter(function (bloque) { return bloque.fecha === fecha && bloque.archivado !== 'TRUE'; })
     .sort(function (a, b) { return a.inicio.localeCompare(b.inicio); });
+}
+
+/**
+ * Bloques no archivados entre dos fechas, ambas incluidas (vista de
+ * semana). Las fechas son texto YYYY-MM-DD, así que compararlas como texto
+ * ordena igual que compararlas como fechas.
+ */
+function listarBloquesRango(desde, hasta) {
+  const formato = /^\d{4}-\d{2}-\d{2}$/;
+  if (!formato.test(desde || '') || !formato.test(hasta || '')) {
+    throw new Error('rango_invalido: desde y hasta tienen que ser YYYY-MM-DD (recibido "' + desde + '" a "' + hasta + '")');
+  }
+  if (desde > hasta) {
+    throw new Error('rango_invalido: "desde" (' + desde + ') es posterior a "hasta" (' + hasta + ')');
+  }
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
+  return hoja.getDataRange().getDisplayValues()
+    .slice(1)
+    .filter(function (fila) { return fila[0]; })
+    .map(filaABloque)
+    .filter(function (bloque) {
+      return bloque.fecha >= desde && bloque.fecha <= hasta && bloque.archivado !== 'TRUE';
+    })
+    .sort(function (a, b) {
+      return a.fecha.localeCompare(b.fecha) || a.inicio.localeCompare(b.inicio);
+    });
 }
 
 function filaABloque(fila) {

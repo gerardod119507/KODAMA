@@ -35,6 +35,13 @@
   --radio-lg: 16px;
   --sombra-sm: 0 1px 2px rgba(14, 23, 19, 0.12);
 
+  /* Vista de semana: alto de un minuto en la grilla (60 min = 3.6rem) */
+  --escala-semana: 0.06rem;
+  --alto-min-bloque-semana: 1.5rem;
+  --ancho-columna-hora: 3rem;
+  --ancho-min-dia: 6.5rem;
+  --ancho-main-semana: 80rem;
+
   /* Movimiento */
   --duracion-rapida: 150ms;
   --duracion-base: 220ms;
@@ -128,8 +135,12 @@ h2 {
 .fecha {
   margin: 0;
   font-size: var(--texto-sm);
-  text-transform: capitalize;
   opacity: 0.8;
+}
+
+/* Solo la primera letra ("Miércoles, 23 de septiembre", no "23 De"). */
+.fecha::first-letter {
+  text-transform: uppercase;
 }
 
 .capas {
@@ -542,4 +553,188 @@ dialog textarea {
 
 main {
   padding-bottom: 6rem;
+}
+
+/* Barra de navegación (anterior / Hoy / siguiente + Día / Semana) */
+
+.barra-navegacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+  margin-bottom: var(--espacio-3);
+}
+
+.navegacion,
+.selector-vista {
+  display: flex;
+  gap: var(--espacio-1);
+}
+
+.boton-barra {
+  margin: 0;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: var(--espacio-2) var(--espacio-3);
+  color: var(--fg);
+  background: transparent;
+  border-color: var(--borde);
+}
+
+.boton-barra:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+/* El modo activo se marca con relleno Y con peso de letra, no solo color. */
+.selector-vista .boton-barra[aria-pressed="true"] {
+  color: var(--bone);
+  background: var(--forest);
+  border-color: var(--forest);
+  font-weight: 600;
+}
+
+/* En modo semana la página usa todo el ancho del escritorio. */
+body.modo-semana main,
+body.modo-semana .cabecera {
+  max-width: var(--ancho-main-semana);
+}
+
+/* Vista de semana: días en columnas, horas en filas */
+
+.semana-desplazable {
+  overflow-x: auto;
+}
+
+.semana {
+  display: grid;
+  grid-template-columns: var(--ancho-columna-hora) repeat(7, minmax(var(--ancho-min-dia), 1fr));
+  grid-template-rows: auto calc(var(--minutos-franja) * var(--escala-semana));
+}
+
+/* La columna de horas queda fija al desplazar la semana de costado
+   (celular), para no perder de vista qué hora es cada fila. */
+.semana__esquina,
+.semana__horas {
+  position: sticky;
+  left: 0;
+  background: var(--bg);
+  z-index: 3;
+}
+
+.semana__dia {
+  padding: var(--espacio-1) var(--espacio-2);
+  font-size: var(--texto-sm);
+  text-align: center;
+  border-bottom: 1px solid var(--borde);
+}
+
+/* Hoy: subrayado grueso + negrita, no solo un cambio de color. */
+.semana__dia--hoy {
+  font-weight: 700;
+  border-bottom: 3px solid var(--fg);
+}
+
+.semana__hora {
+  position: absolute;
+  top: calc(var(--min-inicio) * var(--escala-semana));
+  right: var(--espacio-2);
+  transform: translateY(-50%);
+  font-size: var(--texto-sm);
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.semana__columna {
+  position: relative;
+  border-left: 1px solid var(--borde);
+  /* Una línea por hora en punto, alineada con las etiquetas de la izquierda. */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--borde) 0,
+    var(--borde) 1px,
+    transparent 1px,
+    transparent calc(60 * var(--escala-semana))
+  );
+  background-position: 0 calc(var(--desfase-hora) * var(--escala-semana));
+}
+
+.semana__columna--hoy {
+  background-color: var(--superficie);
+}
+
+.bloque-semana {
+  position: absolute;
+  top: calc(var(--min-inicio) * var(--escala-semana));
+  height: calc(var(--min-duracion) * var(--escala-semana));
+  min-height: var(--alto-min-bloque-semana);
+  left: calc(100% * var(--columna) / var(--columnas));
+  width: calc(100% / var(--columnas));
+  margin: 0;
+  padding: var(--espacio-1) var(--espacio-1) var(--espacio-1) var(--espacio-2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  font-size: var(--texto-sm);
+  line-height: 1.25;
+  color: var(--fg);
+  background: var(--bg);
+  background-image: linear-gradient(var(--superficie), var(--superficie));
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--color-bloque);
+  border-radius: var(--radio-sm);
+  box-shadow: var(--sombra-sm);
+  opacity: 0;
+  animation: entrada-bloque var(--duracion-base) var(--curva) forwards;
+  animation-delay: calc(var(--indice, 0) * 15ms);
+}
+
+.bloque-semana:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 1px;
+  z-index: 2;
+}
+
+.bloque-semana__cabeza {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-1);
+  min-width: 0;
+}
+
+.bloque-semana .bloque__icono svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.bloque-semana__titulo {
+  font-weight: 600;
+  /* Palabras enteras: si no entran, se recortan (el título completo está
+     en el editor), en vez de partirse letra por letra en columnas angostas. */
+  hyphens: auto;
+  min-width: 0;
+}
+
+/* Bloques cortos (menos de 45 min): una sola línea, título recortado. El
+   texto completo sigue en el "title" del botón y en el editor. */
+.bloque-semana--corto {
+  justify-content: center;
+}
+
+.bloque-semana--corto .bloque-semana__titulo {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bloque-semana--corto .bloque-semana__hora {
+  display: none;
+}
+
+.bloque-semana__hora {
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
 }

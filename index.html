@@ -16,8 +16,19 @@
   </header>
 
   <main>
+    <div class="barra-navegacion">
+      <div class="navegacion">
+        <button id="anterior" type="button" class="boton-barra" aria-label="Anterior">‹</button>
+        <button id="ir-hoy" type="button" class="boton-barra">Hoy</button>
+        <button id="siguiente" type="button" class="boton-barra" aria-label="Siguiente">›</button>
+      </div>
+      <div class="selector-vista" role="group" aria-label="Vista">
+        <button id="modo-dia" type="button" class="boton-barra" aria-pressed="true">Día</button>
+        <button id="modo-semana" type="button" class="boton-barra" aria-pressed="false">Semana</button>
+      </div>
+    </div>
     <div class="barra-dia">
-      <p id="fecha" class="fecha"></p>
+      <p id="fecha" class="fecha" aria-live="polite"></p>
       <label class="capas">
         <span class="capas__etiqueta">Capa</span>
         <select id="capa"></select>
@@ -89,9 +100,11 @@
   <script src="js/api.js"></script>
   <script src="js/state.js"></script>
   <script src="js/capas.js"></script>
+  <script src="js/vista.js"></script>
   <script src="js/ui/iconos.js"></script>
   <script src="js/ui/espiritu.js"></script>
   <script src="js/ui/dia.js"></script>
+  <script src="js/ui/semana.js"></script>
   <script src="js/ui/formulario.js"></script>
   <script src="js/app.js"></script>
 </body>

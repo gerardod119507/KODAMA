@@ -68,7 +68,7 @@ const KodamaDia = (function () {
 
     const texto = document.createElement('p');
     texto.className = 'estado-vacio__texto';
-    texto.textContent = 'Día libre. No hay bloques para hoy.';
+    texto.textContent = 'Día libre. No hay bloques este día.';
     vacio.appendChild(texto);
 
     contenedor.appendChild(vacio);
@@ -171,6 +171,10 @@ const KodamaDia = (function () {
     render: render,
     renderCargando: renderCargando,
     renderError: renderError,
+    // Compartidas con la vista de semana (js/ui/semana.js), para que ambas
+    // pinten un bloque con el mismo color y la misma forma.
+    normalizarTipo: normalizarTipo,
+    colorDeBloque: colorDeBloque,
     // Se expone solo para poder probarla: es lógica pura y es la regla que
     // decide qué bloques se dibujan lado a lado (ver tests/frontend.test.js).
     agruparPorSolapamiento: agruparPorSolapamiento
