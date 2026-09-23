@@ -97,6 +97,12 @@
       </div>
 
       <div class="oculto-al-mover">
+        <label for="campo-lugar">Lugar</label>
+        <input id="campo-lugar" type="text" autocomplete="off" autocapitalize="sentences"
+               placeholder="Aula E511, casa del alumno…" />
+      </div>
+
+      <div class="oculto-al-mover">
         <label for="campo-etiqueta">Etiqueta</label>
         <input id="campo-etiqueta" type="text" list="sugerencias-etiqueta" autocomplete="off" />
         <datalist id="sugerencias-etiqueta">
@@ -128,6 +134,10 @@
     <h2 id="ficha-titulo"></h2>
     <p id="ficha-horario" class="ficha__horario"></p>
     <dl class="ficha__datos">
+      <div id="ficha-fila-lugar">
+        <dt>Lugar</dt>
+        <dd></dd>
+      </div>
       <div id="ficha-fila-etiqueta">
         <dt>Etiqueta</dt>
         <dd></dd>

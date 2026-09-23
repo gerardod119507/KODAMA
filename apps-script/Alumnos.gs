@@ -16,11 +16,12 @@ const HOJA_COLEGIOS = 'Colegios';
 const HOJAS_CATALOGO = { cursos: HOJA_CURSOS, colegios: HOJA_COLEGIOS };
 const AREA_FRACTAL = 'Academia Fractal';
 
+// lugar: el lugar habitual de sus clases (al final: se agregó después).
 const COLUMNAS_ALUMNOS = [
   'id', 'nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora',
-  'forma_calculo', 'forma_pago', 'notas', 'archivado'
+  'forma_calculo', 'forma_pago', 'notas', 'archivado', 'lugar'
 ];
-const CAMPOS_EDITABLES_ALUMNO = ['nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora', 'forma_pago', 'notas'];
+const CAMPOS_EDITABLES_ALUMNO = ['nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora', 'forma_pago', 'notas', 'lugar'];
 
 // forma_calculo: cómo se calcula lo que se debe (siempre por hora).
 // forma_pago: cuándo se cobra. Son cosas distintas: un alumno puede
@@ -53,6 +54,8 @@ function asegurarHojaAlumnos(libro) {
     hoja.getRange(1, 1, hoja.getMaxRows(), COLUMNAS_ALUMNOS.length).setNumberFormat('@');
     hoja.getRange(1, 1, 1, COLUMNAS_ALUMNOS.length).setValues([COLUMNAS_ALUMNOS]);
     hoja.setFrozenRows(1);
+  } else {
+    migrarColumnaAlFinal(hoja, COLUMNAS_ALUMNOS, 'lugar');
   }
   return hoja;
 }
@@ -194,6 +197,7 @@ function prepararAlumno(alumno, catalogos, existentes) {
   alumno.nombre = String(alumno.nombre || '').trim();
   alumno.apellido = String(alumno.apellido || '').trim();
   alumno.notas = String(alumno.notas || '');
+  alumno.lugar = String(alumno.lugar || '').trim();
   if (!alumno.nombre) {
     throw new Error('falta_nombre');
   }
@@ -461,7 +465,7 @@ function migrarAlumnosFractal(aplicar, ids) {
           v.alumno.id = nuevoIdDeAlumno(usados);
           aCrear.push({
             id: v.alumno.id, nombre: v.alumno.nombre, apellido: v.alumno.apellido, curso: '', colegio: '',
-            tarifa_hora: '', forma_calculo: FORMA_CALCULO, forma_pago: 'hora', notas: '', archivado: ''
+            tarifa_hora: '', forma_calculo: FORMA_CALCULO, forma_pago: 'hora', notas: '', archivado: '', lugar: ''
           });
         }
       });

@@ -32,6 +32,7 @@
     fin: document.getElementById('regla-fin'),
     desde: document.getElementById('regla-desde'),
     hasta: document.getElementById('regla-hasta'),
+    lugar: document.getElementById('regla-lugar'),
     etiqueta: document.getElementById('regla-etiqueta'),
     notas: document.getElementById('regla-notas')
   };
@@ -55,9 +56,17 @@
   }
 
   // Alumnos (solo Academia Fractal), igual que en el formulario de bloques.
+  // En una regla NUEVA, el lugar se completa con el lugar habitual del
+  // alumno elegido mientras no lo hayas escrito vos.
+  let lugarAutomatico = false;
   const selectorAlumnos = KodamaSelectorAlumnos.crear(document.getElementById('regla-alumnos'), {
-    crearAlumno: function (datos) { return pedir('crearAlumno', { alumno: datos }); }
+    crearAlumno: function (datos) { return pedir('crearAlumno', { alumno: datos }); },
+    alCambiar: function (ids) {
+      if (idEnEdicion || !lugarAutomatico) return;
+      campos.lugar.value = KodamaAlumnos.lugarDeAlumnos(ids);
+    }
   });
+  campos.lugar.addEventListener('input', function () { lugarAutomatico = false; });
   function esFractal() {
     return campos.area.value === 'Academia Fractal';
   }
@@ -97,7 +106,8 @@
 
     const meta = document.createElement('p');
     meta.className = 'regla__meta';
-    meta.textContent = regla.dias + ' · ' + regla.inicio + '–' + regla.fin + ' · ' + regla.area;
+    meta.textContent = regla.dias + ' · ' + regla.inicio + '–' + regla.fin +
+      (regla.lugar ? ' · ' + regla.lugar : '') + ' · ' + regla.area;
     tarjeta.appendChild(meta);
 
     const rango = document.createElement('p');
@@ -152,8 +162,9 @@
     document.getElementById('archivar-regla').hidden = true;
     escribirCampos({
       titulo: '', area: 'Universidad', dias: '', inicio: '09:00', fin: '10:00',
-      desde: KodamaFecha.hoy(), hasta: '', etiqueta: '', notas: ''
+      desde: KodamaFecha.hoy(), hasta: '', lugar: '', etiqueta: '', notas: ''
     });
+    lugarAutomatico = true;
     mostrarError('');
     dialogo.showModal();
     campos.titulo.focus();

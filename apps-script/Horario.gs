@@ -12,13 +12,13 @@
  */
 
 const HOJA_HORARIO = 'Horario';
-// alumno_id (Checkpoint 7) al final, igual que en Bloques.
-const COLUMNAS_HORARIO = ['id', 'titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado', 'alumno_id'];
-const ENCABEZADOS_HORARIO = ['id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado', 'alumno_id'];
+// alumno_id y lugar (Checkpoint 7) al final, igual que en Bloques.
+const COLUMNAS_HORARIO = ['id', 'titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado', 'alumno_id', 'lugar'];
+const ENCABEZADOS_HORARIO = ['id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado', 'alumno_id', 'lugar'];
 
 // Campos que la app puede escribir en una regla. El id y archivado los
 // maneja el backend.
-const CAMPOS_EDITABLES_REGLA = ['titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'alumno_id'];
+const CAMPOS_EDITABLES_REGLA = ['titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'alumno_id', 'lugar'];
 
 /** Una fila de Horario cuenta si tiene título o alumnos (Checkpoint 7). */
 function filaDeHorarioConContenido(fila) {
@@ -39,6 +39,7 @@ function asegurarHojaHorario(libro) {
   } else {
     migrarColumnaArchivadoHorario(hoja);
     migrarColumnaAlFinal(hoja, ENCABEZADOS_HORARIO, 'alumno_id');
+    migrarColumnaAlFinal(hoja, ENCABEZADOS_HORARIO, 'lugar');
   }
   return hoja;
 }
@@ -119,6 +120,9 @@ function generarHorario() {
         bloque.inicio = regla.inicio;
         bloque.fin = regla.fin;
         bloque.alumno_id = regla.alumno_id;
+        // El lugar sale de la regla, igual que el título y la hora: si
+        // cambia el aula en la regla, cambia en todas las clases futuras.
+        bloque.lugar = regla.lugar;
         bloque.actualizado = ahora;
         datosBloques[indiceExistente] = bloqueAFila(bloque);
         actualizados++;
@@ -127,7 +131,7 @@ function generarHorario() {
           id: idBloque, titulo: regla.titulo, area: regla.area, tipo: 'fijo',
           fecha: fecha, inicio: regla.inicio, fin: regla.fin, etiqueta: regla.etiqueta,
           notas: '', creado: ahora, actualizado: ahora, archivado: '',
-          alumno_id: regla.alumno_id
+          alumno_id: regla.alumno_id, lugar: regla.lugar
         };
         datosBloques.push(bloqueAFila(bloqueNuevo));
         indicePorId[idBloque] = datosBloques.length - 1;
@@ -399,7 +403,8 @@ function filaARegla(fila, id) {
   return {
     id: id, titulo: fila[1] || '', area: area, dias: parseDias(diasTexto, titulo),
     inicio: inicio, fin: fin, desde: desde, hasta: hasta, etiqueta: etiqueta,
-    alumno_id: alumnoId
+    alumno_id: alumnoId,
+    lugar: fila[COLUMNAS_HORARIO.indexOf('lugar')] || ''
   };
 }
 

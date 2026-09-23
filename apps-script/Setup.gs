@@ -133,3 +133,84 @@ function candidatosPorNombre(alumnos, nombre, apellido) {
   }
   return alumnos.filter(function (a) { return normalizarTexto(a.nombre) === normalizarTexto(nombre); });
 }
+
+/**
+ * Mueve el aula de "notas" a "lugar" en las reglas de Universidad de la
+ * hoja Horario ("Aula E511" en notas → lugar "Aula E511", notas vacía).
+ *
+ * - Solo reglas de Universidad con lugar vacío.
+ * - Busca en notas UN aula ("Aula E511", "aula e 103", "AULA 12"). Lo que
+ *   haya además del aula queda en notas ("Aula E511 - traer calculadora"
+ *   → lugar "Aula E511", notas "traer calculadora").
+ * - Si hay más de un aula en las notas, la fila queda sin tocar y se anota.
+ * - Solo escribe las columnas notas y lugar de las filas que cambia.
+ *
+ * Después hay que tocar "Regenerar horario" para que los bloques ya
+ * generados tomen el lugar de su regla.
+ */
+function moverAulasALugar() {
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_HORARIO);
+  const datos = hoja.getDataRange().getDisplayValues();
+  const encabezados = datos[0];
+  const cTitulo = encabezados.indexOf('título');
+  const cArea = encabezados.indexOf('área');
+  const cNotas = encabezados.indexOf('notas');
+  const cLugar = encabezados.indexOf('lugar');
+  if (cArea === -1 || cNotas === -1 || cLugar === -1) {
+    throw new Error('A la hoja Horario le falta la columna "área", "notas" o "lugar". ' +
+      'Abrí la app una vez (o corré configurarHojas) y volvé a intentar.');
+  }
+
+  const movidas = [];
+  const pendientes = [];
+  for (let f = 1; f < datos.length; f++) {
+    const fila = datos[f];
+    if (normalizarTexto(fila[cArea]) !== 'universidad') continue;
+    if (String(fila[cLugar] || '').trim()) continue;
+    const resultado = separarAula(fila[cNotas]);
+    if (!resultado) continue; // sin aula en las notas: nada que mover
+    if (resultado.varias) {
+      pendientes.push({ fila: f + 1, titulo: fila[cTitulo], notas: fila[cNotas], motivo: 'hay más de un aula' });
+      continue;
+    }
+    movidas.push({ fila: f + 1, titulo: fila[cTitulo], lugar: resultado.aula, notas: resultado.resto });
+    fila[cLugar] = resultado.aula;
+    fila[cNotas] = resultado.resto;
+  }
+
+  if (movidas.length) {
+    const columna = function (c) { return datos.slice(1).map(function (fila) { return [fila[c]]; }); };
+    hoja.getRange(2, cNotas + 1, datos.length - 1, 1).setValues(columna(cNotas));
+    hoja.getRange(2, cLugar + 1, datos.length - 1, 1).setValues(columna(cLugar));
+  }
+
+  Logger.log('Aulas movidas a "lugar": %s. Pendientes: %s.', movidas.length, pendientes.length);
+  movidas.forEach(function (m) {
+    Logger.log('  ✓ fila %s: "%s" → lugar "%s"%s', m.fila, m.titulo, m.lugar,
+      m.notas ? ' (en notas quedó: "' + m.notas + '")' : '');
+  });
+  pendientes.forEach(function (p) {
+    Logger.log('  ✗ fila %s: "%s" — %s en "%s" (quedó sin tocar)', p.fila, p.titulo, p.motivo, p.notas);
+  });
+  if (movidas.length) {
+    Logger.log('Tocá "Regenerar horario" en la app para que las clases ya generadas muestren el aula.');
+  }
+  return { movidas: movidas, pendientes: pendientes };
+}
+
+/**
+ * "Aula E511 - traer calculadora" → { aula: "Aula E511", resto: "traer calculadora" }.
+ * Sin aula → null. Más de una → { varias: true }.
+ */
+function separarAula(notas) {
+  const texto = String(notas || '');
+  const patron = /\baula\s*[a-z]?\s*-?\s*\d+[a-z]?\b/gi;
+  const encontradas = texto.match(patron);
+  if (!encontradas) return null;
+  if (encontradas.length > 1) return { varias: true };
+  const aula = encontradas[0].replace(/\s+/g, ' ').replace(/^aula/i, 'Aula').trim();
+  const resto = texto.replace(encontradas[0], ' ')
+    .replace(/^[\s\-–—·,;:.]+|[\s\-–—·,;:]+$/g, '')
+    .replace(/\s{2,}/g, ' ');
+  return { aula: aula, resto: resto };
+}

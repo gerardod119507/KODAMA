@@ -763,6 +763,11 @@ body.modo-semana .cabecera {
   font-variant-numeric: tabular-nums;
 }
 
+/* El lugar va junto al horario, discreto (hereda la opacidad de la hora). */
+.bloque-semana__lugar {
+  font-variant-numeric: normal;
+}
+
 /* "Ocupado": bloque de otra área en una capa filtrada. Misma caja y mismo
    lugar que el bloque real, sin título ni detalle. Rayado diagonal + barra
    saturada para que se note en el celular y en modo oscuro. */

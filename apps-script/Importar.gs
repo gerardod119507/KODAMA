@@ -19,9 +19,10 @@ const ALIAS_ALUMNOS = {
   colegio: ['colegio', 'escuela', 'institucion', 'universidad', 'unidad educativa'],
   tarifa_hora: ['tarifa', 'tarifa hora', 'tarifa por hora', 'precio', 'precio hora'],
   forma_pago: ['forma pago', 'forma de pago', 'pago'],
-  notas: ['notas', 'nota', 'observaciones']
+  notas: ['notas', 'nota', 'observaciones'],
+  lugar: ['lugar', 'lugar habitual', 'direccion']
 };
-const ORDEN_ALUMNOS = ['nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora', 'forma_pago', 'notas'];
+const ORDEN_ALUMNOS = ['nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora', 'forma_pago', 'notas', 'lugar'];
 
 const ALIAS_HORARIO = {
   id: ['id'],
@@ -34,10 +35,11 @@ const ALIAS_HORARIO = {
   hasta: ['hasta', 'fecha hasta', 'fecha fin'],
   etiqueta: ['etiqueta'],
   notas: ['notas', 'nota'],
+  lugar: ['lugar', 'aula', 'salon'],
   archivado: ['archivado'],
   alumnos: ['alumnos', 'alumno', 'alumno id']
 };
-const ORDEN_HORARIO = ['titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'alumnos'];
+const ORDEN_HORARIO = ['titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'alumnos', 'lugar'];
 
 // ---------------------------------------------------------------------
 // Lectura del texto pegado
@@ -161,7 +163,8 @@ function importarAlumnos(texto, aplicar) {
         colegio: v.colegio ? resolverOAgregar('colegios', v.colegio) : '',
         tarifa_hora: normalizarTarifa(v.tarifa_hora),
         forma_pago: normalizarFormaPago(v.forma_pago),
-        notas: v.notas || ''
+        notas: v.notas || '',
+        lugar: String(v.lugar || '').trim()
       };
       vistas[clave] = fila.numero;
 
@@ -178,7 +181,7 @@ function importarAlumnos(texto, aplicar) {
       // que vienen con algo en lo pegado; lo vacío no borra lo guardado.
       const actualizado = Object.assign({}, existente);
       const cambios = [];
-      ['curso', 'colegio', 'tarifa_hora', 'notas'].forEach(function (campo) {
+      ['curso', 'colegio', 'tarifa_hora', 'notas', 'lugar'].forEach(function (campo) {
         if (datos[campo] && datos[campo] !== existente[campo]) {
           actualizado[campo] = datos[campo];
           cambios.push(campo);
@@ -319,6 +322,7 @@ function importarHorario(texto, aplicar) {
         hasta: normalizarFechaPegada(v.hasta),
         etiqueta: String(v.etiqueta || '').trim(),
         notas: String(v.notas || ''),
+        lugar: String(v.lugar || '').trim(),
         alumno_id: normalizarIdsAlumnos(ids.join(','))
       };
       if (!regla.titulo && !regla.alumno_id) throw new Error('falta el título o los alumnos');
@@ -339,7 +343,7 @@ function importarHorario(texto, aplicar) {
         resultado.detalle = nombreRegla + ' · ' + regla.dias + ' ' + regla.inicio + '–' + regla.fin;
         return resultado;
       }
-      const cambios = ['fin', 'desde', 'hasta', 'etiqueta', 'notas'].filter(function (c) {
+      const cambios = ['fin', 'desde', 'hasta', 'etiqueta', 'notas', 'lugar'].filter(function (c) {
         return regla[c] && regla[c] !== existente.regla[c];
       });
       resultado.existente = existente;
