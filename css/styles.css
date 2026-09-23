@@ -303,7 +303,7 @@ ul {
   padding-left: 1.2rem;
 }
 
-/* Vista de día */
+/* Estados (carga, error, vacío) */
 
 .estado {
   opacity: 0.75;
@@ -312,48 +312,6 @@ ul {
 .estado--error {
   color: var(--tipo-reunion);
   opacity: 1;
-}
-
-.lista-bloques {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--espacio-3);
-}
-
-.bloque {
-  display: flex;
-  align-items: center;
-  gap: var(--espacio-3);
-  padding: var(--espacio-3) var(--espacio-4);
-  border-left: 4px solid var(--color-bloque);
-  border-radius: var(--radio-md);
-  background: var(--superficie);
-  box-shadow: var(--sombra-sm);
-  opacity: 0;
-  animation: entrada-bloque var(--duracion-base) var(--curva) forwards;
-  animation-delay: calc(var(--indice, 0) * 40ms);
-}
-
-/* Dos o más bloques con horarios que se pisan: van lado a lado, sin ningún
-   aviso de choque — la regla del proyecto es no detectar conflictos, solo
-   mostrarlos uno junto al otro. */
-.fila-simultanea {
-  display: flex;
-  gap: var(--espacio-2);
-  align-items: stretch;
-}
-
-.fila-simultanea .bloque {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.fila-simultanea .bloque__titulo,
-.fila-simultanea .bloque__meta {
-  overflow-wrap: break-word;
 }
 
 @keyframes entrada-bloque {
@@ -365,22 +323,6 @@ ul {
   flex-shrink: 0;
   display: inline-flex;
   color: var(--color-bloque);
-}
-
-.bloque__info {
-  min-width: 0;
-}
-
-.bloque__titulo {
-  margin: 0;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.bloque__meta {
-  margin: var(--espacio-1) 0 0;
-  font-size: var(--texto-sm);
-  opacity: 0.75;
 }
 
 /* Estado vacío y mascota */
@@ -417,25 +359,6 @@ ul {
   opacity: 0.7;
 }
 
-/* Tarjetas de bloque como botón (tocar para editar) */
-
-.bloque {
-  margin: 0;
-  width: 100%;
-  color: var(--fg);
-  text-align: left;
-  font: inherit;
-  cursor: pointer;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-}
-
-.bloque:focus-visible {
-  outline: 2px solid var(--fg);
-  outline-offset: 2px;
-}
-
 /* Acciones flotantes (siempre visibles sobre la vista de día) */
 
 .acciones-flotantes {
@@ -463,12 +386,6 @@ ul {
   padding: 0;
   font-size: 1.6rem;
   line-height: 1;
-}
-
-.fab--secundario {
-  color: var(--forest);
-  background: var(--bone);
-  border-color: var(--forest);
 }
 
 /* Diálogo de formulario */
@@ -520,7 +437,6 @@ dialog textarea {
   min-width: 0;
 }
 
-.modo-rapido .solo-completo,
 .modo-mover .oculto-al-mover {
   display: none;
 }
@@ -868,21 +784,22 @@ body.modo-semana .cabecera {
   border-radius: var(--radio-sm);
 }
 
-.ocupado__texto {
+.ocupado__texto,
+.ocupado__hora {
+  max-width: 100%;
   font-size: var(--texto-xs);
-  font-weight: 600;
   opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ocupado--dia {
-  min-height: var(--alto-tarjeta-dia);
-  padding: var(--espacio-3) var(--espacio-4);
-  border-radius: var(--radio-md);
+.ocupado__texto {
+  font-weight: 600;
 }
 
-.fila-simultanea .ocupado {
-  flex: 1 1 0;
-  min-width: 0;
+.ocupado__hora {
+  font-variant-numeric: tabular-nums;
 }
 
 .ocupado--semana {
@@ -892,14 +809,21 @@ body.modo-semana .cabecera {
   min-height: var(--alto-min-bloque-semana);
   left: calc(100% * var(--columna) / var(--columnas));
   width: calc(100% / var(--columnas));
+  flex-direction: column;
   align-items: flex-start;
   padding: var(--espacio-1) var(--espacio-1) var(--espacio-1) var(--espacio-2);
+}
+
+/* Vista de día: la misma grilla con una sola columna, sin encabezado de
+   día (la fecha ya está arriba). */
+.semana--un-dia .semana__esquina,
+.semana--un-dia .semana__dia {
+  display: none;
 }
 
 /* Superposición real entre dos bloques de la capa que se ve: borde con el
    color de reunión arriba, a la derecha y abajo (a la izquierda sigue la
    barra del área). Sin texto ni aviso. */
-.bloque.bloque--solapado,
 .bloque-semana.bloque--solapado {
   box-shadow:
     inset 0 2px 0 var(--tipo-reunion),
@@ -929,8 +853,11 @@ body.modo-semana .cabecera {
   border-top: 4px solid var(--color-bloque);
 }
 
+/* z-index: la línea del tipo tiene opacidad < 1, lo que la pinta en una
+   capa propia por encima; sin esto la ✕ quedaba tapada y no se podía tocar. */
 .ficha__cerrar {
   position: absolute;
+  z-index: 1;
   top: var(--espacio-2);
   right: var(--espacio-2);
   margin: 0;
@@ -1012,7 +939,10 @@ body.modo-semana .cabecera {
    desplazamiento lateral. Horas más bajas, columnas angostas, bloques con
    color de fondo y título corto. En pantallas anchas no cambia nada. */
 @media (max-width: 699px) {
-  .semana {
+  /* --- Semana compacta (no aplica a la vista de día, que es una sola
+     columna ancha y usa la escala normal para que se lea el texto) --- */
+
+  .semana:not(.semana--un-dia) {
     --escala-semana: 0.034rem;
     --ancho-columna-hora: 1.5rem;
     grid-template-columns: var(--ancho-columna-hora) repeat(var(--dias, 7), minmax(0, 1fr));
@@ -1035,16 +965,16 @@ body.modo-semana .cabecera {
     font-size: var(--texto-sm);
   }
 
-  .semana__hora {
+  .semana:not(.semana--un-dia) .semana__hora {
     right: var(--espacio-1);
     font-size: var(--texto-xs);
   }
 
-  .semana__hora-min {
+  .semana:not(.semana--un-dia) .semana__hora-min {
     display: none;
   }
 
-  .bloque-semana {
+  .semana:not(.semana--un-dia) .bloque-semana {
     padding: var(--espacio-px) var(--espacio-0);
     border-width: 0;
     border-left: 3px solid var(--color-bloque);
@@ -1058,40 +988,43 @@ body.modo-semana .cabecera {
     background: color-mix(in srgb, var(--color-bloque) 22%, var(--bg));
   }
 
-  .bloque-semana__cabeza {
+  .semana:not(.semana--un-dia) .bloque-semana__cabeza {
     gap: var(--espacio-px);
   }
 
-  .bloque-semana .bloque__icono svg {
+  .semana:not(.semana--un-dia) .bloque-semana .bloque__icono svg {
     width: 0.5rem;
     height: 0.5rem;
     margin-top: var(--espacio-px);
   }
 
-  /* Título corto: se corta en sílabas con guion (lang="es") en vez de
-     letra por letra, y lo que no entra en el alto del bloque no se ve. El
-     título completo está en la ficha. */
-  .bloque-semana__titulo {
+  .semana:not(.semana--un-dia) .bloque-semana__titulo {
     font-weight: 500;
-    -webkit-hyphens: auto;
-    hyphens: auto;
-    overflow-wrap: anywhere;
   }
 
-  .bloque-semana__hora,
-  .bloque-semana--corto .bloque-semana__hora {
+  .semana:not(.semana--un-dia) .bloque-semana__hora {
     display: none;
   }
 
-  .ocupado--semana {
+  .semana:not(.semana--un-dia) .ocupado--semana {
     padding: var(--espacio-px) var(--espacio-0);
     border-left-width: 3px;
   }
 
-  .ocupado__texto {
-    font-weight: 500;
-    -webkit-hyphens: auto;
-    hyphens: auto;
-    overflow-wrap: anywhere;
+  /* --- Día y semana en el celular: el texto que no entra se recorta con
+     puntos suspensivos, nunca se parte letra por letra. El título completo
+     está en la ficha. --- */
+
+  .bloque-semana__titulo,
+  .bloque-semana__hora {
+    display: block;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bloque-semana__cabeza {
+    align-items: center;
   }
 }

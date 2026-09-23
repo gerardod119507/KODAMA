@@ -2,7 +2,8 @@
 
 /**
  * Pruebas de la lógica pura del frontend (sin navegador): el filtro de
- * capas y la regla que decide qué bloques se dibujan lado a lado.
+ * capas. El reparto lado a lado y los solapados están en semana.test.js y
+ * huecos.test.js (la vista de día usa la misma grilla que la semana).
  */
 
 const { test } = require('node:test');
@@ -43,7 +44,6 @@ function cargarModulos(archivos) {
 }
 
 const MODULOS_CAPAS = ['js/capas.js'];
-const MODULOS_DIA = ['js/ui/iconos.js', 'js/ui/espiritu.js', 'js/ui/dia.js'];
 
 function bloque(inicio, fin, area) {
   return { titulo: area + ' ' + inicio, area: area, tipo: 'fijo', inicio: inicio, fin: fin };
@@ -91,54 +91,6 @@ test('las capas son General más las 4 áreas', () => {
   assert.deepStrictEqual(env.ejecutar('KodamaCapas.CAPAS'), [
     'General', 'Universidad', 'Academia Fractal', 'Startup', 'Personal'
   ]);
-});
-
-// ---------------------------------------------------------------
-// Bloques simultáneos (sin avisos de choque: solo lado a lado)
-// ---------------------------------------------------------------
-
-function agrupar(env, bloques) {
-  const grupos = env.ejecutar('KodamaDia.agruparPorSolapamiento(__arg)', bloques);
-  return grupos.map((grupo) => grupo.map((b) => b.inicio));
-}
-
-test('bloques que no se pisan quedan cada uno en su fila', () => {
-  const env = cargarModulos(MODULOS_DIA);
-  const bloques = [bloque('09:00', '10:00', 'Universidad'), bloque('11:00', '12:00', 'Startup')];
-  assert.deepStrictEqual(agrupar(env, bloques), [['09:00'], ['11:00']]);
-});
-
-test('dos bloques que se pisan van juntos en una fila', () => {
-  const env = cargarModulos(MODULOS_DIA);
-  const bloques = [bloque('09:00', '10:00', 'Universidad'), bloque('09:30', '10:30', 'Startup')];
-  assert.deepStrictEqual(agrupar(env, bloques), [['09:00', '09:30']]);
-});
-
-test('una cadena de solapamientos (A-B, B-C) queda toda en la misma fila', () => {
-  const env = cargarModulos(MODULOS_DIA);
-  const bloques = [
-    bloque('09:00', '10:00', 'Universidad'),
-    bloque('09:45', '11:00', 'Startup'),
-    bloque('10:30', '12:00', 'Personal')
-  ];
-  assert.deepStrictEqual(agrupar(env, bloques), [['09:00', '09:45', '10:30']]);
-});
-
-test('un bloque que termina justo cuando arranca el siguiente NO se considera solapado', () => {
-  const env = cargarModulos(MODULOS_DIA);
-  const bloques = [bloque('09:00', '10:00', 'Universidad'), bloque('10:00', '11:00', 'Startup')];
-  assert.deepStrictEqual(agrupar(env, bloques), [['09:00'], ['10:00']]);
-});
-
-test('un bloque contenido dentro de otro va en la misma fila', () => {
-  const env = cargarModulos(MODULOS_DIA);
-  const bloques = [bloque('09:00', '13:00', 'Universidad'), bloque('10:00', '10:30', 'Startup')];
-  assert.deepStrictEqual(agrupar(env, bloques), [['09:00', '10:00']]);
-});
-
-test('una lista vacía no produce filas', () => {
-  const env = cargarModulos(MODULOS_DIA);
-  assert.deepStrictEqual(agrupar(env, []), []);
 });
 
 // ---------------------------------------------------------------

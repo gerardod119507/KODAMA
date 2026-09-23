@@ -9,7 +9,7 @@
   const barraRango = document.getElementById('barra-rango');
   const rangoDesde = document.getElementById('rango-desde');
   const rangoHasta = document.getElementById('rango-hasta');
-  // Celular: la semana compacta colapsa los huecos largos (en escritorio no).
+  // Celular: día y semana colapsan los huecos largos (en escritorio no).
   const pantallaCelular = window.matchMedia('(max-width: 699px)');
 
   const config = KodamaApi.leerConfig();
@@ -104,11 +104,14 @@
     const esDeLaCapa = function (bloque) { return KodamaCapas.esDeLaCapa(bloque, capa); };
     if (modo === 'dia') {
       KodamaDia.render(contenedor, bloquesSemana.filter(function (b) { return b.fecha === fecha; }), {
+        fecha: fecha,
+        hoy: KodamaFecha.hoy(),
         // Los bocetos del espíritu solo se comparan mientras no haya una
         // elección — no depende de si hay o no bloques ese día en particular.
         compararBocetos: true,
         esDeLaCapa: esDeLaCapa,
-        alTocar: KodamaFicha.abrir
+        alTocar: KodamaFicha.abrir,
+        colapsarHuecos: pantallaCelular.matches
       });
     } else {
       const dias = diasVisibles();
@@ -276,9 +279,7 @@
   });
 
   // Girar el celular o cambiar el ancho de la ventana: colapsar o no.
-  pantallaCelular.addEventListener('change', function () {
-    if (modo === 'semana') renderizar();
-  });
+  pantallaCelular.addEventListener('change', renderizar);
 
   // Al volver a la app (desde otra app o pestaña), se refresca por detrás.
   document.addEventListener('visibilitychange', function () {
@@ -296,21 +297,7 @@
       fin: KodamaFecha.sumarMinutos(inicio, 60),
       etiqueta: '',
       notas: ''
-    }, false);
-  });
-
-  document.getElementById('nueva-reunion').addEventListener('click', function () {
-    const inicio = KodamaFecha.proximaMediaHora();
-    KodamaFormulario.abrirNuevo({
-      titulo: '',
-      area: areaPorDefecto(),
-      tipo: 'reunión',
-      fecha: fechaPorDefecto(),
-      inicio: inicio,
-      fin: KodamaFecha.sumarMinutos(inicio, 30),
-      etiqueta: '',
-      notas: ''
-    }, true);
+    });
   });
 
   await cargar();
