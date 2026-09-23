@@ -58,7 +58,7 @@ const KodamaFicha = (function () {
     dialogo.style.setProperty('--color-bloque', KodamaDia.colorDeBloque(bloque));
 
     escribir('ficha-tipo-area', (bloque.tipo || 'variable') + ' · ' + bloque.area);
-    escribir('ficha-titulo', bloque.titulo || '(sin título)');
+    escribir('ficha-titulo', bloque.tituloMostrado || bloque.titulo || '(sin título)');
     escribir('ficha-horario', KodamaFecha.legible(bloque.fecha) + ' · ' + bloque.inicio + '–' + bloque.fin);
     mostrarFila('ficha-fila-etiqueta', bloque.etiqueta);
     mostrarFila('ficha-fila-notas', bloque.notas);

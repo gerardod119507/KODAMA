@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KODAMA — Alumnos</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="cabecera">
+    <h1>Alumnos</h1>
+    <nav class="enlaces-cabecera">
+      <a href="index.html">Día</a>
+      <a href="horario.html">Horario</a>
+      <a href="config.html">Configuración</a>
+    </nav>
+  </header>
+
+  <main>
+    <label for="buscar-alumno">Buscar</label>
+    <input id="buscar-alumno" type="search" autocomplete="off"
+           placeholder="Nombre, apellido o colegio" />
+    <label class="casilla">
+      <input id="ver-archivados" type="checkbox" />
+      <span>Mostrar archivados</span>
+    </label>
+
+    <p id="estado-alumnos" class="estado" role="status"></p>
+    <div id="lista-alumnos" class="lista-tarjetas"></div>
+
+    <hr class="separador" />
+    <h2>Cursos y colegios</h2>
+    <p class="nota">
+      En la app se ve el código corto ("4to SA"); en la hoja se guarda el
+      nombre completo. Si cambiás un nombre completo, se actualiza en todos
+      los alumnos que lo tenían.
+    </p>
+    <h3>Cursos</h3>
+    <div id="lista-cursos" class="lista-catalogo"></div>
+    <button id="nuevo-curso" type="button" class="secundario">+ Agregar curso</button>
+    <h3>Colegios</h3>
+    <div id="lista-colegios" class="lista-catalogo"></div>
+    <button id="nuevo-colegio" type="button" class="secundario">+ Agregar colegio</button>
+  </main>
+
+  <div class="acciones-flotantes">
+    <button id="nuevo-alumno" type="button" class="fab" aria-label="Nuevo alumno">+</button>
+  </div>
+
+  <dialog id="dialogo-alumno">
+    <form id="form-alumno">
+      <h2 id="titulo-dialogo-alumno">Nuevo alumno</h2>
+
+      <div class="fila-horas">
+        <div>
+          <label for="alumno-nombre">Nombre</label>
+          <input id="alumno-nombre" type="text" autocomplete="off" autocapitalize="words" />
+        </div>
+        <div>
+          <label for="alumno-apellido">Apellido</label>
+          <input id="alumno-apellido" type="text" autocomplete="off" autocapitalize="words" />
+        </div>
+      </div>
+
+      <label for="alumno-curso">Curso</label>
+      <select id="alumno-curso"></select>
+
+      <label for="alumno-colegio">Colegio</label>
+      <select id="alumno-colegio"></select>
+
+      <div class="fila-horas">
+        <div>
+          <label for="alumno-tarifa">Tarifa por hora (Bs)</label>
+          <input id="alumno-tarifa" type="text" inputmode="decimal" autocomplete="off" />
+        </div>
+        <div>
+          <label for="alumno-pago">Forma de pago</label>
+          <select id="alumno-pago">
+            <option value="hora">Por hora</option>
+            <option value="mensual">Mensual</option>
+          </select>
+        </div>
+      </div>
+      <p class="nota">Lo que se debe se calcula siempre por hora; la forma de pago es cuándo te pagan.</p>
+
+      <label for="alumno-notas">Notas</label>
+      <textarea id="alumno-notas" rows="3" autocapitalize="sentences"></textarea>
+
+      <p id="error-alumno" class="error" role="alert"></p>
+
+      <div class="acciones-dialogo">
+        <button type="button" id="cancelar-alumno" class="secundario">Cancelar</button>
+        <button type="button" id="archivar-alumno" class="fantasma" hidden>Archivar</button>
+        <button type="submit" id="guardar-alumno">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dialogo-catalogo">
+    <form id="form-catalogo">
+      <h2 id="titulo-dialogo-catalogo">Nuevo curso</h2>
+      <label for="catalogo-nombre">Nombre completo</label>
+      <input id="catalogo-nombre" type="text" autocomplete="off" placeholder="Unidad Educativa San Agustín" />
+      <label for="catalogo-corto">Código corto</label>
+      <input id="catalogo-corto" type="text" autocomplete="off" placeholder="SA" />
+      <p id="error-catalogo" class="error" role="alert"></p>
+      <div class="acciones-dialogo">
+        <button type="button" id="cancelar-catalogo" class="secundario">Cancelar</button>
+        <button type="submit" id="guardar-catalogo">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/api.js"></script>
+  <script src="js/alumnos.js"></script>
+  <script src="js/alumnos-pagina.js"></script>
+</body>
+</html>

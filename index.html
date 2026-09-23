@@ -10,6 +10,7 @@
   <header class="cabecera">
     <h1>KODAMA</h1>
     <nav class="enlaces-cabecera">
+      <a href="alumnos.html">Alumnos</a>
       <a href="horario.html">Horario</a>
       <a href="config.html">Configuración</a>
     </nav>
@@ -63,14 +64,17 @@
 
       <!-- .oculto-al-mover se oculta en "Mover" (solo quedan fecha y hora). -->
       <div class="oculto-al-mover">
-        <label for="campo-titulo">Título</label>
-        <input id="campo-titulo" type="text" autocapitalize="sentences"
-               autocomplete="off" enterkeyhint="done" />
-      </div>
-
-      <div class="oculto-al-mover">
         <label for="campo-area">Área</label>
         <select id="campo-area"></select>
+      </div>
+
+      <!-- Solo en Academia Fractal (lo arma js/ui/selector-alumnos.js). -->
+      <div id="campo-alumnos" class="oculto-al-mover" hidden></div>
+
+      <div class="oculto-al-mover">
+        <label for="campo-titulo" id="etiqueta-titulo">Título</label>
+        <input id="campo-titulo" type="text" autocapitalize="sentences"
+               autocomplete="off" enterkeyhint="done" />
 
         <label for="campo-tipo">Tipo</label>
         <select id="campo-tipo"></select>
@@ -146,11 +150,13 @@
   <script src="js/api.js"></script>
   <script src="js/state.js"></script>
   <script src="js/capas.js"></script>
+  <script src="js/alumnos.js"></script>
   <script src="js/vista.js"></script>
   <script src="js/ui/iconos.js"></script>
   <script src="js/ui/espiritu.js"></script>
   <script src="js/ui/dia.js"></script>
   <script src="js/ui/semana.js"></script>
+  <script src="js/ui/selector-alumnos.js"></script>
   <script src="js/ui/formulario.js"></script>
   <script src="js/ui/ficha.js"></script>
   <script src="js/app.js"></script>

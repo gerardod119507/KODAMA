@@ -54,6 +54,23 @@
     return respuesta.data;
   }
 
+  // Alumnos (solo Academia Fractal), igual que en el formulario de bloques.
+  const selectorAlumnos = KodamaSelectorAlumnos.crear(document.getElementById('regla-alumnos'), {
+    crearAlumno: function (datos) { return pedir('crearAlumno', { alumno: datos }); }
+  });
+  function esFractal() {
+    return campos.area.value === 'Academia Fractal';
+  }
+  function actualizarSegunArea() {
+    document.getElementById('regla-alumnos').hidden = !esFractal();
+    document.getElementById('etiqueta-regla-titulo').textContent = esFractal() ? 'Tema (opcional)' : 'Título';
+  }
+  campos.area.addEventListener('change', actualizarSegunArea);
+  KodamaAlumnos.alCambiar(function () {
+    selectorAlumnos.repintar();
+    if (reglas.length) pintarReglas();
+  });
+
   function mostrarError(mensaje) {
     document.getElementById('error-regla').textContent = mensaje;
   }
@@ -74,7 +91,8 @@
 
     const titulo = document.createElement('p');
     titulo.className = 'regla__titulo';
-    titulo.textContent = regla.titulo + (regla.archivado === 'TRUE' ? ' (archivada)' : '');
+    // Con alumnos vinculados, el nombre sale de ellos (no del título).
+    titulo.textContent = KodamaAlumnos.tituloDeBloque(regla) + (regla.archivado === 'TRUE' ? ' (archivada)' : '');
     tarjeta.appendChild(titulo);
 
     const meta = document.createElement('p');
@@ -124,6 +142,8 @@
     Object.keys(campos).forEach(function (clave) {
       campos[clave].value = valores[clave] != null ? valores[clave] : '';
     });
+    selectorAlumnos.fijar(valores.alumno_id || '');
+    actualizarSegunArea();
   }
 
   function abrirNueva() {
@@ -152,10 +172,12 @@
     evento.preventDefault();
     const datos = {};
     Object.keys(campos).forEach(function (clave) { datos[clave] = campos[clave].value; });
+    datos.alumno_id = esFractal() ? selectorAlumnos.valor() : '';
 
-    if (!datos.titulo.trim()) {
-      mostrarError('Falta el título.');
-      campos.titulo.focus();
+    if (!datos.titulo.trim() && !datos.alumno_id) {
+      mostrarError(esFractal() ? 'Elegí al menos un alumno (o escribí un tema).' : 'Falta el título.');
+      if (esFractal()) selectorAlumnos.enfocar();
+      else campos.titulo.focus();
       return;
     }
 
@@ -211,5 +233,6 @@
     }
   });
 
+  KodamaAlumnos.cargar().catch(function () { /* sin conexión: quedan los guardados */ });
   await cargar();
 })();
