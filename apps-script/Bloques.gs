@@ -33,12 +33,14 @@ function crearBloque(datos) {
 
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
   hoja.appendRow(bloqueAFila(bloque));
+  ordenarHojaBloques(hoja);
   return bloque;
 }
 
 function actualizarBloque(id, cambios) {
   const ubicacion = buscarFilaDeBloque(id);
   const bloque = ubicacion.bloque;
+  const posicionAnterior = bloque.fecha + ' ' + bloque.inicio;
 
   CAMPOS_EDITABLES_BLOQUE.forEach(function (campo) {
     if (cambios && cambios[campo] !== undefined && cambios[campo] !== null) {
@@ -52,6 +54,9 @@ function actualizarBloque(id, cambios) {
   ubicacion.hoja
     .getRange(ubicacion.fila, 1, 1, COLUMNAS_BLOQUES.length)
     .setValues([bloqueAFila(bloque)]);
+  if (bloque.fecha + ' ' + bloque.inicio !== posicionAnterior) {
+    ordenarHojaBloques(ubicacion.hoja); // se movió: mantener el orden por fecha
+  }
   return bloque;
 }
 

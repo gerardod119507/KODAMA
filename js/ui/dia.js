@@ -42,6 +42,18 @@ const KodamaDia = (function () {
     contenedor.appendChild(p);
   }
 
+  function renderSinConfiguracion(contenedor) {
+    contenedor.replaceChildren();
+    const p = document.createElement('p');
+    p.className = 'estado';
+    p.textContent = 'Falta configurar la conexión con tu hoja. ';
+    const enlace = document.createElement('a');
+    enlace.href = 'config.html';
+    enlace.textContent = 'Configurar';
+    p.appendChild(enlace);
+    contenedor.appendChild(p);
+  }
+
   function renderVacio(contenedor, opciones) {
     contenedor.replaceChildren();
     const vacio = document.createElement('div');
@@ -136,13 +148,33 @@ const KodamaDia = (function () {
     return grupos;
   }
 
-  function renderLista(contenedor, bloques, alTocar) {
+  // Horas ocupadas por otras áreas (capa filtrada): una franja gris tenue
+  // con solo el horario — sin título, sin área, sin aviso.
+  function crearFranjaOcupada(franja) {
+    const li = document.createElement('li');
+    li.className = 'franja-ocupada';
+    li.textContent = franja.inicio + '–' + franja.fin;
+    return li;
+  }
+
+  function renderLista(contenedor, bloques, alTocar, ocupados) {
     contenedor.replaceChildren();
     const lista = document.createElement('ul');
     lista.className = 'lista-bloques';
     let indice = 0;
 
-    agruparPorSolapamiento(bloques).forEach(function (grupo) {
+    // Grupos de bloques y franjas ocupadas, intercalados por hora de inicio.
+    const filas = agruparPorSolapamiento(bloques)
+      .map(function (grupo) { return { inicio: grupo[0].inicio, grupo: grupo }; })
+      .concat((ocupados || []).map(function (franja) { return { inicio: franja.inicio, franja: franja }; }))
+      .sort(function (a, b) { return a.inicio.localeCompare(b.inicio); });
+
+    filas.forEach(function (fila) {
+      if (fila.franja) {
+        lista.appendChild(crearFranjaOcupada(fila.franja));
+        return;
+      }
+      const grupo = fila.grupo;
       const li = document.createElement('li');
       if (grupo.length === 1) {
         li.appendChild(crearTarjeta(grupo[0], indice++, alTocar));
@@ -160,16 +192,18 @@ const KodamaDia = (function () {
 
   function render(contenedor, bloques, opciones) {
     const config = opciones || {};
-    if (bloques.length === 0) {
+    const ocupados = config.ocupados || [];
+    if (bloques.length === 0 && ocupados.length === 0) {
       renderVacio(contenedor, config);
     } else {
-      renderLista(contenedor, bloques, config.alTocar);
+      renderLista(contenedor, bloques, config.alTocar, ocupados);
     }
   }
 
   return {
     render: render,
     renderCargando: renderCargando,
+    renderSinConfiguracion: renderSinConfiguracion,
     renderError: renderError,
     // Compartidas con la vista de semana (js/ui/semana.js), para que ambas
     // pinten un bloque con el mismo color y la misma forma.

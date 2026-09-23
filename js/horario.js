@@ -5,7 +5,17 @@
 (async function () {
   const config = KodamaApi.leerConfig();
   if (!config.url || !config.token) {
-    location.href = 'config.html';
+    // Igual que en la vista principal: se avisa acá, nunca se salta solo a
+    // Configuración.
+    const lista = document.getElementById('lista-reglas');
+    const aviso = document.createElement('p');
+    aviso.className = 'estado';
+    aviso.textContent = 'Falta configurar la conexión con tu hoja. ';
+    const enlace = document.createElement('a');
+    enlace.href = 'config.html';
+    enlace.textContent = 'Configurar';
+    aviso.appendChild(enlace);
+    lista.appendChild(aviso);
     return;
   }
 

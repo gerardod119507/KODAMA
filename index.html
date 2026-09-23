@@ -28,7 +28,10 @@
       </div>
     </div>
     <div class="barra-dia">
-      <p id="fecha" class="fecha" aria-live="polite"></p>
+      <p class="fecha-y-estado">
+        <span id="fecha" class="fecha" aria-live="polite"></span>
+        <span id="actualizando" class="actualizando" role="status" hidden>actualizando</span>
+      </p>
       <label class="capas">
         <span class="capas__etiqueta">Capa</span>
         <select id="capa"></select>
@@ -46,18 +49,25 @@
   <dialog id="dialogo-bloque">
     <form id="form-bloque">
       <h2 id="titulo-dialogo">Nuevo bloque</h2>
+      <p id="subtitulo-dialogo" class="nota" hidden></p>
 
-      <label for="campo-titulo">Título</label>
-      <input id="campo-titulo" type="text" autocapitalize="sentences"
-             autocomplete="off" enterkeyhint="done" />
+      <!-- Clases de modo: .solo-completo se oculta en "Reunión rápida";
+           .oculto-al-mover se oculta en "Mover" (solo quedan fecha y hora). -->
+      <div class="oculto-al-mover">
+        <label for="campo-titulo">Título</label>
+        <input id="campo-titulo" type="text" autocapitalize="sentences"
+               autocomplete="off" enterkeyhint="done" />
+      </div>
 
-      <div class="solo-completo">
+      <div class="solo-completo oculto-al-mover">
         <label for="campo-area">Área</label>
         <select id="campo-area"></select>
 
         <label for="campo-tipo">Tipo</label>
         <select id="campo-tipo"></select>
+      </div>
 
+      <div class="solo-completo">
         <label for="campo-fecha">Fecha</label>
         <input id="campo-fecha" type="date" />
       </div>
@@ -73,7 +83,7 @@
         </div>
       </div>
 
-      <div class="solo-completo">
+      <div class="solo-completo oculto-al-mover">
         <label for="campo-etiqueta">Etiqueta</label>
         <input id="campo-etiqueta" type="text" list="sugerencias-etiqueta" autocomplete="off" />
         <datalist id="sugerencias-etiqueta">
@@ -96,6 +106,33 @@
     </form>
   </dialog>
 
+  <dialog id="dialogo-ficha" class="ficha" aria-labelledby="ficha-titulo">
+    <button type="button" id="ficha-cerrar" class="fantasma ficha__cerrar" aria-label="Cerrar">✕</button>
+    <p class="ficha__tipo">
+      <span id="ficha-icono" class="bloque__icono"></span>
+      <span id="ficha-tipo-area"></span>
+    </p>
+    <h2 id="ficha-titulo"></h2>
+    <p id="ficha-horario" class="ficha__horario"></p>
+    <dl class="ficha__datos">
+      <div id="ficha-fila-etiqueta">
+        <dt>Etiqueta</dt>
+        <dd></dd>
+      </div>
+      <div id="ficha-fila-notas">
+        <dt>Notas</dt>
+        <dd class="ficha__notas"></dd>
+      </div>
+    </dl>
+    <p id="error-ficha" class="error" role="alert"></p>
+    <div class="acciones-ficha">
+      <button type="button" id="ficha-editar">Editar</button>
+      <button type="button" id="ficha-mover" class="secundario">Mover</button>
+      <button type="button" id="ficha-duplicar" class="secundario">Duplicar</button>
+      <button type="button" id="ficha-archivar" class="fantasma">Archivar</button>
+    </div>
+  </dialog>
+
   <script src="js/fecha.js"></script>
   <script src="js/api.js"></script>
   <script src="js/state.js"></script>
@@ -106,6 +143,7 @@
   <script src="js/ui/dia.js"></script>
   <script src="js/ui/semana.js"></script>
   <script src="js/ui/formulario.js"></script>
+  <script src="js/ui/ficha.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

@@ -181,14 +181,23 @@ un repo público son públicos. El paso de deploy reemplaza el ID por
 
 ### Auto-creación de hojas
 
-`asegurarEstructura()` (Code.gs) corre en **cada** `POST` autorizado, antes
-de ejecutar la acción pedida: crea `Areas` (con las 4 áreas) y `Bloques`
+`asegurarEstructura()` (Code.gs) corre antes de la acción pedida en el
+primer `POST` autorizado, y después solo cuando hace falta (ver abajo): crea `Areas` (con las 4 áreas) y `Bloques`
 (con encabezados, en formato texto) si no existen, y fija la zona horaria
 del libro. Es idempotente — si una hoja ya tiene filas, no la toca. Motivo:
 con el despliegue automatizado, la idea es tocar el editor de Apps Script lo
 menos posible; si alguna vez hay que recrear el Sheet desde cero, la primera
 petición al Web App ya lo deja usable. `Horario` se suma a esta función
 recién en el Checkpoint 4, cuando se defina su estructura de columnas.
+
+**Desde el Checkpoint 6.5 no corre en cada petición** (eran ~15 llamadas a
+Sheets de 18 en una lectura). `asegurarEstructuraSiHaceFalta()` guarda en
+Script Properties (`KODAMA_ESTRUCTURA`) una *firma* — zona horaria +
+encabezados de `Bloques` y `Horario` — y solo verifica si la firma guardada
+no coincide con la del código. Así, un cambio de columnas en el código (una
+migración nueva) dispara la verificación solo, sin acordarse de nada al
+desplegar. Además, **cualquier error** borra la firma: si alguien borró o
+rompió una hoja a mano, esa petición falla y la siguiente la repara.
 
 ## Pruebas automáticas
 
@@ -215,6 +224,12 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
 - `tests/escritura.test.js` — las acciones de escritura del Checkpoint 5:
   crear/editar/archivar bloques y reglas, validaciones que fallan sin tocar
   la hoja, y que todas exijan token.
+- `tests/velocidad.test.js` — Checkpoint 6.5: que una semana lea una
+  fracción de la hoja (no la hoja entera), que `Bloques` quede ordenada
+  tras generar/crear/mover, que una hoja desordenada a mano igual dé
+  resultados correctos, que la estructura se verifique una vez (y de nuevo
+  tras un error o un cambio de columnas), la caché por semana del
+  navegador y "Duplicar".
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -254,6 +269,15 @@ Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
   del Google Sheet (Archivo → Configuración) y configuración del proyecto de
   Apps Script (`appsscript.json` → `timeZone`). Debe coincidir en ambos o los
   cálculos de fecha/hora en Apps Script quedan desfasados.
+- **Ordenada por `fecha` y `inicio`** (Checkpoint 6.5): `generarHorario`
+  escribe la grilla ordenada (en memoria, sin llamadas extra), y
+  `crearBloque`/`actualizarBloque` (si cambió fecha u hora) llaman a
+  `ordenarHojaBloques()` — una sola operación de Sheets. Motivo: las
+  lecturas (`leerFilasEntreFechas`) leen primero solo la columna `fecha` y
+  después solo el tramo de filas entre la primera y la última fecha
+  pedida; con la hoja ordenada ese tramo es exactamente la semana. **La
+  corrección no depende del orden**: si la hoja se desordena a mano, el
+  tramo es más largo (más lento) pero sigue incluyendo todo.
 - **Archivar, no borrar:** `archivado` es `TRUE`/`FALSE` (o vacío). Borrar un
   bloque de verdad no es parte del MVP.
 - **`etiqueta`** (Checkpoint 4): texto libre, opcional. Para Startup se
@@ -414,8 +438,24 @@ partir de ahora, esa rama siempre incluye la última acción agregada.
 
 ## Caché local
 
-Solo para **lectura offline** (ver el último día/semana cargado sin
-conexión). Crear o editar un bloque **requiere conexión** — si falla el
+Solo para **lectura**: lo último guardado se muestra **al instante** al
+abrir la app o cambiar de semana, y se actualiza por detrás (indicador
+discreto "actualizando" junto a la fecha). Si la actualización falla, queda
+lo guardado con el aviso "Sin conexión".
+
+- Se guarda **por semana** (`kodama.cache.semana.<lunes>`), siempre la
+  semana completa: tanto la vista de día como la de semana piden la semana
+  entera en una sola llamada (`listarBloquesRango`), así cambiar de día
+  dentro de la semana o pasar de Día a Semana no pide nada.
+- Como mucho 12 semanas guardadas; las más viejas se borran. Las cachés de
+  versiones anteriores (`kodama.cache.bloques.*`, `kodama.cache.rango.*`) se
+  borran al abrir la app.
+- Al guardar, mover, duplicar o archivar, el cambio se aplica **en la
+  lista local primero** (se ve al instante) y después se vuelve a pedir la
+  semana para confirmar. Cada carga lleva un número; una respuesta vieja
+  que llega tarde se descarta.
+
+Crear o editar un bloque **requiere conexión** — si falla el
 POST, se muestra error y no se guarda nada localmente. No hay cola offline
 ni sincronización diferida en el MVP: se agrega complejidad (conflictos,
 reintentos) que no se justifica para un uso personal.
@@ -427,9 +467,25 @@ diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
 
 - **Vista de día** (`index.html`): botón `+` (bloque completo) y botón
   "Reunión" (modo rápido: solo título y hora, el resto por defecto) siempre
-  visibles. Tocar un bloque lo abre para editar o archivar.
-  `js/ui/formulario.js` es un solo diálogo con dos modos; el rápido oculta
-  los campos `.solo-completo` por CSS en vez de duplicar el formulario.
+  visibles. Tocar un bloque abre su **ficha** (ver abajo).
+  `js/ui/formulario.js` es un solo diálogo con tres modos: completo, rápido
+  (oculta `.solo-completo`) y mover (oculta `.oculto-al-mover`: quedan solo
+  fecha y hora). Los modos ocultan campos por CSS en vez de duplicar el
+  formulario.
+- **Ficha de bloque** (`js/ui/ficha.js`, Checkpoint 6.5): solo lectura —
+  tipo y área (con el ícono), título, fecha y horario, etiqueta y notas
+  (las vacías no se muestran) — con **Editar** (formulario completo),
+  **Mover** (solo fecha y hora), **Duplicar** (formulario nuevo con los
+  mismos datos; el duplicado es un bloque suelto con id `b…`, así que el
+  generador nunca lo toca aunque venga de una clase fija) y **Archivar**.
+  Tocar fuera de la ficha la cierra.
+- **La app nunca cambia de página sola.** Antes, sin URL/token guardados,
+  `index.html` y `horario.html` saltaban a `config.html`; ahora muestran
+  "Falta configurar la conexión" con un enlace. Motivo: Gerardo reportó que
+  tocar un bloque lo mandaba a Configuración. No se pudo reproducir en
+  Chromium (se tocaron todos los bloques, día y semana, sin ningún salto);
+  la única navegación automática del código era esa redirección al cargar,
+  así que se eliminó.
 - **Editor de horario** (`horario.html` + `js/horario.js`): lista de reglas,
   crear/editar/archivar, y botón "Regenerar horario".
 - **Valores por defecto**: fecha = el día que se está viendo; inicio = la
@@ -464,9 +520,14 @@ una pantalla de 900px o más arranca en semana y el celular en día.
   cadena que la vista de día) se reparten el ancho; cada uno toma la
   primera columna libre, así en A–B–C, C reusa el lugar de A si A ya
   terminó.
-- **Celular en modo semana:** la grilla se desplaza de costado dentro de su
-  caja (la página nunca), con la columna de horas fija y arrancando en el
-  día de hoy.
+- **Celular en modo semana — semana compacta** (Checkpoint 6.5, `@media
+  (max-width: 699px)`): los 7 días entran en el ancho de la pantalla, sin
+  desplazamiento lateral. Horas más bajas (`--escala-semana` menor), columna
+  de horas angosta (solo "07", sin ":00"), encabezados "lun / 22" en dos
+  líneas, bloques con fondo del color del área (tenue, con `color-mix`),
+  borde e ícono de tipo, y el título cortado en sílabas (`hyphens: auto`,
+  `lang="es"`) sin el horario. El título completo está en la ficha. En
+  pantallas de 700px o más la semana queda igual que en el Checkpoint 6.
 - Tocar un bloque abre el mismo editor del Checkpoint 5. Un bloque nuevo
   desde la semana toma hoy si hoy está en la semana vista, si no el lunes.
 - Caché de lectura offline propia por rango
@@ -479,6 +540,15 @@ Academia Fractal, Startup, Personal. Filtra client-side sobre los bloques
 que ya trajo `listarBloquesDia` o `listarBloquesRango` — no pega otra vez al Web App, así que
 cambiar de capa es instantáneo. `General` muestra todo, sin filtrar. La
 capa elegida se guarda en `localStorage` (dispositivo), no en el Sheet.
+
+**Horas ocupadas por otras áreas** (Checkpoint 6.5): en una capa filtrada,
+los bloques de las otras áreas se ven como una **franja gris tenue** (token
+`--ocupado`), sin título, sin área y sin aviso — en la semana, una banda
+detrás de los bloques; en el día, una línea delgada con solo el horario.
+`KodamaCapas.ocupadosPorOtras()` funde en una sola franja las que se pisan
+o se tocan el mismo día. En `General` no hay franjas. La franja horaria de
+la semana se calcula con **todos** los bloques, así la grilla no salta al
+cambiar de capa.
 
 **Sin avisos de choques ni solapamientos, en ninguna capa** (decisión
 explícita del alcance): si dos bloques comparten horario, `js/ui/dia.js`
@@ -607,14 +677,15 @@ KODAMA/
 │   ├── api.js                # fetch al Web App (POST text/plain)
 │   ├── config.js              # lógica de config.html
 │   ├── horario.js              # lógica de horario.html (editor de reglas)
-│   ├── state.js               # estado en memoria + cache local (lectura)
+│   ├── state.js               # semana por llamada + caché local (lectura)
 │   ├── fecha.js                # fecha "hoy" y formato legible en America/La_Paz
 │   ├── capas.js                 # selector de capa (día y semana): leer/guardar/filtrar
 │   ├── vista.js                 # modo día/semana, recordado en el dispositivo
 │   └── ui/
 │       ├── dia.js                # render de bloques (agrupa los que se pisan)
 │       ├── semana.js             # grilla de semana: días × horas
-│       ├── formulario.js          # diálogo de alta/edición de bloque
+│       ├── formulario.js          # diálogo de alta/edición/mover/duplicar
+│       ├── ficha.js               # ficha de solo lectura al tocar un bloque
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
 ├── icons/                   # íconos PWA
