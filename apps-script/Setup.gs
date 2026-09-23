@@ -8,8 +8,8 @@ function configurarHojas() {
   // como atajo manual, por si querés forzar el chequeo sin esperar a que
   // la app haga una petición.
   asegurarEstructura();
-  Logger.log('Listo. Hojas "%s" y "%s" verificadas, zona horaria %s.',
-    HOJA_AREAS, HOJA_BLOQUES, ZONA_HORARIA);
+  Logger.log('Listo. Hojas "%s", "%s" y "%s" verificadas, zona horaria %s.',
+    HOJA_AREAS, HOJA_BLOQUES, HOJA_HORARIO, ZONA_HORARIA);
 }
 
 function generarToken() {

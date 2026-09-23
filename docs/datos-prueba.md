@@ -10,15 +10,18 @@ poder crear bloques desde la app; por ahora se agregan a mano en el Sheet.
    exactamente como lo tipeás — Sheets no lo va a convertir a fecha ni a
    número.
 4. Escribí estas 3 filas a partir de la fila 2 (una fila = un bloque), **una
-   celda por columna**, en este orden exacto:
+   celda por columna**, en este orden exacto (desde el Checkpoint 4 hay una
+   columna `etiqueta` entre `fin` y `notas` — si tu hoja es de antes, se
+   agregó sola la primera vez que la app le pidió algo después de ese
+   checkpoint):
 
-   `id | título | área | tipo | fecha | inicio | fin | notas | creado | actualizado | archivado`
+   `id | título | área | tipo | fecha | inicio | fin | etiqueta | notas | creado | actualizado | archivado`
 
-   | id | título | área | tipo | fecha | inicio | fin | notas | creado | actualizado | archivado |
-   |---|---|---|---|---|---|---|---|---|---|---|
-   | b1 | Cálculo II | Universidad | fijo | **HOY** | 09:00 | 10:30 | | **HOY** 08:00 | **HOY** 08:00 | |
-   | b2 | Clase con Valentina | Academia Fractal | variable | **HOY** | 15:00 | 16:00 | | **HOY** 08:00 | **HOY** 08:00 | |
-   | b3 | Café con inversionista | Startup | reunión | **HOY** | 18:30 | 19:00 | | **HOY** 08:00 | **HOY** 08:00 | |
+   | id | título | área | tipo | fecha | inicio | fin | etiqueta | notas | creado | actualizado | archivado |
+   |---|---|---|---|---|---|---|---|---|---|---|---|
+   | b1 | Cálculo II | Universidad | fijo | **HOY** | 09:00 | 10:30 | | | **HOY** 08:00 | **HOY** 08:00 | |
+   | b2 | Clase con Valentina | Academia Fractal | variable | **HOY** | 15:00 | 16:00 | | | **HOY** 08:00 | **HOY** 08:00 | |
+   | b3 | Café con inversionista | Startup | reunión | **HOY** | 18:30 | 19:00 | Nerak | | **HOY** 08:00 | **HOY** 08:00 | |
 
 5. Reemplazá **HOY** por la fecha de hoy en formato `YYYY-MM-DD` (ej.
    `2026-09-22`). Tiene que ser la fecha real del día en que probás, porque
@@ -45,6 +48,7 @@ desde el Checkpoint 2):
   importar el área).
 - Cada bloque muestra título, horario y el nombre del área como texto, no
   solo el color.
+- `b3` además muestra "Nerak" al final de esa línea (la etiqueta).
 
 ## Para ver el estado vacío (y los bocetos de la mascota)
 
