@@ -10,7 +10,7 @@
 const KodamaFormulario = (function () {
   const AREAS = ['Universidad', 'Academia Fractal', 'Startup', 'Personal'];
   const TIPOS = ['fijo', 'variable', 'reunión'];
-  const CAMPOS = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'alumno_id'];
+  const CAMPOS = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'lugar', 'etiqueta', 'notas', 'alumno_id'];
   const AREA_FRACTAL = 'Academia Fractal';
 
   let dialogo;
@@ -19,6 +19,9 @@ const KodamaFormulario = (function () {
   let alArchivar;
   let idEnEdicion = null;
   let selectorAlumnos = null;
+  // En un bloque NUEVO, el lugar se completa con el lugar habitual del
+  // alumno elegido mientras no lo hayas escrito vos (si lo tocás, manda lo tuyo).
+  let lugarAutomatico = false;
 
   function iniciar(opciones) {
     dialogo = document.getElementById('dialogo-bloque');
@@ -29,6 +32,7 @@ const KodamaFormulario = (function () {
       fecha: document.getElementById('campo-fecha'),
       inicio: document.getElementById('campo-inicio'),
       fin: document.getElementById('campo-fin'),
+      lugar: document.getElementById('campo-lugar'),
       etiqueta: document.getElementById('campo-etiqueta'),
       notas: document.getElementById('campo-notas')
     };
@@ -40,8 +44,13 @@ const KodamaFormulario = (function () {
 
     // Alumnos (solo Academia Fractal): autocompletado + alta sin salir.
     selectorAlumnos = KodamaSelectorAlumnos.crear(document.getElementById('campo-alumnos'), {
-      crearAlumno: opciones.crearAlumno
+      crearAlumno: opciones.crearAlumno,
+      alCambiar: function (ids) {
+        if (idEnEdicion || !lugarAutomatico) return;
+        campos.lugar.value = KodamaAlumnos.lugarDeAlumnos(ids);
+      }
     });
+    campos.lugar.addEventListener('input', function () { lugarAutomatico = false; });
     campos.area.addEventListener('change', actualizarSegunArea);
     KodamaAlumnos.alCambiar(function () { selectorAlumnos.repintar(); });
 
@@ -76,6 +85,7 @@ const KodamaFormulario = (function () {
   function abrirNuevo(valoresPorDefecto) {
     preparar('Nuevo bloque', '', 'nuevo', null);
     escribirCampos(valoresPorDefecto);
+    lugarAutomatico = !campos.lugar.value;
     dialogo.showModal();
     if (esFractal()) selectorAlumnos.enfocar();
     else campos.titulo.focus();
@@ -99,6 +109,7 @@ const KodamaFormulario = (function () {
   function abrirDuplicado(bloque) {
     preparar('Duplicar bloque', 'Copia de "' + (bloque.titulo || '') + '". Cambiá lo que haga falta y guardá.', 'nuevo', null);
     escribirCampos(valoresDuplicado(bloque));
+    lugarAutomatico = !campos.lugar.value;
     dialogo.showModal();
     campos.fecha.focus();
   }

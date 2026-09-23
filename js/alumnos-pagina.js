@@ -26,6 +26,7 @@
     colegio: document.getElementById('alumno-colegio'),
     tarifa_hora: document.getElementById('alumno-tarifa'),
     forma_pago: document.getElementById('alumno-pago'),
+    lugar: document.getElementById('alumno-lugar'),
     notas: document.getElementById('alumno-notas')
   };
   let idEnEdicion = null;
@@ -46,7 +47,8 @@
 
   function textoPago(alumno) {
     const tarifa = alumno.tarifa_hora ? 'Bs ' + alumno.tarifa_hora + '/h' : 'sin tarifa';
-    return tarifa + ' · paga ' + (alumno.forma_pago === 'mensual' ? 'por mes' : 'por hora');
+    return tarifa + ' · paga ' + (alumno.forma_pago === 'mensual' ? 'por mes' : 'por hora') +
+      (alumno.lugar ? ' · ' + alumno.lugar : '');
   }
 
   function pintarLista() {

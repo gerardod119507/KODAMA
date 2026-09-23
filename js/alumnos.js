@@ -16,7 +16,7 @@ const KodamaAlumnos = (function () {
   /** "  Agustín  ALIENDRE " → "agustin aliendre" (igual que normalizarTexto en el backend). */
   function normalizar(texto) {
     return String(texto == null ? '' : texto)
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
@@ -110,6 +110,21 @@ const KodamaAlumnos = (function () {
     return bloque.titulo ? nombres + ' · ' + bloque.titulo : nombres;
   }
 
+  /**
+   * Lugar habitual para una clase con estos alumnos: el del primero que
+   * tenga uno cargado (vacío si ninguno). Se usa para completar solo el
+   * campo "Lugar" de un bloque o regla nuevos.
+   */
+  function lugarDeAlumnos(texto, dir) {
+    const d = dir || directorio;
+    const ids = idsDe(texto);
+    for (let i = 0; i < ids.length; i++) {
+      const alumno = porId(ids[i], d);
+      if (alumno && alumno.lugar) return alumno.lugar;
+    }
+    return '';
+  }
+
   // --- Directorio guardado en el dispositivo --------------------------
 
   function leerGuardado() {
@@ -153,6 +168,7 @@ const KodamaAlumnos = (function () {
     nombreCompleto: nombreCompleto,
     buscar: buscar,
     tituloDeBloque: tituloDeBloque,
+    lugarDeAlumnos: lugarDeAlumnos,
     idsDe: idsDe,
     porId: porId,
     corto: corto,

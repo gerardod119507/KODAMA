@@ -60,6 +60,7 @@ const KodamaFicha = (function () {
     escribir('ficha-tipo-area', (bloque.tipo || 'variable') + ' · ' + bloque.area);
     escribir('ficha-titulo', bloque.tituloMostrado || bloque.titulo || '(sin título)');
     escribir('ficha-horario', KodamaFecha.legible(bloque.fecha) + ' · ' + bloque.inicio + '–' + bloque.fin);
+    mostrarFila('ficha-fila-lugar', bloque.lugar);
     mostrarFila('ficha-fila-etiqueta', bloque.etiqueta);
     mostrarFila('ficha-fila-notas', bloque.notas);
     escribir('error-ficha', '');

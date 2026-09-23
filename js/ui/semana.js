@@ -200,7 +200,8 @@ const KodamaSemana = (function () {
     boton.style.setProperty('--indice', String(indice));
     ubicar(boton, posicion, escala);
     // Texto completo al pasar el mouse (los bloques cortos lo recortan).
-    boton.title = (nombreVisible(bloque)) + ' · ' + bloque.inicio + '–' + bloque.fin + ' · ' + bloque.area;
+    boton.title = nombreVisible(bloque) + ' · ' + bloque.inicio + '–' + bloque.fin +
+      (bloque.lugar ? ' · ' + bloque.lugar : '') + ' · ' + bloque.area;
     if (alTocar) {
       boton.addEventListener('click', function () { alTocar(bloque); });
     }
@@ -221,13 +222,19 @@ const KodamaSemana = (function () {
 
     const hora = document.createElement('span');
     hora.className = 'bloque-semana__hora';
-    // En la vista de día (una sola columna, ancha) va también el área y la
-    // etiqueta; en la semana, solo el horario.
-    let detalle = bloque.inicio + '–' + bloque.fin;
-    if (conDetalle) {
-      detalle += ' · ' + bloque.area + (bloque.etiqueta ? ' · ' + bloque.etiqueta : '');
+    // Junto al horario, el lugar (si hay; si no, nada, ni un separador de
+    // más). En la vista de día (una columna ancha) van también el área y la
+    // etiqueta.
+    hora.textContent = bloque.inicio + '–' + bloque.fin;
+    if (bloque.lugar) {
+      const lugar = document.createElement('span');
+      lugar.className = 'bloque-semana__lugar';
+      lugar.textContent = ' · ' + bloque.lugar;
+      hora.appendChild(lugar);
     }
-    hora.textContent = detalle;
+    if (conDetalle) {
+      hora.appendChild(document.createTextNode(' · ' + bloque.area + (bloque.etiqueta ? ' · ' + bloque.etiqueta : '')));
+    }
     boton.appendChild(hora);
 
     return boton;

@@ -81,6 +81,7 @@ const KodamaSelectorAlumnos = (function () {
     const nColegio = el('select'); nColegio.id = 'nuevo-alumno-colegio-' + n;
     const nTarifa = el('input'); nTarifa.id = 'nuevo-alumno-tarifa-' + n; nTarifa.inputMode = 'decimal';
     const nPago = el('select'); nPago.id = 'nuevo-alumno-pago-' + n;
+    const nLugar = el('input'); nLugar.id = 'nuevo-alumno-lugar-' + n; nLugar.autocapitalize = 'sentences';
     [['hora', 'Por hora'], ['mensual', 'Mensual']].forEach(function (par) {
       const o = el('option', null, par[1]); o.value = par[0]; nPago.appendChild(o);
     });
@@ -95,6 +96,7 @@ const KodamaSelectorAlumnos = (function () {
       campo('Nombre', nNombre), campo('Apellido', nApellido),
       campo('Curso', nCurso), campo('Colegio', nColegio),
       campo('Tarifa por hora (Bs)', nTarifa), campo('Forma de pago', nPago),
+      campo('Lugar habitual', nLugar),
       nError, nAcciones
     );
 
@@ -112,6 +114,7 @@ const KodamaSelectorAlumnos = (function () {
         quitar.addEventListener('click', function () {
           elegidos = elegidos.filter(function (x) { return x !== id; });
           pintarElegidos();
+          avisar();
           entrada.focus();
         });
         li.appendChild(quitar);
@@ -160,11 +163,17 @@ const KodamaSelectorAlumnos = (function () {
       marcarActivo(sugerencias.length ? 0 : -1);
     }
 
+    /** Avisa al formulario que cambió la lista (para completar el lugar). */
+    function avisar() {
+      if (config.alCambiar) config.alCambiar(elegidos.join(','));
+    }
+
     function elegir(id) {
       if (elegidos.indexOf(id) === -1) elegidos.push(id);
       entrada.value = '';
       cerrarLista();
       pintarElegidos();
+      avisar();
       entrada.focus();
     }
 
@@ -178,6 +187,7 @@ const KodamaSelectorAlumnos = (function () {
       opciones(nColegio, dir.colegios, '— Colegio —');
       nTarifa.value = '';
       nPago.value = 'hora';
+      nLugar.value = '';
       nError.textContent = '';
       nuevo.hidden = false;
       nNombre.focus();
@@ -194,7 +204,8 @@ const KodamaSelectorAlumnos = (function () {
       try {
         const alumno = await config.crearAlumno({
           nombre: nNombre.value, apellido: nApellido.value, curso: nCurso.value,
-          colegio: nColegio.value, tarifa_hora: nTarifa.value, forma_pago: nPago.value, notas: ''
+          colegio: nColegio.value, tarifa_hora: nTarifa.value, forma_pago: nPago.value, notas: '',
+          lugar: nLugar.value
         });
         KodamaAlumnos.aplicarAlumno(alumno);
         nuevo.hidden = true;
@@ -232,10 +243,11 @@ const KodamaSelectorAlumnos = (function () {
       } else if (e.key === 'Backspace' && !entrada.value && elegidos.length) {
         elegidos.pop();
         pintarElegidos();
+        avisar();
       }
     });
 
-    [nNombre, nApellido, nTarifa].forEach(function (control) {
+    [nNombre, nApellido, nTarifa, nLugar].forEach(function (control) {
       control.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); crearNuevo(); }
       });
