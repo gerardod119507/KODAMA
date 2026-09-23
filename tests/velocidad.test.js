@@ -273,6 +273,6 @@ test('duplicar copia los datos del bloque (alumnos incluidos) pero no su id ni s
   });
   assert.deepStrictEqual(copia, {
     titulo: 'Cálculo II', area: 'Universidad', tipo: 'fijo', fecha: '2026-09-23',
-    inicio: '06:45', fin: '08:15', etiqueta: 'aula 4', notas: 'traer calculadora', alumno_id: ''
+    inicio: '06:45', fin: '08:15', lugar: '', etiqueta: 'aula 4', notas: 'traer calculadora', alumno_id: ''
   });
 });

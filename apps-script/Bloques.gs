@@ -10,7 +10,7 @@ const TIPOS_BLOQUE = ['fijo', 'variable', 'reunión'];
 
 // Campos que la app puede escribir. El resto (id, creado, actualizado,
 // archivado) los maneja el backend.
-const CAMPOS_EDITABLES_BLOQUE = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'alumno_id'];
+const CAMPOS_EDITABLES_BLOQUE = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'alumno_id', 'lugar'];
 
 function crearBloque(datos) {
   const entrada = datos || {};
@@ -27,7 +27,8 @@ function crearBloque(datos) {
     creado: ahoraEnTexto(),
     actualizado: ahoraEnTexto(),
     archivado: '',
-    alumno_id: normalizarIdsAlumnos(entrada.alumno_id)
+    alumno_id: normalizarIdsAlumnos(entrada.alumno_id),
+    lugar: String(entrada.lugar || '').trim()
   };
 
   validarBloque(bloque);

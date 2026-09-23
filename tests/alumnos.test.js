@@ -45,7 +45,7 @@ test('se crean Alumnos, Cursos y Colegios con sus encabezados y catálogos inici
   const env = preparar();
   assert.deepStrictEqual(filas(env, 'Alumnos')[0], [
     'id', 'nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora',
-    'forma_calculo', 'forma_pago', 'notas', 'archivado'
+    'forma_calculo', 'forma_pago', 'notas', 'archivado', 'lugar'
   ]);
   const colegios = filas(env, 'Colegios');
   assert.deepStrictEqual(colegios[0], ['nombre', 'corto']);

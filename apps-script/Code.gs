@@ -14,16 +14,17 @@ const ZONA_HORARIA = 'America/La_Paz';
 
 // Mismo orden que los encabezados que crea asegurarHojaBloques().
 // Claves en ASCII (sin tildes) para que el JSON no dependa de codificación.
-// alumno_id (Checkpoint 7) va AL FINAL, para no mover ninguna columna de
-// una hoja que ya tiene datos: ids de la hoja Alumnos separados por coma
-// (una clase puede tener varios alumnos).
+// alumno_id y lugar (Checkpoint 7) van AL FINAL, para no mover ninguna
+// columna de una hoja que ya tiene datos. alumno_id: ids de la hoja Alumnos
+// separados por coma (una clase puede tener varios alumnos). lugar: dónde
+// es (en la UMSS, el aula).
 const COLUMNAS_BLOQUES = [
   'id', 'titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin',
-  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id'
+  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id', 'lugar'
 ];
 const ENCABEZADOS_BLOQUES = [
   'id', 'título', 'área', 'tipo', 'fecha', 'inicio', 'fin',
-  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id'
+  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id', 'lugar'
 ];
 
 // Sugerencias de "etiqueta" (no restringen: se cargan con "permitir
@@ -337,6 +338,7 @@ function asegurarHojaBloques(libro) {
     // "etiqueta"). Se agrega sin tocar las filas que ya tenía.
     migrarColumnaEtiqueta(hoja);
     migrarColumnaAlFinal(hoja, ENCABEZADOS_BLOQUES, 'alumno_id');
+    migrarColumnaAlFinal(hoja, ENCABEZADOS_BLOQUES, 'lugar');
   }
   return hoja;
 }
