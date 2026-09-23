@@ -113,7 +113,16 @@ function generarHorario() {
     });
   }
 
-  hojaBloques.getRange(1, 1, datosBloques.length, COLUMNAS_BLOQUES.length).setValues(datosBloques);
+  // Se normaliza el ancho de cada fila: getDataRange() devuelve tantas
+  // columnas como tenga la hoja, y si alguien escribió algo a la derecha de
+  // "archivado" la escritura fallaría por dimensiones que no coinciden.
+  // Las columnas extra quedan intactas (no entran en el rango que se pisa).
+  const grillaFinal = datosBloques.map(function (fila) {
+    return COLUMNAS_BLOQUES.map(function (_, indice) {
+      return fila[indice] != null ? fila[indice] : '';
+    });
+  });
+  hojaBloques.getRange(1, 1, grillaFinal.length, COLUMNAS_BLOQUES.length).setValues(grillaFinal);
 
   return { creados: creados, actualizados: actualizados, archivados: archivados };
 }

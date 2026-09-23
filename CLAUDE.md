@@ -138,6 +138,21 @@ propio archivo dispara un run nuevo de verdad; `workflow_dispatch` da un
 botón para forzarlo a mano cuando ni `apps-script/` ni el workflow
 cambiaron.
 
+**Un job en verde no significaba "desplegado" (incidente 2026-09-23):** el
+Checkpoint 4 se dio por terminado con el workflow en verde, pero el paso de
+deploy había impreso `Invalid deployment ID` y **salido con código 0**.
+`clasp push` sí había subido el código al proyecto, pero el despliegue nunca
+se actualizó, así que el Web App siguió sirviendo la versión anterior y la
+hoja `Horario` nunca se creó. Ahora el paso de deploy revisa **la salida de
+clasp además del código de salida** y falla el job si aparece
+`invalid`/`error`/`not found`/`failed`. Regla que quedó: *clasp puede fallar
+sin fallar*, así que cualquier paso que lo use tiene que validar su salida.
+
+**Nunca imprimir el deployment ID en los logs:** el ID es literalmente la
+parte `/macros/s/<ID>/exec` de la URL del Web App, y los logs de Actions de
+un repo público son públicos. El paso de deploy reemplaza el ID por
+`<DEPLOYMENT_ID>` antes de mostrar cualquier salida de clasp.
+
 ### Secrets del repo (`Settings` → `Secrets and variables` → `Actions`)
 
 - `SCRIPT_ID` — identifica el proyecto de Apps Script. Se genera un
@@ -174,6 +189,37 @@ con el despliegue automatizado, la idea es tocar el editor de Apps Script lo
 menos posible; si alguna vez hay que recrear el Sheet desde cero, la primera
 petición al Web App ya lo deja usable. `Horario` se suma a esta función
 recién en el Checkpoint 4, cuando se defina su estructura de columnas.
+
+## Pruebas automáticas
+
+`tests/` + `.github/workflows/tests.yml`. Corren con `npm test` (que es
+`node --test tests/*.test.js`) en cada push y cada PR. **Cero dependencias:**
+usan el runner de pruebas que ya trae Node, no se instala nada.
+
+- `tests/fake-google.js` — entorno falso de Apps Script (`SpreadsheetApp`,
+  `Utilities`, `PropertiesService`, `ContentService`) que evalúa los `.gs`
+  reales de `apps-script/` con `vm`. Imita **a propósito** las partes
+  estrictas de Sheets (rangos de 0 filas, `setValues` con dimensiones que no
+  coinciden) para que un error que rompería en producción también rompa acá.
+  `Utilities.formatDate` devuelve un instante fijo, así las pruebas de
+  "hoy vs. futuro" son deterministas.
+- `tests/estructura.test.js` — que `asegurarEstructura()` cree las 3 hojas
+  (la prueba de regresión del incidente del Checkpoint 4), encabezados,
+  formato de texto en fechas/horas, idempotencia, y la migración de la
+  columna `etiqueta` sobre una hoja que ya tenía datos.
+- `tests/horario.test.js` — el generador: expansión de días a fechas,
+  días con y sin tilde, límites de `desde`/`hasta`, respeto del pasado al
+  regenerar, idempotencia, y convivencia con lo editado a mano.
+- `tests/frontend.test.js` — lógica pura del navegador: filtro de capas y
+  agrupación de bloques que se pisan.
+
+**Qué NO cubren:** nada que necesite un navegador o el Sheet real (render
+del DOM, CSS, permisos de Google, que el despliegue efectivamente sirva la
+versión nueva). Eso se verifica a mano, y si no se verificó hay que decirlo
+como riesgo, no darlo por bueno.
+
+**Al agregar comportamiento nuevo al backend o a la lógica del frontend, se
+agrega su prueba en el mismo PR.**
 
 ## Modelo de datos (Google Sheets)
 
@@ -441,8 +487,11 @@ drop, notificaciones, cola offline.
 KODAMA/
 ├── .github/
 │   └── workflows/
-│       └── deploy-apps-script.yml  # clasp push + clasp deploy en cada push a main
+│       ├── deploy-apps-script.yml  # clasp push + clasp deploy en cada push a main
+│       └── tests.yml                # npm test en cada push y PR
 ├── .gitignore               # .clasp.json / .clasprc.json (nunca al repo)
+├── package.json             # sin dependencias: solo el comando de pruebas
+├── tests/                   # pruebas con el runner de Node (ver "Pruebas automáticas")
 ├── index.html              # vista principal (día/semana)
 ├── config.html             # URL del Web App + token, y prueba de conexión
 ├── manifest.webmanifest    # PWA (checkpoint 7)

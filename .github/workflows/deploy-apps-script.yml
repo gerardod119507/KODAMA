@@ -43,8 +43,16 @@ jobs:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
         run: |
+          set -euo pipefail
           echo "$CLASPRC_JSON" > ~/.clasprc.json
-          printf '{"scriptId":"%s","rootDir":"apps-script"}' "$SCRIPT_ID" > .clasp.json
+          # tr -d: un secret copiado a mano suele traer un espacio o un salto
+          # de línea invisible al final, y clasp lo rechaza.
+          id_script="$(printf '%s' "$SCRIPT_ID" | tr -d '[:space:]')"
+          if [ -z "$id_script" ]; then
+            echo "::error::El secret SCRIPT_ID está vacío."
+            exit 1
+          fi
+          printf '{"scriptId":"%s","rootDir":"apps-script"}' "$id_script" > .clasp.json
 
       - name: Publicar código (clasp push)
         run: clasp push --force
@@ -52,7 +60,35 @@ jobs:
       # -i apunta al despliegue que ya existe (creado a mano en el
       # Checkpoint 2): crea una versión nueva del código y la asocia a ese
       # mismo despliegue, así la URL del Web App nunca cambia.
+      #
+      # OJO: clasp puede imprimir un error y AUN ASÍ salir con código 0. Pasó
+      # el 2026-09-23: "Invalid deployment ID" con el job en verde, así que
+      # el código quedó subido pero el Web App siguió sirviendo la versión
+      # anterior durante todo un checkpoint. Por eso acá se revisa la salida
+      # además del código de salida.
       - name: Actualizar el despliegue existente
         env:
           DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
-        run: clasp deploy -i "$DEPLOYMENT_ID" -d "Auto-deploy ${{ github.sha }}"
+        run: |
+          set -uo pipefail
+          id_despliegue="$(printf '%s' "$DEPLOYMENT_ID" | tr -d '[:space:]')"
+          if [ -z "$id_despliegue" ]; then
+            echo "::error::El secret DEPLOYMENT_ID está vacío."
+            exit 1
+          fi
+
+          salida="$(clasp deploy -i "$id_despliegue" -d "Auto-deploy ${{ github.sha }}" 2>&1)"
+          codigo=$?
+
+          # El deployment ID es la parte /macros/s/<ID>/exec de la URL del
+          # Web App, así que nunca se imprime crudo: se reemplaza antes de
+          # mostrar nada (el repo es público y los logs también).
+          salida_segura="$(printf '%s' "$salida" | sed "s|$id_despliegue|<DEPLOYMENT_ID>|g")"
+          echo "$salida_segura"
+
+          if [ $codigo -ne 0 ] || printf '%s' "$salida" | grep -qiE 'invalid|error|not found|failed'; then
+            echo "::error::clasp deploy no actualizó el despliegue. Revisá el secret DEPLOYMENT_ID (Implementar → Administrar implementaciones → ID de implementación)."
+            exit 1
+          fi
+
+          echo "Despliegue actualizado."
