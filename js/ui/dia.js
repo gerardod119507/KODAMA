@@ -165,6 +165,9 @@ const KodamaDia = (function () {
   return {
     render: render,
     renderCargando: renderCargando,
-    renderError: renderError
+    renderError: renderError,
+    // Se expone solo para poder probarla: es lógica pura y es la regla que
+    // decide qué bloques se dibujan lado a lado (ver tests/frontend.test.js).
+    agruparPorSolapamiento: agruparPorSolapamiento
   };
 })();

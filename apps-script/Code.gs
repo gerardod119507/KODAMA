@@ -197,7 +197,10 @@ function aplicarSugerenciasEtiqueta(hoja, columna) {
     .requireValueInList(SUGERENCIAS_ETIQUETA, true)
     .setAllowInvalid(true) // sugiere, pero nunca bloquea escribir otra cosa
     .build();
-  hoja.getRange(2, columna, hoja.getMaxRows() - 1, 1).setDataValidation(regla);
+  // Un rango con 0 filas tira error en Sheets. Si la hoja quedó recortada a
+  // una sola fila, esto no debe romper toda la creación de estructura.
+  const filas = Math.max(1, hoja.getMaxRows() - 1);
+  hoja.getRange(2, columna, filas, 1).setDataValidation(regla);
 }
 
 function responderJson(objeto) {

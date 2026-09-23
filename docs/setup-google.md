@@ -217,3 +217,31 @@ Esto ya está hecho — queda documentado por si hay que rehacerlo alguna vez
 | "La respuesta no es JSON" | La URL termina en `/dev` en vez de `/exec` | Usá la URL del paso 48 |
 | `no_autorizado` con el token correcto | El token se copió con un espacio de más | Copialo de nuevo desde Propiedades del script (paso 39) |
 | Cambiaste el código, lo mergeaste, y no pasa nada | Revisá la pestaña **Actions** del repo en GitHub: el workflow "Deploy Apps Script" tiene que terminar en verde | Si falla, el error suele estar en algún secret vencido o mal copiado |
+| El workflow dice `Invalid deployment ID` | El secret `DEPLOYMENT_ID` está mal copiado o trae un espacio | Ver "Cómo verificar el DEPLOYMENT_ID" abajo |
+| Una hoja nueva no aparece en el Sheet | El código se subió pero el **despliegue** no se actualizó | Mismo caso de arriba: el Web App sigue sirviendo la versión vieja |
+
+### Cómo verificar el DEPLOYMENT_ID
+
+El deployment ID es lo que identifica al Web App publicado. Es **la parte
+del medio de tu propia URL**:
+
+```
+https://script.google.com/macros/s/ESTO-DE-ACA-ES-EL-DEPLOYMENT-ID/exec
+```
+
+1. En el editor de Apps Script: **Implementar** → **Administrar
+   implementaciones**.
+2. Clic en el ícono de información (ⓘ) del despliegue activo → copiá el
+   **ID de implementación**.
+3. Confirmá que sea idéntico al pedazo entre `/macros/s/` y `/exec` de la
+   URL que usás en `config.html`. Si no coinciden, el que vale es el de la
+   URL que realmente funciona.
+4. En GitHub: `Settings` → `Secrets and variables` → `Actions` →
+   `DEPLOYMENT_ID` → **Update** → pegalo **sin espacios ni saltos de línea**
+   antes ni después.
+5. Volvé a la pestaña **Actions** → workflow "Deploy Apps Script" → botón
+   **Run workflow**.
+
+> El workflow ahora **falla en rojo** si el deployment ID es inválido. Antes
+> se quedaba en verde aunque no hubiera desplegado nada, que fue lo que hizo
+> que el Checkpoint 4 pareciera terminado sin estarlo.

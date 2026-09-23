@@ -1,0 +1,8 @@
+{
+  "name": "kodama",
+  "private": true,
+  "description": "KODAMA — sin dependencias: solo define el comando de pruebas, que usa el runner que ya trae Node.",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}

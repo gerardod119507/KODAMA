@@ -1,0 +1,22 @@
+name: Tests
+
+# Corre en todo push y en todo PR: si algo de apps-script/ o js/ se rompe,
+# tiene que verse acá antes de mergear, no en el Sheet de Gerardo.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Sin "npm install": el proyecto no tiene dependencias y las pruebas
+      # usan el runner incorporado de Node (node --test).
+      - name: Correr pruebas
+        run: npm test
