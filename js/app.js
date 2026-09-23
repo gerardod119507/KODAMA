@@ -102,8 +102,13 @@
     // En una capa filtrada, los bloques de otras áreas se dibujan como
     // "ocupado" en su misma posición (por eso se pasan todos).
     const esDeLaCapa = function (bloque) { return KodamaCapas.esDeLaCapa(bloque, capa); };
+    // El nombre que se ve de cada bloque: con alumnos vinculados sale de
+    // ellos (Checkpoint 7). Se arma en copias, sin tocar lo guardado.
+    const bloques = bloquesSemana.map(function (b) {
+      return Object.assign({}, b, { tituloMostrado: KodamaAlumnos.tituloDeBloque(b) });
+    });
     if (modo === 'dia') {
-      KodamaDia.render(contenedor, bloquesSemana.filter(function (b) { return b.fecha === fecha; }), {
+      KodamaDia.render(contenedor, bloques.filter(function (b) { return b.fecha === fecha; }), {
         fecha: fecha,
         hoy: KodamaFecha.hoy(),
         // Los bocetos del espíritu solo se comparan mientras no haya una
@@ -118,7 +123,7 @@
       KodamaSemana.render(contenedor, {
         dias: dias,
         hoy: KodamaFecha.hoy(),
-        bloques: bloquesSemana.filter(function (b) { return dias.indexOf(b.fecha) !== -1; }),
+        bloques: bloques.filter(function (b) { return dias.indexOf(b.fecha) !== -1; }),
         esDeLaCapa: esDeLaCapa,
         alTocar: KodamaFicha.abrir,
         colapsarHuecos: pantallaCelular.matches
@@ -228,7 +233,8 @@
         : await pedir('crearBloque', { bloque: datos });
       aplicarLocal(guardado);
     },
-    alArchivar: archivar
+    alArchivar: archivar,
+    crearAlumno: function (datos) { return pedir('crearAlumno', { alumno: datos }); }
   });
 
   KodamaFicha.iniciar({
@@ -300,5 +306,14 @@
     });
   });
 
+  // Alumnos y catálogos: lo guardado se usa al instante; se refresca por
+  // detrás y, cuando llega, se vuelven a pintar los nombres.
+  KodamaAlumnos.alCambiar(function () {
+    if (semanaEnPantalla) renderizar(); // mientras dice "Cargando..." no hay nada que repintar
+  });
+
   await cargar();
+  KodamaAlumnos.cargar().catch(function () {
+    // Sin conexión: quedan los alumnos guardados en el dispositivo.
+  });
 })();

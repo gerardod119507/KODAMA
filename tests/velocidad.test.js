@@ -143,7 +143,7 @@ test('la estructura se verifica en la primera petición y no en las siguientes',
   post(env, { action: 'listarBloquesRango', desde: '2026-10-12', hasta: '2026-10-18' });
   post(env, { action: 'listarAreas' });
   assert.strictEqual(verificaciones(), 1);
-  assert.deepStrictEqual(env.libro.nombresDeHojas().sort(), ['Areas', 'Bloques', 'Horario']);
+  assert.deepStrictEqual(env.libro.nombresDeHojas().sort(), ['Alumnos', 'Areas', 'Bloques', 'Colegios', 'Cursos', 'Horario']);
 });
 
 test('después de un error, la próxima petición vuelve a verificar y repara', () => {
@@ -264,7 +264,7 @@ test('un cambio guardado se aplica al instante en la semana en pantalla', () => 
 // Frontend: duplicar desde la ficha
 // ---------------------------------------------------------------
 
-test('duplicar copia los datos del bloque pero no su id ni sus fechas de registro', () => {
+test('duplicar copia los datos del bloque (alumnos incluidos) pero no su id ni sus fechas de registro', () => {
   const env = cargarModulos(['js/ui/formulario.js']);
   const copia = env.ejecutar('KodamaFormulario.valoresDuplicado(__arg)', {
     id: 'h1234abcd-2026-09-23', titulo: 'Cálculo II', area: 'Universidad', tipo: 'fijo',
@@ -273,6 +273,6 @@ test('duplicar copia los datos del bloque pero no su id ni sus fechas de registr
   });
   assert.deepStrictEqual(copia, {
     titulo: 'Cálculo II', area: 'Universidad', tipo: 'fijo', fecha: '2026-09-23',
-    inicio: '06:45', fin: '08:15', etiqueta: 'aula 4', notas: 'traer calculadora'
+    inicio: '06:45', fin: '08:15', etiqueta: 'aula 4', notas: 'traer calculadora', alumno_id: ''
   });
 });

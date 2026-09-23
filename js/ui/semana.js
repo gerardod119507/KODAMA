@@ -178,6 +178,11 @@ const KodamaSemana = (function () {
     elemento.style.setProperty('--columnas', String(posicion.columnas));
   }
 
+  /** Con alumnos vinculados, el nombre sale de ellos (lo arma app.js). */
+  function nombreVisible(bloque) {
+    return bloque.tituloMostrado || bloque.titulo || '(sin título)';
+  }
+
   function crearBloque(posicion, escala, indice, alTocar, solapado, conDetalle) {
     const bloque = posicion.bloque;
     const tipo = KodamaDia.normalizarTipo(bloque.tipo);
@@ -195,7 +200,7 @@ const KodamaSemana = (function () {
     boton.style.setProperty('--indice', String(indice));
     ubicar(boton, posicion, escala);
     // Texto completo al pasar el mouse (los bloques cortos lo recortan).
-    boton.title = (bloque.titulo || '(sin título)') + ' · ' + bloque.inicio + '–' + bloque.fin + ' · ' + bloque.area;
+    boton.title = (nombreVisible(bloque)) + ' · ' + bloque.inicio + '–' + bloque.fin + ' · ' + bloque.area;
     if (alTocar) {
       boton.addEventListener('click', function () { alTocar(bloque); });
     }
@@ -210,7 +215,7 @@ const KodamaSemana = (function () {
 
     const titulo = document.createElement('span');
     titulo.className = 'bloque-semana__titulo';
-    titulo.textContent = bloque.titulo || '(sin título)';
+    titulo.textContent = nombreVisible(bloque);
     cabeza.appendChild(titulo);
     boton.appendChild(cabeza);
 

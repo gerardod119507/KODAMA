@@ -11,6 +11,7 @@
     <h1>Horario</h1>
     <nav class="enlaces-cabecera">
       <a href="index.html">Día</a>
+      <a href="alumnos.html">Alumnos</a>
       <a href="config.html">Configuración</a>
     </nav>
   </header>
@@ -35,12 +36,15 @@
     <form id="form-regla">
       <h2 id="titulo-dialogo-regla">Nueva regla</h2>
 
-      <label for="regla-titulo">Título</label>
-      <input id="regla-titulo" type="text" autocapitalize="sentences"
-             autocomplete="off" enterkeyhint="done" />
-
       <label for="regla-area">Área</label>
       <select id="regla-area"></select>
+
+      <!-- Solo en Academia Fractal (lo arma js/ui/selector-alumnos.js). -->
+      <div id="regla-alumnos" hidden></div>
+
+      <label for="regla-titulo" id="etiqueta-regla-titulo">Título</label>
+      <input id="regla-titulo" type="text" autocapitalize="sentences"
+             autocomplete="off" enterkeyhint="done" />
 
       <label for="regla-dias">Días</label>
       <input id="regla-dias" type="text" autocomplete="off"
@@ -91,6 +95,8 @@
 
   <script src="js/fecha.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/alumnos.js"></script>
+  <script src="js/ui/selector-alumnos.js"></script>
   <script src="js/horario.js"></script>
 </body>
 </html>

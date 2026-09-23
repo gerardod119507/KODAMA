@@ -32,7 +32,7 @@
 
     <p id="continuar-envoltorio" hidden><a id="continuar" href="index.html">Continuar a KODAMA →</a></p>
 
-    <p><a href="index.html">Volver sin probar</a></p>
+    <p><a href="index.html">Volver sin probar</a> · <a href="alumnos.html">Alumnos</a></p>
 
     <hr class="separador" />
     <h2>Horario del semestre</h2>
@@ -58,10 +58,52 @@
     <p id="resultado-series" role="status"></p>
 
     <hr class="separador" />
+    <h2>Importar datos</h2>
+    <p class="nota">
+      Copiá filas de una tabla o de un Sheet y pegalas acá (las columnas van
+      separadas por tabulación, como salen al copiar). Si la primera fila
+      tiene los nombres de las columnas, se usan para saber qué es cada una.
+      Nada de esto se guarda en el repositorio: va solo a tu hoja.
+    </p>
+    <label for="modo-importar">Qué importar</label>
+    <select id="modo-importar">
+      <option value="alumnos">Alumnos</option>
+      <option value="horario">Reglas de la hoja Horario</option>
+    </select>
+    <p id="ayuda-importar" class="nota"></p>
+    <label for="texto-importar">Filas copiadas</label>
+    <textarea id="texto-importar" rows="8" spellcheck="false" autocomplete="off"></textarea>
+    <button id="previa-importar" type="button">Vista previa</button>
+    <div id="zona-previa" hidden>
+      <p id="resumen-importar" class="resumen-importar" role="status"></p>
+      <ul id="filas-importar" class="filas-importar"></ul>
+      <button id="aplicar-importar" type="button">Importar</button>
+      <button id="cancelar-importar" type="button" class="secundario">Cancelar</button>
+    </div>
+    <p id="resultado-importar" role="status"></p>
+
+    <hr class="separador" />
+    <h2>Vincular alumnos en clases de Fractal</h2>
+    <p class="nota">
+      Busca bloques y reglas de Academia Fractal que tienen el nombre del
+      alumno escrito en el título ("Clase con Valentina"), crea los alumnos
+      que falten y los vincula. Primero muestra qué va a hacer; nada cambia
+      hasta que confirmes.
+    </p>
+    <button id="previa-migrar" type="button" class="secundario">Buscar clases para vincular</button>
+    <div id="zona-migrar" hidden>
+      <p id="resumen-migrar" class="resumen-importar" role="status"></p>
+      <ul id="filas-migrar" class="filas-importar"></ul>
+      <button id="aplicar-migrar" type="button">Vincular las marcadas</button>
+    </div>
+    <p id="resultado-migrar" role="status"></p>
+
+    <hr class="separador" />
     <button id="olvidar" type="button" class="fantasma">Olvidar conexión guardada</button>
   </main>
 
   <script src="js/api.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/importar.js"></script>
 </body>
 </html>

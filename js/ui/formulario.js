@@ -10,13 +10,15 @@
 const KodamaFormulario = (function () {
   const AREAS = ['Universidad', 'Academia Fractal', 'Startup', 'Personal'];
   const TIPOS = ['fijo', 'variable', 'reunión'];
-  const CAMPOS = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas'];
+  const CAMPOS = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'alumno_id'];
+  const AREA_FRACTAL = 'Academia Fractal';
 
   let dialogo;
   let campos;
   let alGuardar;
   let alArchivar;
   let idEnEdicion = null;
+  let selectorAlumnos = null;
 
   function iniciar(opciones) {
     dialogo = document.getElementById('dialogo-bloque');
@@ -35,6 +37,13 @@ const KodamaFormulario = (function () {
 
     llenarOpciones(campos.area, AREAS);
     llenarOpciones(campos.tipo, TIPOS);
+
+    // Alumnos (solo Academia Fractal): autocompletado + alta sin salir.
+    selectorAlumnos = KodamaSelectorAlumnos.crear(document.getElementById('campo-alumnos'), {
+      crearAlumno: opciones.crearAlumno
+    });
+    campos.area.addEventListener('change', actualizarSegunArea);
+    KodamaAlumnos.alCambiar(function () { selectorAlumnos.repintar(); });
 
     document.getElementById('form-bloque').addEventListener('submit', async function (evento) {
       evento.preventDefault();
@@ -68,7 +77,8 @@ const KodamaFormulario = (function () {
     preparar('Nuevo bloque', '', 'nuevo', null);
     escribirCampos(valoresPorDefecto);
     dialogo.showModal();
-    campos.titulo.focus();
+    if (esFractal()) selectorAlumnos.enfocar();
+    else campos.titulo.focus();
   }
 
   function abrirEdicion(bloque) {
@@ -93,15 +103,32 @@ const KodamaFormulario = (function () {
     campos.fecha.focus();
   }
 
+  function esFractal() {
+    return campos.area.value === AREA_FRACTAL;
+  }
+
+  /**
+   * En Academia Fractal aparece el campo de alumnos y el título pasa a ser
+   * opcional (el nombre que se ve sale de los alumnos elegidos).
+   */
+  function actualizarSegunArea() {
+    document.getElementById('campo-alumnos').hidden = !esFractal();
+    document.getElementById('etiqueta-titulo').textContent = esFractal() ? 'Tema (opcional)' : 'Título';
+  }
+
   function escribirCampos(valores) {
     Object.keys(campos).forEach(function (clave) {
       campos[clave].value = valores[clave] != null ? valores[clave] : '';
     });
+    selectorAlumnos.fijar(valores.alumno_id || '');
+    actualizarSegunArea();
   }
 
   function leerCampos() {
     const datos = {};
     Object.keys(campos).forEach(function (clave) { datos[clave] = campos[clave].value; });
+    // Si se cambió el área a otra, la clase deja de tener alumnos.
+    datos.alumno_id = esFractal() ? selectorAlumnos.valor() : '';
     return datos;
   }
 
@@ -116,9 +143,14 @@ const KodamaFormulario = (function () {
 
   async function guardar() {
     const datos = leerCampos();
-    if (!datos.titulo.trim()) {
-      mostrarError('Falta el título.');
-      campos.titulo.focus();
+    if (!datos.titulo.trim() && !datos.alumno_id) {
+      if (esFractal()) {
+        mostrarError('Elegí al menos un alumno (o escribí un tema).');
+        selectorAlumnos.enfocar();
+      } else {
+        mostrarError('Falta el título.');
+        campos.titulo.focus();
+      }
       return;
     }
 
