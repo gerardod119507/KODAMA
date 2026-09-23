@@ -86,10 +86,13 @@ const KodamaDia = (function () {
     contenedor.appendChild(vacio);
   }
 
-  function crearTarjeta(bloque, indice, alTocar) {
+  function crearTarjeta(bloque, indice, alTocar, solapado) {
     const tarjeta = document.createElement('button');
     tarjeta.type = 'button';
     tarjeta.className = 'bloque bloque--' + normalizarTipo(bloque.tipo);
+    if (solapado) {
+      tarjeta.classList.add('bloque--solapado');
+    }
     if (alTocar) {
       tarjeta.addEventListener('click', function () { alTocar(bloque); });
     }
@@ -148,41 +151,65 @@ const KodamaDia = (function () {
     return grupos;
   }
 
-  // Horas ocupadas por otras áreas (capa filtrada): una franja gris tenue
-  // con solo el horario — sin título, sin área, sin aviso.
-  function crearFranjaOcupada(franja) {
-    const li = document.createElement('li');
-    li.className = 'franja-ocupada';
-    li.textContent = franja.inicio + '–' + franja.fin;
-    return li;
+  /**
+   * Ids de los bloques que se pisan de verdad con otro del mismo día (A
+   * empieza antes de que B termine y viceversa; tocarse no cuenta). Recibe
+   * solo los bloques de la capa que se ve. No es un aviso: esos bloques
+   * solo llevan el borde con el color de reunión (.bloque--solapado). Las
+   * horas son texto HH:mm, que se compara bien como texto.
+   */
+  function idsSolapados(bloques) {
+    const ids = {};
+    for (let i = 0; i < bloques.length; i++) {
+      for (let j = i + 1; j < bloques.length; j++) {
+        const a = bloques[i];
+        const b = bloques[j];
+        if (a.fecha === b.fecha && a.inicio < b.fin && b.inicio < a.fin) {
+          ids[a.id] = true;
+          ids[b.id] = true;
+        }
+      }
+    }
+    return Object.keys(ids);
   }
 
-  function renderLista(contenedor, bloques, alTocar, ocupados) {
+  /**
+   * Bloque de otra área en una capa filtrada: una tarjeta del mismo tamaño,
+   * en el mismo lugar, que solo dice "ocupado" (sin título ni horario).
+   */
+  function crearOcupado() {
+    const caja = document.createElement('div');
+    caja.className = 'ocupado ocupado--dia';
+    const texto = document.createElement('span');
+    texto.className = 'ocupado__texto';
+    texto.textContent = 'ocupado';
+    caja.appendChild(texto);
+    return caja;
+  }
+
+  function renderLista(contenedor, bloques, alTocar, esDeLaCapa) {
     contenedor.replaceChildren();
     const lista = document.createElement('ul');
     lista.className = 'lista-bloques';
     let indice = 0;
+    const solapados = {};
+    idsSolapados(bloques.filter(esDeLaCapa)).forEach(function (id) { solapados[id] = true; });
 
-    // Grupos de bloques y franjas ocupadas, intercalados por hora de inicio.
-    const filas = agruparPorSolapamiento(bloques)
-      .map(function (grupo) { return { inicio: grupo[0].inicio, grupo: grupo }; })
-      .concat((ocupados || []).map(function (franja) { return { inicio: franja.inicio, franja: franja }; }))
-      .sort(function (a, b) { return a.inicio.localeCompare(b.inicio); });
+    function pieza(bloque) {
+      return esDeLaCapa(bloque)
+        ? crearTarjeta(bloque, indice++, alTocar, solapados[bloque.id])
+        : crearOcupado();
+    }
 
-    filas.forEach(function (fila) {
-      if (fila.franja) {
-        lista.appendChild(crearFranjaOcupada(fila.franja));
-        return;
-      }
-      const grupo = fila.grupo;
+    // Se agrupa con TODOS los bloques del día, así cada "ocupado" queda en
+    // el mismo lugar que tendría el bloque real en General.
+    agruparPorSolapamiento(bloques).forEach(function (grupo) {
       const li = document.createElement('li');
       if (grupo.length === 1) {
-        li.appendChild(crearTarjeta(grupo[0], indice++, alTocar));
+        li.appendChild(pieza(grupo[0]));
       } else {
         li.className = 'fila-simultanea';
-        grupo.forEach(function (bloque) {
-          li.appendChild(crearTarjeta(bloque, indice++, alTocar));
-        });
+        grupo.forEach(function (bloque) { li.appendChild(pieza(bloque)); });
       }
       lista.appendChild(li);
     });
@@ -190,13 +217,17 @@ const KodamaDia = (function () {
     contenedor.appendChild(lista);
   }
 
+  /**
+   * bloques: TODOS los del día (todas las áreas), ordenados por inicio.
+   * opciones.esDeLaCapa(b): true si se muestra completo; si no, "ocupado".
+   */
   function render(contenedor, bloques, opciones) {
     const config = opciones || {};
-    const ocupados = config.ocupados || [];
-    if (bloques.length === 0 && ocupados.length === 0) {
+    const esDeLaCapa = config.esDeLaCapa || function () { return true; };
+    if (bloques.length === 0) {
       renderVacio(contenedor, config);
     } else {
-      renderLista(contenedor, bloques, config.alTocar, ocupados);
+      renderLista(contenedor, bloques, config.alTocar, esDeLaCapa);
     }
   }
 
@@ -211,6 +242,7 @@ const KodamaDia = (function () {
     colorDeBloque: colorDeBloque,
     // Se expone solo para poder probarla: es lógica pura y es la regla que
     // decide qué bloques se dibujan lado a lado (ver tests/frontend.test.js).
-    agruparPorSolapamiento: agruparPorSolapamiento
+    agruparPorSolapamiento: agruparPorSolapamiento,
+    idsSolapados: idsSolapados
   };
 })();

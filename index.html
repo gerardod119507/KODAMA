@@ -37,6 +37,17 @@
         <select id="capa"></select>
       </label>
     </div>
+    <div id="barra-rango" class="barra-rango" hidden>
+      <span class="capas__etiqueta">Días</span>
+      <label class="capas">
+        <span class="capas__etiqueta">del</span>
+        <select id="rango-desde" aria-label="Primer día visible"></select>
+      </label>
+      <label class="capas">
+        <span class="capas__etiqueta">al</span>
+        <select id="rango-hasta" aria-label="Último día visible"></select>
+      </label>
+    </div>
     <p id="aviso-offline" class="aviso-offline" hidden>Mostrando lo último guardado. Sin conexión.</p>
     <div id="vista-dia"></div>
   </main>
