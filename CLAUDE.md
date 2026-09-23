@@ -251,6 +251,10 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
 - `tests/buscador.test.js` — el buscador del autocompletado (sin tildes
   ni mayúsculas, por nombre/apellido/colegio, "ag" → Agustín primero) y el
   nombre que se ve de un bloque armado desde sus alumnos.
+- `tests/vincular-horario.test.js` — `vincularAlumnosEnHorario()`:
+  vincula por nombre y apellido sin tildes/mayúsculas, varios alumnos por
+  regla, deja sin tocar (y registra) lo no encontrado o ambiguo, no toca
+  otras áreas, reglas ya vinculadas ni otras columnas, y es idempotente.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -459,6 +463,18 @@ los alumnos que lo tenían.
   que falten una sola vez, y vincula. Vista previa con casillas: solo se
   aplica a las filas marcadas. Lo único que se descarta del título es el
   prefijo ("Clase con").
+- **Función manual `vincularAlumnosEnHorario()`** (`apps-script/Setup.gs`,
+  se ejecuta desde el editor de Apps Script): solo para las **reglas** de
+  `Horario` de Fractal con `alumno_id` vacío. Lee los nombres del título
+  (misma `extraerNombresDeTitulo`) y los busca en `Alumnos` por nombre y
+  apellido sin tildes/mayúsculas (solo nombre: vale si hay uno solo con
+  ese nombre). Varios nombres → vincula a todos. Si alguno no aparece o es
+  ambiguo, la fila queda **sin tocar** y se anota como pendiente. A
+  diferencia de la migración de Configuración, **no crea alumnos ni cambia
+  títulos**: solo escribe la columna `alumno_id`. El resultado (vinculadas
+  y pendientes con su motivo) queda en el registro de ejecución. Después
+  hay que tocar "Regenerar horario" para que los bloques ya generados
+  hereden los alumnos.
 
 ## API (acciones del Web App)
 
