@@ -97,7 +97,88 @@ const KodamaSemana = (function () {
     return String(Math.floor(minutos / 60)).padStart(2, '0') + ':' + String(minutos % 60).padStart(2, '0');
   }
 
-  function crearBloque(posicion, franja, indice, alTocar) {
+  // --- Huecos colapsables (solo celular) ------------------------------
+
+  // Un hueco se colapsa si está libre en TODOS los días visibles y dura
+  // MÁS de 2 horas. Colapsado ocupa lo que ocuparían estos minutos.
+  const HUECO_MINIMO = 120;
+  const ALTO_HUECO = 50;
+  // Se colapsa el hueco menos 30 min a cada lado: así un bloque corto
+  // pegado a un hueco (una llamada de 15 min) nunca queda tapado por la
+  // línea, y las horas de los bordes se leen.
+  const MARGEN_HUECO = 30;
+
+  /** La parte de un hueco que efectivamente se colapsa. */
+  function tramoColapsado(hueco) {
+    return { desde: hueco.desde + MARGEN_HUECO, hasta: hueco.hasta - MARGEN_HUECO, libre: hueco };
+  }
+
+  /**
+   * Tramos de la franja sin ningún bloque en ninguno de los días visibles
+   * (de cualquier área: las casillas "ocupado" también se dibujan) que
+   * duran más de HUECO_MINIMO. Devuelve [{ desde, hasta }] en minutos.
+   */
+  function calcularHuecos(bloques, franja) {
+    const tramos = bloques
+      .map(tramo)
+      .filter(Boolean)
+      .sort(function (a, b) { return a.inicio - b.inicio; });
+
+    const huecos = [];
+    let cursor = franja.desde;
+    tramos.forEach(function (t) {
+      if (t.inicio > cursor) huecos.push({ desde: cursor, hasta: t.inicio });
+      cursor = Math.max(cursor, t.fin);
+    });
+    if (franja.hasta > cursor) huecos.push({ desde: cursor, hasta: franja.hasta });
+
+    return huecos.filter(function (h) { return h.hasta - h.desde > HUECO_MINIMO; });
+  }
+
+  /**
+   * Pasa de minutos del día a "minutos de pantalla" (lo que después CSS
+   * multiplica por --escala-semana). Fuera de los huecos colapsados cada
+   * minuto mide lo mismo, así un bloque de 1 h mide la mitad que uno de
+   * 2 h; cada hueco colapsado mide ALTO_HUECO, sin importar cuánto dure.
+   */
+  function crearEscala(franja, colapsados) {
+    function y(minuto) {
+      let posicion = minuto - franja.desde;
+      colapsados.forEach(function (h) {
+        const largo = h.hasta - h.desde;
+        if (minuto >= h.hasta) {
+          posicion -= largo - ALTO_HUECO;
+        } else if (minuto > h.desde) {
+          const recorrido = minuto - h.desde;
+          posicion -= recorrido - ALTO_HUECO * recorrido / largo;
+        }
+      });
+      return posicion;
+    }
+    return { y: y, total: y(franja.hasta) };
+  }
+
+  function textoDuracion(minutos) {
+    const h = Math.floor(minutos / 60);
+    const m = minutos % 60;
+    return (h ? h + ' h' : '') + (h && m ? ' ' : '') + (m ? m + ' min' : '');
+  }
+
+  // Huecos que se tocaron para expandir: siguen expandidos mientras la app
+  // esté abierta (la clave es el horario, así sirve para cualquier semana).
+  const huecosExpandidos = {};
+
+  // --- Dibujo -----------------------------------------------------------
+
+  function ubicar(elemento, posicion, escala) {
+    const arriba = escala.y(posicion.inicio);
+    elemento.style.setProperty('--min-inicio', String(arriba));
+    elemento.style.setProperty('--min-duracion', String(escala.y(posicion.fin) - arriba));
+    elemento.style.setProperty('--columna', String(posicion.columna));
+    elemento.style.setProperty('--columnas', String(posicion.columnas));
+  }
+
+  function crearBloque(posicion, escala, indice, alTocar, solapado) {
     const bloque = posicion.bloque;
     const tipo = KodamaDia.normalizarTipo(bloque.tipo);
 
@@ -107,12 +188,12 @@ const KodamaSemana = (function () {
     if (posicion.fin - posicion.inicio < 45) {
       boton.classList.add('bloque-semana--corto');
     }
+    if (solapado) {
+      boton.classList.add('bloque--solapado');
+    }
     boton.style.setProperty('--color-bloque', KodamaDia.colorDeBloque(bloque));
-    boton.style.setProperty('--min-inicio', String(posicion.inicio - franja.desde));
-    boton.style.setProperty('--min-duracion', String(posicion.fin - posicion.inicio));
-    boton.style.setProperty('--columna', String(posicion.columna));
-    boton.style.setProperty('--columnas', String(posicion.columnas));
     boton.style.setProperty('--indice', String(indice));
+    ubicar(boton, posicion, escala);
     // Texto completo al pasar el mouse (los bloques cortos lo recortan).
     boton.title = (bloque.titulo || '(sin título)') + ' · ' + bloque.inicio + '–' + bloque.fin + ' · ' + bloque.area;
     if (alTocar) {
@@ -141,29 +222,76 @@ const KodamaSemana = (function () {
     return boton;
   }
 
+  /** Bloque de otra área en una capa filtrada: misma caja, solo "ocupado". */
+  function crearOcupado(posicion, escala) {
+    const caja = document.createElement('div');
+    caja.className = 'ocupado ocupado--semana';
+    ubicar(caja, posicion, escala);
+    const texto = document.createElement('span');
+    texto.className = 'ocupado__texto';
+    texto.textContent = 'ocupado';
+    caja.appendChild(texto);
+    return caja;
+  }
+
+  function crearHueco(colapsado, escala, alExpandir) {
+    const hueco = colapsado.libre; // el texto habla del tiempo libre completo
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'semana__hueco';
+    boton.style.setProperty('--min-inicio', String(escala.y(colapsado.desde)));
+    boton.style.setProperty('--min-duracion', String(ALTO_HUECO));
+    boton.setAttribute('aria-expanded', 'false');
+    const duracion = textoDuracion(hueco.hasta - hueco.desde);
+    boton.setAttribute('aria-label', duracion + ' libres, de ' + horaTexto(hueco.desde) +
+      ' a ' + horaTexto(hueco.hasta) + '. Tocar para expandir');
+
+    const principal = document.createElement('span');
+    principal.className = 'semana__hueco-texto';
+    principal.textContent = duracion + ' libres';
+    const rango = document.createElement('span');
+    rango.className = 'semana__hueco-rango';
+    rango.textContent = horaTexto(hueco.desde) + '–' + horaTexto(hueco.hasta);
+    boton.append(principal, rango);
+
+    boton.addEventListener('click', alExpandir);
+    return boton;
+  }
+
   /**
-   * opciones: { dias: [7 fechas], hoy, bloques (los de la capa), todos
-   * (sin filtrar: la franja horaria no cambia al cambiar de capa),
-   * ocupados (franjas de otras áreas), alTocar }
+   * opciones:
+   *   dias            fechas visibles (el rango elegido, por defecto lun–dom)
+   *   hoy
+   *   bloques         TODOS los bloques de esos días (todas las áreas)
+   *   esDeLaCapa(b)   true si el bloque es de la capa que se ve; los demás
+   *                   se dibujan como "ocupado" en la misma posición
+   *   alTocar(b)
+   *   colapsarHuecos  true en el celular
    */
   function render(contenedor, opciones) {
-    const franja = calcularFranja(opciones.todos || opciones.bloques);
+    const esDeLaCapa = opciones.esDeLaCapa || function () { return true; };
+    const franja = calcularFranja(opciones.bloques);
     const porDia = {};
-    const ocupadosPorDia = {};
-    opciones.dias.forEach(function (fecha) { porDia[fecha] = []; ocupadosPorDia[fecha] = []; });
+    opciones.dias.forEach(function (fecha) { porDia[fecha] = []; });
     opciones.bloques.forEach(function (bloque) {
       if (porDia[bloque.fecha]) porDia[bloque.fecha].push(bloque);
     });
-    (opciones.ocupados || []).forEach(function (ocupado) {
-      if (ocupadosPorDia[ocupado.fecha]) ocupadosPorDia[ocupado.fecha].push(ocupado);
-    });
+    const solapados = {};
+    KodamaDia.idsSolapados(opciones.bloques.filter(esDeLaCapa)).forEach(function (id) { solapados[id] = true; });
+
+    const colapsados = opciones.colapsarHuecos
+      ? calcularHuecos(opciones.bloques, franja)
+        .filter(function (h) { return !huecosExpandidos[h.desde + '-' + h.hasta]; })
+        .map(tramoColapsado)
+      : [];
+    const escala = crearEscala(franja, colapsados);
 
     contenedor.replaceChildren();
 
-    if (opciones.bloques.length === 0 && (opciones.ocupados || []).length === 0) {
+    if (opciones.bloques.length === 0) {
       const vacio = document.createElement('p');
       vacio.className = 'estado';
-      vacio.textContent = 'Semana libre. No hay bloques en estos 7 días.';
+      vacio.textContent = 'Días libres. No hay bloques en estas fechas.';
       contenedor.appendChild(vacio);
     }
 
@@ -172,9 +300,8 @@ const KodamaSemana = (function () {
 
     const grilla = document.createElement('div');
     grilla.className = 'semana';
-    grilla.style.setProperty('--minutos-franja', String(franja.hasta - franja.desde));
-    // Desfase de las líneas de hora cuando la franja no arranca en punto.
-    grilla.style.setProperty('--desfase-hora', String((60 - (franja.desde % 60)) % 60));
+    grilla.style.setProperty('--dias', String(opciones.dias.length));
+    grilla.style.setProperty('--minutos-franja', String(escala.total));
 
     // Fila de encabezados: esquina vacía + un encabezado por día.
     const esquina = document.createElement('div');
@@ -199,13 +326,24 @@ const KodamaSemana = (function () {
       grilla.appendChild(encabezado);
     });
 
-    // Columna de horas: una etiqueta en cada hora en punto de la franja.
+    // Sin etiqueta de hora dentro de un hueco colapsado ni pegada a sus
+    // bordes (quedaría cortada por la línea del hueco).
+    const dentroDeUnHueco = function (m) {
+      return colapsados.some(function (h) { return m >= h.desde - 15 && m <= h.hasta + 15; });
+    };
+
+    // Columna de horas: una etiqueta en cada hora en punto visible.
     const horas = document.createElement('div');
     horas.className = 'semana__horas';
+    // Líneas de hora, detrás de las columnas de los días.
+    const lineas = document.createElement('div');
+    lineas.className = 'semana__lineas';
+    lineas.setAttribute('aria-hidden', 'true');
     for (let m = Math.ceil(franja.desde / 60) * 60; m < franja.hasta; m += 60) {
+      if (dentroDeUnHueco(m)) continue;
       const etiqueta = document.createElement('span');
       etiqueta.className = 'semana__hora';
-      etiqueta.style.setProperty('--min-inicio', String(m - franja.desde));
+      etiqueta.style.setProperty('--min-inicio', String(escala.y(m)));
       // "07" + ":00": en el celular se oculta ":00" para ganar ancho.
       const texto = horaTexto(m).split(':');
       const hora = document.createElement('span');
@@ -215,35 +353,57 @@ const KodamaSemana = (function () {
       minutos.textContent = ':' + texto[1];
       etiqueta.append(hora, minutos);
       horas.appendChild(etiqueta);
+
+      const linea = document.createElement('div');
+      linea.className = 'semana__linea';
+      linea.style.setProperty('--min-inicio', String(escala.y(m)));
+      lineas.appendChild(linea);
     }
+    // Ubicación explícita en la fila 2: varias capas comparten celdas.
+    horas.style.gridArea = '2 / 1';
+    lineas.style.gridArea = '2 / 2 / 3 / -1';
     grilla.appendChild(horas);
+    grilla.appendChild(lineas);
 
     let indice = 0;
-    opciones.dias.forEach(function (fecha) {
+    opciones.dias.forEach(function (fecha, i) {
       const columna = document.createElement('div');
       columna.className = 'semana__columna';
+      columna.style.gridArea = '2 / ' + (i + 2);
       if (fecha === opciones.hoy) columna.classList.add('semana__columna--hoy');
-      ocupadosPorDia[fecha].forEach(function (ocupado) {
-        const t = tramo(ocupado);
-        if (!t) return;
-        const banda = document.createElement('div');
-        banda.className = 'semana__ocupado';
-        banda.setAttribute('aria-hidden', 'true');
-        banda.style.setProperty('--min-inicio', String(t.inicio - franja.desde));
-        banda.style.setProperty('--min-duracion', String(t.fin - t.inicio));
-        columna.appendChild(banda);
-      });
+      // Se reparte el ancho con TODOS los bloques del día, así cada casilla
+      // "ocupado" queda justo donde está el bloque real en General.
       distribuir(porDia[fecha]).forEach(function (posicion) {
-        columna.appendChild(crearBloque(posicion, franja, indice++, opciones.alTocar));
+        if (esDeLaCapa(posicion.bloque)) {
+          columna.appendChild(crearBloque(posicion, escala, indice++, opciones.alTocar,
+            solapados[posicion.bloque.id]));
+        } else {
+          columna.appendChild(crearOcupado(posicion, escala));
+        }
       });
       grilla.appendChild(columna);
     });
 
+    // Huecos colapsados: una línea a todo el ancho, encima de la grilla.
+    if (colapsados.length) {
+      const capaHuecos = document.createElement('div');
+      capaHuecos.className = 'semana__capa-huecos';
+      capaHuecos.style.gridArea = '2 / 1 / 3 / -1';
+      colapsados.forEach(function (colapsado) {
+        const hueco = colapsado.libre;
+        capaHuecos.appendChild(crearHueco(colapsado, escala, function () {
+          huecosExpandidos[hueco.desde + '-' + hueco.hasta] = true;
+          render(contenedor, opciones);
+        }));
+      });
+      grilla.appendChild(capaHuecos);
+    }
+
     desplazable.appendChild(grilla);
     contenedor.appendChild(desplazable);
 
-    // En pantallas angostas la semana se desplaza de costado: arrancar
-    // mostrando el día de hoy, no siempre el lunes.
+    // En pantallas medianas la semana se desplaza de costado: arrancar
+    // mostrando el día de hoy, no siempre el primero.
     const columnaHoy = grilla.querySelector('.semana__columna--hoy');
     if (columnaHoy && desplazable.scrollWidth > desplazable.clientWidth) {
       const distancia = columnaHoy.getBoundingClientRect().left - desplazable.getBoundingClientRect().left;
@@ -253,9 +413,15 @@ const KodamaSemana = (function () {
 
   return {
     render: render,
-    // Expuestas solo para las pruebas (tests/semana.test.js): son la lógica
-    // pura que decide dónde y de qué ancho se dibuja cada bloque.
+    // Expuestas solo para las pruebas (tests/semana.test.js y
+    // tests/huecos.test.js): son la lógica pura que decide dónde y de qué
+    // tamaño se dibuja cada cosa.
     calcularFranja: calcularFranja,
-    distribuir: distribuir
+    distribuir: distribuir,
+    calcularHuecos: calcularHuecos,
+    tramoColapsado: tramoColapsado,
+    crearEscala: crearEscala,
+    HUECO_MINIMO: HUECO_MINIMO,
+    ALTO_HUECO: ALTO_HUECO
   };
 })();

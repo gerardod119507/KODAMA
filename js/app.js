@@ -6,6 +6,11 @@
   const selectorCapa = document.getElementById('capa');
   const botonDia = document.getElementById('modo-dia');
   const botonSemana = document.getElementById('modo-semana');
+  const barraRango = document.getElementById('barra-rango');
+  const rangoDesde = document.getElementById('rango-desde');
+  const rangoHasta = document.getElementById('rango-hasta');
+  // Celular: la semana compacta colapsa los huecos largos (en escritorio no).
+  const pantallaCelular = window.matchMedia('(max-width: 699px)');
 
   const config = KodamaApi.leerConfig();
   if (!config.url || !config.token) {
@@ -26,6 +31,8 @@
   KodamaState.limpiarCachesViejas();
 
   let modo = KodamaVista.leer(window.innerWidth);
+  // Días visibles en la semana (0 = lunes … 6 = domingo).
+  let rango = KodamaVista.rangoCompleto();
   // Día que se ve (modo día) o cualquier día de la semana que se ve.
   let fecha = KodamaFecha.hoy();
   // Siempre se tiene en memoria la semana completa (lunes a domingo) que
@@ -46,45 +53,72 @@
     return capa === 'General' ? 'Universidad' : capa;
   }
 
-  /** Fecha para un bloque nuevo: el día visto, o hoy si cae en la semana vista. */
+  function diasVisibles() {
+    return KodamaVista.diasVisibles(semana(fecha).dias, rango);
+  }
+
+  /** Fecha para un bloque nuevo: el día visto, o hoy si está entre los días visibles. */
   function fechaPorDefecto() {
     if (modo === 'dia') return fecha;
-    const dias = semana(fecha).dias;
+    const dias = diasVisibles();
     const hoy = KodamaFecha.hoy();
     return dias.indexOf(hoy) !== -1 ? hoy : dias[0];
+  }
+
+  /** Opciones "lun 21" … "dom 27" de la semana vista, en los dos selectores. */
+  function pintarSelectorRango() {
+    const dias = semana(fecha).dias;
+    [rangoDesde, rangoHasta].forEach(function (selector) {
+      selector.replaceChildren();
+      dias.forEach(function (dia, indice) {
+        const opcion = document.createElement('option');
+        opcion.value = String(indice);
+        opcion.textContent = KodamaFecha.diaCorto(dia);
+        selector.appendChild(opcion);
+      });
+    });
+    rangoDesde.value = String(rango.desde);
+    rangoHasta.value = String(rango.hasta);
   }
 
   function pintarEncabezado() {
     document.body.classList.toggle('modo-semana', modo === 'semana');
     botonDia.setAttribute('aria-pressed', String(modo === 'dia'));
     botonSemana.setAttribute('aria-pressed', String(modo === 'semana'));
+    barraRango.hidden = modo !== 'semana';
     if (modo === 'dia') {
       encabezadoFecha.textContent = KodamaFecha.legible(fecha);
     } else {
-      const s = semana(fecha);
-      encabezadoFecha.textContent = 'Semana del ' + KodamaFecha.rangoLegible(s.lunes, s.domingo);
+      const dias = diasVisibles();
+      const completa = dias.length === 7;
+      encabezadoFecha.textContent = (completa ? 'Semana del ' : '') +
+        KodamaFecha.rangoLegible(dias[0], dias[dias.length - 1]);
+      pintarSelectorRango();
     }
   }
 
   function renderizar() {
     const capa = selectorCapa.value;
+    // En una capa filtrada, los bloques de otras áreas se dibujan como
+    // "ocupado" en su misma posición (por eso se pasan todos).
+    const esDeLaCapa = function (bloque) { return KodamaCapas.esDeLaCapa(bloque, capa); };
     if (modo === 'dia') {
-      const delDia = bloquesSemana.filter(function (b) { return b.fecha === fecha; });
-      KodamaDia.render(contenedor, KodamaCapas.filtrar(delDia, capa), {
+      KodamaDia.render(contenedor, bloquesSemana.filter(function (b) { return b.fecha === fecha; }), {
         // Los bocetos del espíritu solo se comparan mientras no haya una
         // elección — no depende de si hay o no bloques ese día en particular.
         compararBocetos: true,
-        ocupados: KodamaCapas.ocupadosPorOtras(delDia, capa),
+        esDeLaCapa: esDeLaCapa,
         alTocar: KodamaFicha.abrir
       });
     } else {
+      const dias = diasVisibles();
       KodamaSemana.render(contenedor, {
-        dias: semana(fecha).dias,
+        dias: dias,
         hoy: KodamaFecha.hoy(),
-        bloques: KodamaCapas.filtrar(bloquesSemana, capa),
-        todos: bloquesSemana,
-        ocupados: KodamaCapas.ocupadosPorOtras(bloquesSemana, capa),
-        alTocar: KodamaFicha.abrir
+        bloques: bloquesSemana.filter(function (b) { return dias.indexOf(b.fecha) !== -1; }),
+        esDeLaCapa: esDeLaCapa,
+        alTocar: KodamaFicha.abrir,
+        colapsarHuecos: pantallaCelular.matches
       });
     }
   }
@@ -224,7 +258,26 @@
   document.getElementById('siguiente').addEventListener('click', function () { mover(1); });
   document.getElementById('ir-hoy').addEventListener('click', function () {
     fecha = KodamaFecha.hoy();
-    cargar(); // "Hoy" siempre refresca
+    rango = KodamaVista.rangoCompleto(); // "Hoy" vuelve a la semana completa
+    cargar(); // y siempre refresca
+  });
+
+  // Elegir los días: solo cambia qué parte de la semana (ya en memoria) se
+  // dibuja, así que no pide nada al Web App.
+  rangoDesde.addEventListener('change', function () {
+    rango = KodamaVista.ajustarRango(rango, 'desde', rangoDesde.value);
+    pintarEncabezado();
+    renderizar();
+  });
+  rangoHasta.addEventListener('change', function () {
+    rango = KodamaVista.ajustarRango(rango, 'hasta', rangoHasta.value);
+    pintarEncabezado();
+    renderizar();
+  });
+
+  // Girar el celular o cambiar el ancho de la ventana: colapsar o no.
+  pantallaCelular.addEventListener('change', function () {
+    if (modo === 'semana') renderizar();
   });
 
   // Al volver a la app (desde otra app o pestaña), se refresca por detrás.

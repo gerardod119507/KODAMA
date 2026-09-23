@@ -28,5 +28,40 @@ const KodamaVista = (function () {
     }
   }
 
-  return { MODOS: MODOS, leer: leer, guardar: guardar };
+  // --- Rango de días en la vista de semana -----------------------------
+  // Índices dentro de la semana: 0 = lunes … 6 = domingo. Por defecto la
+  // semana completa. No se guarda en el dispositivo: al abrir la app, o al
+  // tocar "Hoy", vuelve a lunes–domingo.
+  function rangoCompleto() {
+    return { desde: 0, hasta: 6 };
+  }
+
+  /**
+   * Nuevo rango después de cambiar uno de los extremos. Si el cambio deja
+   * "desde" después de "hasta", el otro extremo se mueve para acompañarlo
+   * (elegir "del sábado" con "al jueves" pasa a "del sábado al sábado").
+   */
+  function ajustarRango(rango, extremo, valor) {
+    const nuevo = { desde: rango.desde, hasta: rango.hasta };
+    nuevo[extremo] = Math.max(0, Math.min(6, Number(valor)));
+    if (nuevo.desde > nuevo.hasta) {
+      if (extremo === 'desde') nuevo.hasta = nuevo.desde;
+      else nuevo.desde = nuevo.hasta;
+    }
+    return nuevo;
+  }
+
+  /** Las fechas visibles: la parte del rango dentro de los 7 días. */
+  function diasVisibles(diasSemana, rango) {
+    return diasSemana.slice(rango.desde, rango.hasta + 1);
+  }
+
+  return {
+    MODOS: MODOS,
+    leer: leer,
+    guardar: guardar,
+    rangoCompleto: rangoCompleto,
+    ajustarRango: ajustarRango,
+    diasVisibles: diasVisibles
+  };
 })();

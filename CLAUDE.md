@@ -219,8 +219,9 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
 - `tests/horario.test.js` — el generador: expansión de días a fechas,
   días con y sin tilde, límites de `desde`/`hasta`, respeto del pasado al
   regenerar, idempotencia, y convivencia con lo editado a mano.
-- `tests/frontend.test.js` — lógica pura del navegador: filtro de capas y
-  agrupación de bloques que se pisan.
+- `tests/frontend.test.js` — lógica pura del navegador: filtro de capas
+  (qué se muestra completo y qué como "ocupado") y agrupación de bloques
+  que se pisan.
 - `tests/escritura.test.js` — las acciones de escritura del Checkpoint 5:
   crear/editar/archivar bloques y reglas, validaciones que fallan sin tocar
   la hoja, y que todas exijan token.
@@ -230,6 +231,10 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   resultados correctos, que la estructura se verifique una vez (y de nuevo
   tras un error o un cambio de columnas), la caché por semana del
   navegador y "Duplicar".
+- `tests/huecos.test.js` — ajustes de la semana: rango de días elegible,
+  qué huecos se colapsan (más de 2 h, libres en todos los días visibles),
+  que las alturas sigan proporcionales con huecos colapsados, y qué bloques
+  llevan el borde de superposición.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -508,6 +513,14 @@ una pantalla de 900px o más arranca en semana y el celular en día.
 
 - **Navegación:** `‹` / `›` mueven 1 día en modo día y 7 días en modo
   semana; "Hoy" vuelve a la fecha actual. La semana va de lunes a domingo.
+- **Rango de días elegible** (selector "Días del … al …", solo en modo
+  semana): por defecto lunes a domingo; se puede elegir, por ejemplo, solo
+  jueves a sábado y la grilla muestra esas columnas (`--dias` en CSS). Es
+  un rango de días **de la semana** (índices 0–6 en `KodamaVista`), así
+  que `‹`/`›` siguen moviendo de a 7 días y muestran jueves a sábado de la
+  otra semana. "Hoy" vuelve a lunes–domingo. No se guarda en el
+  dispositivo: al abrir la app siempre es la semana completa. Elegir días
+  no pide nada al Web App (la semana entera ya está en memoria).
   Las fechas se calculan en UTC puro (`KodamaFecha.sumarDias`,
   `diasDeSemana`) por el mismo motivo que el generador: una fecha es un día
   de calendario, no un instante.
@@ -528,10 +541,19 @@ una pantalla de 900px o más arranca en semana y el celular en día.
   borde e ícono de tipo, y el título cortado en sílabas (`hyphens: auto`,
   `lang="es"`) sin el horario. El título completo está en la ficha. En
   pantallas de 700px o más la semana queda igual que en el Checkpoint 6.
-- Tocar un bloque abre el mismo editor del Checkpoint 5. Un bloque nuevo
-  desde la semana toma hoy si hoy está en la semana vista, si no el lunes.
-- Caché de lectura offline propia por rango
-  (`kodama.cache.rango.<desde>.<hasta>`), igual que la del día.
+- **Huecos colapsados (solo celular, `max-width: 699px`):** si una franja
+  está vacía en **todos** los días visibles y dura **más de 2 horas**, se
+  colapsa en una línea fina ("3 h libres · 12:00–15:00") que se toca para
+  expandirla. Se colapsa el hueco menos 30 min a cada lado, para que un
+  bloque corto pegado al hueco nunca quede tapado. La posición vertical la
+  calcula `crearEscala()` en JS: fuera de los huecos cada minuto mide lo
+  mismo (una clase de 1 h mide la mitad que una de 2 h) y cada hueco
+  colapsado mide un alto fijo. Por eso las líneas de hora son elementos y
+  no un fondo repetido. Un hueco expandido sigue expandido mientras la app
+  esté abierta. En escritorio no se colapsa nada.
+- Tocar un bloque abre su ficha (ver "Escritura desde la app"). Un bloque
+  nuevo desde la semana toma hoy si hoy está entre los días visibles; si
+  no, el primero visible.
 
 ## Capas (vista de día y de semana)
 
@@ -541,22 +563,27 @@ que ya trajo `listarBloquesDia` o `listarBloquesRango` — no pega otra vez al W
 cambiar de capa es instantáneo. `General` muestra todo, sin filtrar. La
 capa elegida se guarda en `localStorage` (dispositivo), no en el Sheet.
 
-**Horas ocupadas por otras áreas** (Checkpoint 6.5): en una capa filtrada,
-los bloques de las otras áreas se ven como una **franja gris tenue** (token
-`--ocupado`), sin título, sin área y sin aviso — en la semana, una banda
-detrás de los bloques; en el día, una línea delgada con solo el horario.
-`KodamaCapas.ocupadosPorOtras()` funde en una sola franja las que se pisan
-o se tocan el mismo día. En `General` no hay franjas. La franja horaria de
-la semana se calcula con **todos** los bloques, así la grilla no salta al
-cambiar de capa.
+**Bloques de otras áreas → "ocupado"**: en una capa filtrada, cada bloque
+de otra área se dibuja como una casilla **en la misma posición y del mismo
+tamaño** que el bloque real (el reparto lado a lado se calcula con todos los
+bloques del día, igual que en General), que solo dice "ocupado": sin
+título, sin área, sin horario, y no se puede tocar. Se ve con rayado
+diagonal tenue (`--ocupado-raya`) y una barra vertical saturada
+(`--ocupado-barra`, gris azulado para no confundirse con ningún color de
+área) en claro y en oscuro. En `General` no hay casillas "ocupado". La
+franja horaria de la semana se calcula con todos los bloques, así la
+grilla no salta al cambiar de capa.
 
-**Sin avisos de choques ni solapamientos, en ninguna capa** (decisión
-explícita del alcance): si dos bloques comparten horario, `js/ui/dia.js`
-los agrupa en la misma fila visual y los pinta lado a lado
-(`.fila-simultanea` en `css/styles.css`) — nada más. La agrupación es por
-**cadena** de solapamiento (si A se pisa con B y B con C, los 3 van
-juntos), calculada sobre los bloques ya ordenados por `inicio` que devuelve
-el backend.
+**Superposición: sin avisos, solo un borde.** Si dos bloques de la capa que
+se está viendo (en General, cualquiera) se pisan de verdad —uno empieza
+antes de que el otro termine; tocarse no cuenta—, los dos llevan un borde
+con el color de reunión (`--tipo-reunion`, `#9D3D2E`) arriba, a la derecha
+y abajo; a la izquierda sigue la barra del área. `KodamaDia.idsSolapados()`
+decide cuáles, en día y en semana. No hay texto, ícono ni alerta. Los
+bloques que se pisan se siguen dibujando lado a lado: en el día,
+`js/ui/dia.js` los agrupa en la misma fila visual (`.fila-simultanea`),
+agrupando por **cadena** de solapamiento (si A se pisa con B y B con C, los
+3 van juntos).
 
 ## Paleta y tema
 

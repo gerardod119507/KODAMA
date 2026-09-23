@@ -142,44 +142,16 @@ test('una lista vacía no produce filas', () => {
 });
 
 // ---------------------------------------------------------------
-// Capa filtrada: horas ocupadas por otras áreas (franja gris, sin título)
+// Capa filtrada: los bloques de otras áreas se dibujan como "ocupado"
 // ---------------------------------------------------------------
 
-function conFecha(fecha, inicio, fin, area) {
-  return Object.assign(bloque(inicio, fin, area), { fecha: fecha });
-}
-
-test('en General no hay franjas de ocupado', () => {
+test('en General todos los bloques se muestran completos', () => {
   const env = cargarModulos(MODULOS_CAPAS);
-  const bloques = [conFecha('2026-09-23', '09:00', '10:00', 'Universidad')];
-  assert.deepStrictEqual(env.ejecutar('KodamaCapas.ocupadosPorOtras(__arg, "General")', bloques), []);
+  assert.strictEqual(env.ejecutar('KodamaCapas.esDeLaCapa(__arg, "General")', bloque('09:00', '10:00', 'Personal')), true);
 });
 
-test('en una capa, las otras áreas quedan como franjas sin título ni área', () => {
+test('en una capa, solo los de esa área se muestran completos; el resto es "ocupado"', () => {
   const env = cargarModulos(MODULOS_CAPAS);
-  const bloques = [
-    conFecha('2026-09-23', '09:00', '10:00', 'Universidad'),
-    conFecha('2026-09-23', '11:00', '12:00', 'Startup'),
-    conFecha('2026-09-24', '15:00', '16:00', 'Personal')
-  ];
-  assert.deepStrictEqual(env.ejecutar('KodamaCapas.ocupadosPorOtras(__arg, "Startup")', bloques), [
-    { fecha: '2026-09-23', inicio: '09:00', fin: '10:00' },
-    { fecha: '2026-09-24', inicio: '15:00', fin: '16:00' }
-  ]);
-});
-
-test('las franjas que se pisan o se tocan el mismo día se funden en una', () => {
-  const env = cargarModulos(MODULOS_CAPAS);
-  const bloques = [
-    conFecha('2026-09-23', '09:00', '10:00', 'Universidad'),
-    conFecha('2026-09-23', '09:30', '11:00', 'Personal'),
-    conFecha('2026-09-23', '11:00', '11:30', 'Academia Fractal'),
-    conFecha('2026-09-23', '14:00', '15:00', 'Universidad'),
-    conFecha('2026-09-24', '09:00', '10:00', 'Universidad')
-  ];
-  assert.deepStrictEqual(env.ejecutar('KodamaCapas.ocupadosPorOtras(__arg, "Startup")', bloques), [
-    { fecha: '2026-09-23', inicio: '09:00', fin: '11:30' },
-    { fecha: '2026-09-23', inicio: '14:00', fin: '15:00' },
-    { fecha: '2026-09-24', inicio: '09:00', fin: '10:00' }
-  ]);
+  assert.strictEqual(env.ejecutar('KodamaCapas.esDeLaCapa(__arg, "Startup")', bloque('09:00', '10:00', 'Startup')), true);
+  assert.strictEqual(env.ejecutar('KodamaCapas.esDeLaCapa(__arg, "Startup")', bloque('09:00', '10:00', 'Personal')), false);
 });
