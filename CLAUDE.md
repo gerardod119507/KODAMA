@@ -44,7 +44,7 @@ Además existen las **reuniones imprevistas**, que no son un área: son un
   token, ver logs de ejecución).
 - **Frontend:** HTML + CSS + JavaScript vanilla. Sin frameworks, sin build
   step. Publicado en GitHub Pages.
-- **PWA** instalable en el celular (manifest + service worker) — checkpoint 7.
+- **PWA** instalable en el celular (manifest + service worker) — checkpoint 8.
 - **Mobile-first.** Uso principal: celular. El dictado por voz usa el
   micrófono del teclado del móvil, así que basta con buenos campos de texto;
   no hace falta integrar reconocimiento de voz en la app.
@@ -236,6 +236,21 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   qué huecos se colapsan (más de 2 h, libres en todos los días visibles),
   que las alturas sigan proporcionales con huecos colapsados, y qué bloques
   llevan el borde de superposición.
+- `tests/alumnos.test.js` — Checkpoint 7: hojas `Alumnos`/`Cursos`/
+  `Colegios`, alta/edición/archivo con sus validaciones (catálogo, tarifa,
+  forma de pago, duplicados), renombrar un catálogo actualiza a los
+  alumnos, bloques y reglas con `alumno_id` (título opcional), el
+  generador copia los alumnos, y la **migración** de los bloques de
+  Fractal con el nombre en el título (vista previa sin escribir, cada
+  alumno creado una sola vez, nada perdido, filas elegidas).
+- `tests/importar.test.js` — el importador: encabezados en cualquier
+  orden o sin encabezado, vista previa sin escribir, filas malas señaladas
+  sin frenar el resto, sin duplicar (ni contra la hoja ni dentro de lo
+  pegado), catálogos nuevos propuestos, y reglas del horario con alumnos
+  por nombre.
+- `tests/buscador.test.js` — el buscador del autocompletado (sin tildes
+  ni mayúsculas, por nombre/apellido/colegio, "ag" → Agustín primero) y el
+  nombre que se ve de un bloque armado desde sus alumnos.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -300,6 +315,13 @@ Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
   `insertColumnBefore` — corre las columnas existentes sin tocar ninguna
   fila. Si la hoja ya tiene `etiqueta`, no hace nada (idempotente).
 
+- **`alumno_id`** (Checkpoint 7): ids de la hoja `Alumnos` separados por
+  coma (una clase puede tener varios alumnos). Va **al final** (columna
+  13), agregada sola con `migrarColumnaAlFinal()` para no mover ninguna
+  columna existente. Con alumnos, el `título` es opcional y guarda solo un
+  tema ("Física"): **el nombre del alumno no vive en el título**, se arma
+  desde el vínculo (ver "Alumnos").
+
 ### Hoja `Horario` (Checkpoint 4)
 Columnas: `id`, `título`, `área`, `días`, `inicio`, `fin`, `desde`, `hasta`,
 `etiqueta`, `notas`, `archivado`. Cada fila es una **regla** ("esta clase se repite estos
@@ -323,6 +345,10 @@ días, entre estas fechas"), no una clase puntual.
 - **`inicio`/`fin`**: `HH:mm`. **`desde`/`hasta`**: `YYYY-MM-DD`. Mismo
   formato de texto que en `Bloques`, mismo motivo (Sheets no debe
   autoconvertirlas).
+- **`alumno_id`** (Checkpoint 7): igual que en `Bloques`, al final
+  (columna 12). El generador lo copia a cada bloque que crea y lo refresca
+  en los que actualiza, igual que el título. Una fila sin título pero con
+  alumnos es una regla válida.
 - **`archivado`** (Checkpoint 5): `TRUE` o vacío. Una regla archivada deja
   de generar bloques, y sus bloques futuros se archivan en la próxima
   corrida. Se agregó **al final** de la hoja (no en el medio) para no mover
@@ -364,6 +390,75 @@ ese resumen.
 archiva esa fila específica directamente en `Bloques`, nunca se edita
 `Horario` para eso — `Horario` son las reglas generales, no el detalle de
 cada semana.
+
+### Hoja `Alumnos` y catálogos `Cursos` / `Colegios` (Checkpoint 7)
+
+`Alumnos`: `id`, `nombre`, `apellido`, `curso`, `colegio`, `tarifa_hora`,
+`forma_calculo`, `forma_pago`, `notas`, `archivado`. Todo en formato texto.
+
+- **`id`**: `a` + 8 hexadecimales, lo pone el backend.
+- **`curso` y `colegio` guardan el nombre COMPLETO** del catálogo; la app
+  muestra el código corto ("Agustín Aliendre — 4to SA"). Al guardar se
+  acepta cualquiera de los dos ("SA" o "Unidad Educativa San Agustín", sin
+  importar tildes ni mayúsculas) y se guarda el completo.
+- **`forma_calculo`** es siempre `hora` (cómo se calcula lo que se debe).
+  **`forma_pago`** es `hora` o `mensual` (cuándo se cobra). Son cosas
+  distintas: un alumno puede calcularse por hora y pagar por mes.
+- **La tarifa es por alumno, nunca por grupo:** si dos hermanas comparten
+  una clase, el bloque tiene los dos ids y cada una suma su propia tarifa.
+- **Duplicados:** no puede haber dos alumnos con el mismo nombre y
+  apellido (sin tildes/mayúsculas). **Archivar, nunca borrar.**
+
+`Cursos` y `Colegios`: columnas `nombre`, `corto`. Se crean con valores
+iniciales (secundaria 1ro–6to y universidad 1er–5to año; San Agustín = SA,
+Colegio Poveda = Poveda, UCB) y se editan desde la pantalla de Alumnos. Si
+cambia el nombre completo, `guardarCatalogo` lo cambia también en todos
+los alumnos que lo tenían.
+
+## Alumnos en la app (Checkpoint 7)
+
+- **Pantalla `alumnos.html`** (`js/alumnos-pagina.js`): lista con
+  buscador, "Mostrar archivados", crear/editar/archivar, y los catálogos
+  de cursos y colegios.
+- **`js/alumnos.js` (`KodamaAlumnos`)**: el directorio (alumnos +
+  catálogos, una sola llamada `listarAlumnos`, guardado en el dispositivo
+  y refrescado por detrás), el buscador y `tituloDeBloque()`: con alumnos,
+  el nombre que se ve es "Agustín Aliendre — 4to SA" (uno) o "Camila
+  Aliendre, Lucía Aliendre" (varios), más " · tema" si hay título. La
+  grilla y la ficha usan ese nombre (`tituloMostrado`, armado en copias
+  por `app.js`, nunca guardado).
+- **Buscador:** cada palabra escrita tiene que aparecer en nombre,
+  apellido o colegio (nombre completo o código), sin tildes ni
+  mayúsculas; primero los que tienen una palabra que *empieza* con lo
+  escrito ("ag" → Agustín), después los que solo la contienen. Los
+  archivados no se sugieren.
+- **Campo de alumnos** (`js/ui/selector-alumnos.js`), en el formulario de
+  bloques y en el de reglas, solo cuando el área es Academia Fractal (el
+  título pasa a "Tema (opcional)"): sugerencias mientras se escribe
+  (flechas/Enter/Escape o tocando), varios alumnos por clase, y "+ Crear
+  alumno" abre un mini formulario **dentro del mismo diálogo**. Si el
+  área cambia a otra, la clase se guarda sin alumnos.
+- **Importador** (Configuración, `js/importar.js` + `Importar.gs`): se
+  pegan filas separadas por tabulación (copiadas de una tabla o un Sheet),
+  modo Alumnos o Reglas del horario. Si la primera fila tiene nombres de
+  columna conocidos, se usan (cualquier orden); si no, orden por defecto.
+  Siempre **vista previa** (crear / actualizar / sin cambios / error, cada
+  una con su motivo) y después "Importar N filas". Una fila mala no frena
+  al resto. Duplicados por nombre+apellido: actualiza solo los campos que
+  vienen con algo, nunca duplica; repetidos dentro de lo pegado se marcan.
+  Un curso o colegio desconocido se propone para el catálogo (código corto
+  = el mismo texto, editable). En reglas, los alumnos van por nombre y
+  tienen que existir; fechas `dd/mm/aaaa` y horas `9:00` se aceptan. Los
+  datos van solo al Sheet, nunca al repo.
+- **Migración de lo existente** (Configuración → "Vincular alumnos en
+  clases de Fractal", acción `migrarAlumnosFractal`): busca bloques y
+  reglas de Fractal sin `alumno_id` con el nombre en el título, saca los
+  nombres (`extraerNombresDeTitulo`: quita "Clase con/de…", separa por
+  coma/"y"/"/", "Camila y Lucía Aliendre" comparten apellido, lo que va
+  después de " - " queda como tema), reusa alumnos existentes, crea los
+  que falten una sola vez, y vincula. Vista previa con casillas: solo se
+  aplica a las filas marcadas. Lo único que se descarta del título es el
+  prefijo ("Clase con").
 
 ## API (acciones del Web App)
 
@@ -429,6 +524,23 @@ con el código, el código manda:
   excepción a "archivar en vez de borrar": existe para limpiar datos de
   prueba sin editar el Sheet a mano. Sin `idSerie` falla; nunca borra
   bloques que no pertenezcan a una serie (reuniones, bloques manuales).
+- `listarAlumnos` — sin parámetros. Devuelve `{ alumnos, cursos,
+  colegios }` en una sola llamada (alumnos archivados incluidos).
+- `crearAlumno` — parámetro `alumno` (`nombre`, `apellido`, `curso`,
+  `colegio`, `tarifa_hora`, `forma_pago`, `notas`). Valida y rechaza
+  duplicados por nombre+apellido.
+- `actualizarAlumno` — `id` y `cambios` (solo los campos que vienen).
+- `archivarAlumno` — `id`. Nunca borra.
+- `guardarCatalogo` — `tipo` (`cursos`/`colegios`), `item: { nombre,
+  corto }` y opcional `anterior` (nombre completo actual, para editar).
+- `importar` — `modo` (`alumnos`/`horario`), `texto` (filas con
+  tabulaciones) y `aplicar` (`false` = vista previa). Devuelve `{ resumen,
+  filas: [{ numero, estado, detalle }], catalogosNuevos }`.
+- `migrarAlumnosFractal` — `aplicar` y opcional `ids` (filas elegidas).
+  Devuelve `{ alumnosNuevos, filas, sinResolver }`.
+- `crearBloque`/`actualizarBloque` y `crearRegla`/`actualizarRegla`
+  aceptan además `alumno_id` (ids separados por coma); con alumnos, el
+  título es opcional. Un id que no existe falla con `alumno_no_encontrado`.
 
 Se agrega una acción por checkpoint; esta lista se mantiene al día.
 
@@ -678,7 +790,7 @@ Universidad, da 2.54:1. `css/styles.css` define variantes más claras (mismo
 matiz, más luminosidad) solo bajo `[data-theme="dark"]`, todas por encima de
 4.5:1. En modo claro se usan los valores de la paleta sin cambios (ya dan
 5.2–6.4:1 sobre `bone`). El modo oscuro todavía no tiene un botón que lo
-active (eso es el Checkpoint 7); los tokens ya están listos para cuando lo
+active (eso es el Checkpoint 8); los tokens ya están listos para cuando lo
 tenga.
 
 ## Alcance del MVP
@@ -693,7 +805,11 @@ tenga.
 5. Editar y archivar bloques (nunca borrar).
 6. Tema claro/oscuro con la paleta de arriba, contraste WCAG AA.
 
-**Fuera de alcance por ahora:** estudiantes, kanban, buscador global, drag &
+7. Alumnos de Academia Fractal (Checkpoint 7): ficha de cada alumno,
+   vínculo con clases e importador.
+
+**Fuera de alcance por ahora:** cobros/pagos (la tarifa ya está, el
+cálculo de lo que se debe todavía no), kanban, buscador global, drag &
 drop, notificaciones, cola offline.
 
 ## Estructura de carpetas
@@ -709,9 +825,10 @@ KODAMA/
 ├── tests/                   # pruebas con el runner de Node (ver "Pruebas automáticas")
 ├── index.html              # vista de día/semana + alta/edición de bloques
 ├── horario.html            # editor de las reglas del semestre
-├── config.html             # URL del Web App + token, y prueba de conexión
-├── manifest.webmanifest    # PWA (checkpoint 7)
-├── sw.js                   # service worker (checkpoint 7)
+├── config.html             # URL del Web App + token, prueba de conexión, importador
+├── alumnos.html            # alumnos de Fractal + catálogos de cursos y colegios
+├── manifest.webmanifest    # PWA (checkpoint 8)
+├── sw.js                   # service worker (checkpoint 8)
 ├── css/
 │   └── styles.css
 ├── js/
@@ -723,11 +840,15 @@ KODAMA/
 │   ├── fecha.js                # fecha "hoy" y formato legible en America/La_Paz
 │   ├── capas.js                 # selector de capa (día y semana): leer/guardar/filtrar
 │   ├── vista.js                 # modo día/semana, recordado en el dispositivo
+│   ├── alumnos.js               # directorio de alumnos, buscador, nombre visible de un bloque
+│   ├── alumnos-pagina.js        # lógica de alumnos.html
+│   ├── importar.js              # importador y vinculación (en config.html)
 │   └── ui/
 │       ├── dia.js                # vista de día (grilla de una columna) y estados vacío/carga/error
 │       ├── semana.js             # grilla de semana: días × horas
 │       ├── formulario.js          # diálogo de alta/edición/mover/duplicar
 │       ├── ficha.js               # ficha de solo lectura al tocar un bloque
+│       ├── selector-alumnos.js    # campo de alumnos con autocompletado
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
 ├── icons/                   # íconos PWA
@@ -736,7 +857,9 @@ KODAMA/
 │   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
 │   ├── Bloques.gs             # crear/editar/archivar bloques desde la app
 │   ├── Setup.gs               # configurarHojas() y generarToken(), un solo uso
-│   └── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
+│   ├── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
+│   ├── Alumnos.gs             # hojas Alumnos/Cursos/Colegios, ABM y migración de Fractal
+│   └── Importar.gs            # importador de filas pegadas (alumnos y reglas)
 ├── docs/
 │   ├── setup-google.md      # pasos exactos para Sheet + Apps Script
 │   ├── datos-prueba.md       # cómo cargar bloques de prueba a mano
@@ -757,6 +880,7 @@ antes.
    `Bloques`.
 5. **Captura rápida de reunión + editar/archivar.**
 6. **Vista de semana (escritorio).**
-7. **Tema claro/oscuro + PWA + contraste WCAG AA.**
+7. **Alumnos de Academia Fractal (CRM) + importador.**
+8. **Tema claro/oscuro + PWA + contraste WCAG AA** (antes era el 7).
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.
