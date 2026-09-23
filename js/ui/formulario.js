@@ -1,8 +1,8 @@
 /**
- * Diálogo para crear/editar un bloque. Un solo formulario con tres modos:
- * completo, rápido (solo título y hora, para una reunión imprevista) y
- * mover (solo fecha y hora). Cada modo oculta campos por CSS en vez de
- * duplicar el formulario.
+ * Diálogo para crear/editar un bloque. Un solo formulario con dos modos:
+ * completo (crear, editar, duplicar; el tipo —fijo, variable, reunión— se
+ * elige adentro) y mover (solo fecha y hora, oculta el resto por CSS en vez
+ * de duplicar el formulario).
  *
  * Si guardar falla, el diálogo queda abierto con todo lo escrito: escribir
  * requiere conexión, pero perder lo tipeado no es aceptable.
@@ -60,13 +60,12 @@ const KodamaFormulario = (function () {
     sub.textContent = subtitulo || '';
     sub.hidden = !subtitulo;
     document.getElementById('archivar-bloque').hidden = modo !== 'edicion';
-    dialogo.classList.toggle('modo-rapido', modo === 'rapido');
     dialogo.classList.toggle('modo-mover', modo === 'mover');
     mostrarError('');
   }
 
-  function abrirNuevo(valoresPorDefecto, modoRapido) {
-    preparar(modoRapido ? 'Reunión rápida' : 'Nuevo bloque', '', modoRapido ? 'rapido' : 'nuevo', null);
+  function abrirNuevo(valoresPorDefecto) {
+    preparar('Nuevo bloque', '', 'nuevo', null);
     escribirCampos(valoresPorDefecto);
     dialogo.showModal();
     campos.titulo.focus();

@@ -53,7 +53,6 @@
   </main>
 
   <div class="acciones-flotantes">
-    <button id="nueva-reunion" type="button" class="fab fab--secundario">Reunión</button>
     <button id="nuevo-bloque" type="button" class="fab" aria-label="Nuevo bloque">+</button>
   </div>
 
@@ -62,15 +61,14 @@
       <h2 id="titulo-dialogo">Nuevo bloque</h2>
       <p id="subtitulo-dialogo" class="nota" hidden></p>
 
-      <!-- Clases de modo: .solo-completo se oculta en "Reunión rápida";
-           .oculto-al-mover se oculta en "Mover" (solo quedan fecha y hora). -->
+      <!-- .oculto-al-mover se oculta en "Mover" (solo quedan fecha y hora). -->
       <div class="oculto-al-mover">
         <label for="campo-titulo">Título</label>
         <input id="campo-titulo" type="text" autocapitalize="sentences"
                autocomplete="off" enterkeyhint="done" />
       </div>
 
-      <div class="solo-completo oculto-al-mover">
+      <div class="oculto-al-mover">
         <label for="campo-area">Área</label>
         <select id="campo-area"></select>
 
@@ -78,7 +76,7 @@
         <select id="campo-tipo"></select>
       </div>
 
-      <div class="solo-completo">
+      <div>
         <label for="campo-fecha">Fecha</label>
         <input id="campo-fecha" type="date" />
       </div>
@@ -94,7 +92,7 @@
         </div>
       </div>
 
-      <div class="solo-completo oculto-al-mover">
+      <div class="oculto-al-mover">
         <label for="campo-etiqueta">Etiqueta</label>
         <input id="campo-etiqueta" type="text" list="sugerencias-etiqueta" autocomplete="off" />
         <datalist id="sugerencias-etiqueta">

@@ -178,7 +178,7 @@ const KodamaSemana = (function () {
     elemento.style.setProperty('--columnas', String(posicion.columnas));
   }
 
-  function crearBloque(posicion, escala, indice, alTocar, solapado) {
+  function crearBloque(posicion, escala, indice, alTocar, solapado, conDetalle) {
     const bloque = posicion.bloque;
     const tipo = KodamaDia.normalizarTipo(bloque.tipo);
 
@@ -216,13 +216,23 @@ const KodamaSemana = (function () {
 
     const hora = document.createElement('span');
     hora.className = 'bloque-semana__hora';
-    hora.textContent = bloque.inicio + '–' + bloque.fin;
+    // En la vista de día (una sola columna, ancha) va también el área y la
+    // etiqueta; en la semana, solo el horario.
+    let detalle = bloque.inicio + '–' + bloque.fin;
+    if (conDetalle) {
+      detalle += ' · ' + bloque.area + (bloque.etiqueta ? ' · ' + bloque.etiqueta : '');
+    }
+    hora.textContent = detalle;
     boton.appendChild(hora);
 
     return boton;
   }
 
-  /** Bloque de otra área en una capa filtrada: misma caja, solo "ocupado". */
+  /**
+   * Bloque de otra área en una capa filtrada: misma caja, dice "ocupado" y
+   * su horario — se ve CUÁNDO está ocupado, nunca QUÉ es (sin título, área
+   * ni etiqueta).
+   */
   function crearOcupado(posicion, escala) {
     const caja = document.createElement('div');
     caja.className = 'ocupado ocupado--semana';
@@ -230,7 +240,10 @@ const KodamaSemana = (function () {
     const texto = document.createElement('span');
     texto.className = 'ocupado__texto';
     texto.textContent = 'ocupado';
-    caja.appendChild(texto);
+    const hora = document.createElement('span');
+    hora.className = 'ocupado__hora';
+    hora.textContent = posicion.bloque.inicio + '–' + posicion.bloque.fin;
+    caja.append(texto, hora);
     return caja;
   }
 
@@ -267,6 +280,8 @@ const KodamaSemana = (function () {
    *                   se dibujan como "ocupado" en la misma posición
    *   alTocar(b)
    *   colapsarHuecos  true en el celular
+   *   unDia           true para la vista de día (una sola columna ancha,
+   *                   sin encabezado de día y con más detalle por bloque)
    */
   function render(contenedor, opciones) {
     const esDeLaCapa = opciones.esDeLaCapa || function () { return true; };
@@ -299,7 +314,7 @@ const KodamaSemana = (function () {
     desplazable.className = 'semana-desplazable';
 
     const grilla = document.createElement('div');
-    grilla.className = 'semana';
+    grilla.className = opciones.unDia ? 'semana semana--un-dia' : 'semana';
     grilla.style.setProperty('--dias', String(opciones.dias.length));
     grilla.style.setProperty('--minutos-franja', String(escala.total));
 
@@ -376,7 +391,7 @@ const KodamaSemana = (function () {
       distribuir(porDia[fecha]).forEach(function (posicion) {
         if (esDeLaCapa(posicion.bloque)) {
           columna.appendChild(crearBloque(posicion, escala, indice++, opciones.alTocar,
-            solapados[posicion.bloque.id]));
+            solapados[posicion.bloque.id], opciones.unDia));
         } else {
           columna.appendChild(crearOcupado(posicion, escala));
         }

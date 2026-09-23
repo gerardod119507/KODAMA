@@ -164,3 +164,12 @@ test('una cadena A–B–C marca a los tres solo si se pisan de a pares', () => 
   ]);
   assert.deepStrictEqual(ids, ['A', 'B', 'C']);
 });
+
+test('la vista de día (un solo día) colapsa sus propios huecos de más de 2 h', () => {
+  const env = cargarModulos(MODULOS_SEMANA);
+  const huecos = env.ejecutar('KodamaSemana.calcularHuecos(__arg.bloques, __arg.franja)', {
+    franja: FRANJA,
+    bloques: [b(SEMANA[2], '06:45', '08:15'), b(SEMANA[2], '09:00', '12:00'), b(SEMANA[2], '19:30', '21:00')]
+  });
+  assert.deepStrictEqual(huecos, [{ desde: min('12:00'), hasta: min('19:30') }]);
+});

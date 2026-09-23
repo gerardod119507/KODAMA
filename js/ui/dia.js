@@ -1,5 +1,6 @@
 /**
- * Vista de día: lista de bloques o estado vacío/carga/error.
+ * Vista de día: grilla horaria de un solo día (la misma de la semana) o
+ * estado vacío/carga/error.
  *
  * Los SVG de íconos y mascota son plantillas fijas escritas por nosotros
  * (nunca contienen datos del usuario), por eso es seguro insertarlas con
@@ -86,71 +87,6 @@ const KodamaDia = (function () {
     contenedor.appendChild(vacio);
   }
 
-  function crearTarjeta(bloque, indice, alTocar, solapado) {
-    const tarjeta = document.createElement('button');
-    tarjeta.type = 'button';
-    tarjeta.className = 'bloque bloque--' + normalizarTipo(bloque.tipo);
-    if (solapado) {
-      tarjeta.classList.add('bloque--solapado');
-    }
-    if (alTocar) {
-      tarjeta.addEventListener('click', function () { alTocar(bloque); });
-    }
-    tarjeta.style.setProperty('--color-bloque', colorDeBloque(bloque));
-    tarjeta.style.setProperty('--indice', String(indice));
-
-    const icono = document.createElement('span');
-    icono.className = 'bloque__icono';
-    icono.innerHTML = KodamaIconos.svgTipo(normalizarTipo(bloque.tipo));
-    tarjeta.appendChild(icono);
-
-    const info = document.createElement('div');
-    info.className = 'bloque__info';
-
-    const titulo = document.createElement('p');
-    titulo.className = 'bloque__titulo';
-    titulo.textContent = bloque.titulo || '(sin título)';
-    info.appendChild(titulo);
-
-    const meta = document.createElement('p');
-    meta.className = 'bloque__meta';
-    let textoMeta = bloque.inicio + '–' + bloque.fin + ' · ' + bloque.area;
-    if (bloque.etiqueta) {
-      textoMeta += ' · ' + bloque.etiqueta;
-    }
-    meta.textContent = textoMeta;
-    info.appendChild(meta);
-
-    tarjeta.appendChild(info);
-    return tarjeta;
-  }
-
-  // No hay aviso de choques ni solapamientos: si dos bloques comparten
-  // horario, simplemente se agrupan en la misma fila visual y se muestran
-  // lado a lado (ver css .fila-simultanea). Agrupa por cadena de
-  // solapamiento (A se pisa con B, B con C => los 3 van juntos), no solo
-  // pares — así una fila nunca queda a medias.
-  function agruparPorSolapamiento(bloques) {
-    const grupos = [];
-    let grupoActual = null;
-    let finMaximo = null;
-
-    bloques.forEach(function (bloque) {
-      if (grupoActual && bloque.inicio < finMaximo) {
-        grupoActual.push(bloque);
-        if (bloque.fin > finMaximo) {
-          finMaximo = bloque.fin;
-        }
-      } else {
-        grupoActual = [bloque];
-        grupos.push(grupoActual);
-        finMaximo = bloque.fin;
-      }
-    });
-
-    return grupos;
-  }
-
   /**
    * Ids de los bloques que se pisan de verdad con otro del mismo día (A
    * empieza antes de que B termine y viceversa; tocarse no cuenta). Recibe
@@ -174,61 +110,30 @@ const KodamaDia = (function () {
   }
 
   /**
-   * Bloque de otra área en una capa filtrada: una tarjeta del mismo tamaño,
-   * en el mismo lugar, que solo dice "ocupado" (sin título ni horario).
-   */
-  function crearOcupado() {
-    const caja = document.createElement('div');
-    caja.className = 'ocupado ocupado--dia';
-    const texto = document.createElement('span');
-    texto.className = 'ocupado__texto';
-    texto.textContent = 'ocupado';
-    caja.appendChild(texto);
-    return caja;
-  }
-
-  function renderLista(contenedor, bloques, alTocar, esDeLaCapa) {
-    contenedor.replaceChildren();
-    const lista = document.createElement('ul');
-    lista.className = 'lista-bloques';
-    let indice = 0;
-    const solapados = {};
-    idsSolapados(bloques.filter(esDeLaCapa)).forEach(function (id) { solapados[id] = true; });
-
-    function pieza(bloque) {
-      return esDeLaCapa(bloque)
-        ? crearTarjeta(bloque, indice++, alTocar, solapados[bloque.id])
-        : crearOcupado();
-    }
-
-    // Se agrupa con TODOS los bloques del día, así cada "ocupado" queda en
-    // el mismo lugar que tendría el bloque real en General.
-    agruparPorSolapamiento(bloques).forEach(function (grupo) {
-      const li = document.createElement('li');
-      if (grupo.length === 1) {
-        li.appendChild(pieza(grupo[0]));
-      } else {
-        li.className = 'fila-simultanea';
-        grupo.forEach(function (bloque) { li.appendChild(pieza(bloque)); });
-      }
-      lista.appendChild(li);
-    });
-
-    contenedor.appendChild(lista);
-  }
-
-  /**
-   * bloques: TODOS los del día (todas las áreas), ordenados por inicio.
-   * opciones.esDeLaCapa(b): true si se muestra completo; si no, "ocupado".
+   * La vista de día usa la MISMA grilla horaria que la de semana, con una
+   * sola columna: cada bloque en su hora, alto proporcional a su duración,
+   * casillas "ocupado" de otras capas, huecos colapsados en el celular y el
+   * borde de superposición. Si el día no tiene nada, el estado vacío con la
+   * mascota.
+   *
+   * bloques: TODOS los del día (todas las áreas).
+   * opciones: { fecha, hoy, esDeLaCapa, alTocar, colapsarHuecos, compararBocetos }
    */
   function render(contenedor, bloques, opciones) {
     const config = opciones || {};
-    const esDeLaCapa = config.esDeLaCapa || function () { return true; };
     if (bloques.length === 0) {
       renderVacio(contenedor, config);
-    } else {
-      renderLista(contenedor, bloques, config.alTocar, esDeLaCapa);
+      return;
     }
+    KodamaSemana.render(contenedor, {
+      dias: [config.fecha],
+      hoy: config.hoy,
+      bloques: bloques,
+      esDeLaCapa: config.esDeLaCapa,
+      alTocar: config.alTocar,
+      colapsarHuecos: config.colapsarHuecos,
+      unDia: true
+    });
   }
 
   return {
@@ -240,9 +145,7 @@ const KodamaDia = (function () {
     // pinten un bloque con el mismo color y la misma forma.
     normalizarTipo: normalizarTipo,
     colorDeBloque: colorDeBloque,
-    // Se expone solo para poder probarla: es lógica pura y es la regla que
-    // decide qué bloques se dibujan lado a lado (ver tests/frontend.test.js).
-    agruparPorSolapamiento: agruparPorSolapamiento,
+    // Se expone también para las pruebas (tests/huecos.test.js).
     idsSolapados: idsSolapados
   };
 })();
