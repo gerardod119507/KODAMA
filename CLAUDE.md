@@ -255,6 +255,11 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   vincula por nombre y apellido sin tildes/mayúsculas, varios alumnos por
   regla, deja sin tocar (y registra) lo no encontrado o ambiguo, no toca
   otras áreas, reglas ya vinculadas ni otras columnas, y es idempotente.
+- `tests/lugar.test.js` — el campo `lugar`: columnas al final en las tres
+  hojas (y migración de una hoja vieja), guardar/editar en bloques,
+  reglas y alumnos, el generador lo copia y lo refresca,
+  `moverAulasALugar()` (solo Universidad, resto de la nota conservado, dos
+  aulas = pendiente, idempotente) y el lugar habitual del alumno elegido.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -325,6 +330,9 @@ Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
   columna existente. Con alumnos, el `título` es opcional y guarda solo un
   tema ("Física"): **el nombre del alumno no vive en el título**, se arma
   desde el vínculo (ver "Alumnos").
+- **`lugar`** (cierre del Checkpoint 7): dónde es la clase (en la UMSS, el
+  aula: "Aula E511"). Texto libre, opcional, **al final** (columna 14),
+  agregado con `migrarColumnaAlFinal()`.
 
 ### Hoja `Horario` (Checkpoint 4)
 Columnas: `id`, `título`, `área`, `días`, `inicio`, `fin`, `desde`, `hasta`,
@@ -353,6 +361,10 @@ días, entre estas fechas"), no una clase puntual.
   (columna 12). El generador lo copia a cada bloque que crea y lo refresca
   en los que actualiza, igual que el título. Una fila sin título pero con
   alumnos es una regla válida.
+- **`lugar`**: al final (columna 13). El generador lo copia a cada bloque y
+  lo **refresca** en los futuros que actualiza, igual que título y hora: si
+  cambia el aula en la regla, cambia en todas las clases futuras (un
+  cambio puntual de aula en un solo bloque se pisa al regenerar).
 - **`archivado`** (Checkpoint 5): `TRUE` o vacío. Una regla archivada deja
   de generar bloques, y sus bloques futuros se archivan en la próxima
   corrida. Se agregó **al final** de la hoja (no en el medio) para no mover
@@ -398,7 +410,9 @@ cada semana.
 ### Hoja `Alumnos` y catálogos `Cursos` / `Colegios` (Checkpoint 7)
 
 `Alumnos`: `id`, `nombre`, `apellido`, `curso`, `colegio`, `tarifa_hora`,
-`forma_calculo`, `forma_pago`, `notas`, `archivado`. Todo en formato texto.
+`forma_calculo`, `forma_pago`, `notas`, `archivado`, `lugar`. Todo en
+formato texto. `lugar` es el **lugar habitual** de sus clases (al final,
+agregado después).
 
 - **`id`**: `a` + 8 hexadecimales, lo pone el backend.
 - **`curso` y `colegio` guardan el nombre COMPLETO** del catálogo; la app
@@ -463,6 +477,23 @@ los alumnos que lo tenían.
   que falten una sola vez, y vincula. Vista previa con casillas: solo se
   aplica a las filas marcadas. Lo único que se descarta del título es el
   prefijo ("Clase con").
+- **Lugar** (cierre del Checkpoint 7): campo "Lugar" en el formulario de
+  bloques y en el de reglas, y "Lugar habitual" en el de alumnos (y en el
+  alta rápida desde el selector). En un bloque o regla **nuevos**, al
+  elegir alumnos el lugar se completa con el lugar habitual del primero
+  que tenga uno (`KodamaAlumnos.lugarDeAlumnos`), mientras no lo hayas
+  escrito vos: si lo tocás, manda lo tuyo. Al **editar** nunca se completa
+  solo. En la grilla (día y semana de escritorio) va junto al horario,
+  "06:45–08:15 · Aula E511"; sin lugar no se muestra nada (ni un
+  separador). En la semana compacta del celular no se ve (tampoco la
+  hora). En la ficha, fila "Lugar" (oculta si está vacío) y las notas
+  completas.
+- **Función manual `moverAulasALugar()`** (`apps-script/Setup.gs`, desde el
+  editor): en las reglas de `Horario` de **Universidad** con `lugar` vacío,
+  mueve el aula que está en `notas` ("Aula E511") a `lugar`; si las notas
+  tenían algo más, ese resto queda en notas. Dos aulas en las mismas notas
+  → la fila queda sin tocar y se registra. Solo escribe `notas` y `lugar`.
+  Después, "Regenerar horario" lleva el aula a los bloques ya generados.
 - **Función manual `vincularAlumnosEnHorario()`** (`apps-script/Setup.gs`,
   se ejecuta desde el editor de Apps Script): solo para las **reglas** de
   `Horario` de Fractal con `alumno_id` vacío. Lee los nombres del título
@@ -557,6 +588,9 @@ con el código, el código manda:
 - `crearBloque`/`actualizarBloque` y `crearRegla`/`actualizarRegla`
   aceptan además `alumno_id` (ids separados por coma); con alumnos, el
   título es opcional. Un id que no existe falla con `alumno_no_encontrado`.
+  También aceptan `lugar` (texto libre), igual que `crearAlumno`/
+  `actualizarAlumno` (lugar habitual). El importador reconoce las columnas
+  `lugar`/`aula` (reglas) y `lugar`/`lugar habitual` (alumnos).
 
 Se agrega una acción por checkpoint; esta lista se mantiene al día.
 
@@ -872,7 +906,7 @@ KODAMA/
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
 │   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
 │   ├── Bloques.gs             # crear/editar/archivar bloques desde la app
-│   ├── Setup.gs               # configurarHojas() y generarToken(), un solo uso
+│   ├── Setup.gs               # funciones manuales: configurarHojas, generarToken, vincularAlumnosEnHorario, moverAulasALugar
 │   ├── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
 │   ├── Alumnos.gs             # hojas Alumnos/Cursos/Colegios, ABM y migración de Fractal
 │   └── Importar.gs            # importador de filas pegadas (alumnos y reglas)
