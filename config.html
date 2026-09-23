@@ -44,6 +44,20 @@
     <p id="resultado-horario" role="status"></p>
 
     <hr class="separador" />
+    <h2>Limpiar bloques generados</h2>
+    <p class="nota">
+      Borra los bloques que generó una serie del horario. No toca reuniones
+      ni bloques cargados a mano.
+    </p>
+    <button id="ver-series" type="button" class="secundario">Ver series generadas</button>
+    <div id="zona-series" hidden>
+      <label for="serie">Serie</label>
+      <select id="serie"></select>
+      <button id="borrar-serie" type="button">Borrar los bloques de esta serie</button>
+    </div>
+    <p id="resultado-series" role="status"></p>
+
+    <hr class="separador" />
     <button id="olvidar" type="button" class="fantasma">Olvidar conexión guardada</button>
   </main>
 

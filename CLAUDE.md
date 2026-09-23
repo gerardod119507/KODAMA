@@ -269,10 +269,16 @@ Columnas: `id`, `título`, `área`, `días`, `inicio`, `fin`, `desde`, `hasta`,
 `etiqueta`, `notas`. Cada fila es una **regla** ("esta clase se repite estos
 días, entre estas fechas"), no una clase puntual.
 
-- **`id`**: lo asigna solo `generarHorario()` la primera vez que procesa esa
-  fila (si la celda está vacía), y lo escribe de vuelta en la hoja. No hace
-  falta completarlo a mano. Sirve para que los bloques que genera esa regla
-  sean identificables y siempre los mismos aunque cambie el título.
+- **`id`**: lo asigna siempre `generarHorario()` y lo escribe de vuelta en
+  la hoja. **Tiene forma fija: `h` + 8 caracteres hexadecimales**
+  (`PATRON_ID_SERIE` en Horario.gs). Cualquier valor que no tenga esa forma
+  —celda vacía, un texto pegado a mano, un resto de una prueba— se
+  reemplaza por uno nuevo. Una vez asignado es estable: no cambia al
+  regenerar. Motivo de la forma fija: sin ella no había manera de
+  distinguir un id puesto por el generador de basura en la celda, y un
+  ejemplo de la documentación (`(vacío)`) terminó copiado literalmente,
+  generando bloques con id `(vacío)-2026-09-22`. La unicidad se verifica
+  contra los otros ids de la hoja antes de asignar.
 - **`días`**: abreviaturas en español separadas por lo que sea (coma,
   espacio, guion, barra) — `Lun`, `Mar`, `Mié`, `Jue`, `Vie`, `Sáb`, `Dom`,
   con o sin tilde, mayúscula o minúscula (`parseDias()` en Horario.gs solo
@@ -348,6 +354,15 @@ con el código, el código manda:
 - `generarHorario` — sin parámetros. Lee la hoja `Horario`, crea/actualiza
   bloques fijos en `Bloques` (ver "Modelo de datos" para el algoritmo
   completo) y devuelve `{ creados, actualizados, archivados }`.
+- `listarSeries` — sin parámetros. Devuelve
+  `[{ idSerie, titulo, cantidad }]` con las series que hoy tienen bloques,
+  incluidas las **huérfanas** (sin fila en `Horario`), que son las que hay
+  que poder limpiar.
+- `borrarSerie` — parámetro `idSerie`. **Borra de verdad** (no archiva) las
+  filas de `Bloques` de esa serie, y devuelve `{ borrados }`. Es la única
+  excepción a "archivar en vez de borrar": existe para limpiar datos de
+  prueba sin editar el Sheet a mano. Sin `idSerie` falla; nunca borra
+  bloques que no pertenezcan a una serie (reuniones, bloques manuales).
 
 Se agrega una acción por checkpoint; esta lista se mantiene al día.
 

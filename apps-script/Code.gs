@@ -45,6 +45,12 @@ const ACCIONES = {
   },
   generarHorario: function () {
     return generarHorario();
+  },
+  listarSeries: function () {
+    return listarSeries();
+  },
+  borrarSerie: function (peticion) {
+    return borrarSerie(peticion.idSerie);
   }
 };
 
