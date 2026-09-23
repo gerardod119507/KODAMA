@@ -260,6 +260,11 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   reglas y alumnos, el generador lo copia y lo refresca,
   `moverAulasALugar()` (solo Universidad, resto de la nota conservado, dos
   aulas = pendiente, idempotente) y el lugar habitual del alumno elegido.
+- `tests/auditoria.test.js` — `auditarDatos()`: encuentra cada tipo de
+  problema (repetidos, homónimos sin apellido, catálogo, tarifas,
+  vínculos faltantes o de más, nombre en el título, bloques que no
+  heredaron, huérfanos, `(vacío)`, bloques de prueba), cuenta las filas y
+  **no escribe nada**.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -494,6 +499,19 @@ los alumnos que lo tenían.
   tenían algo más, ese resto queda en notas. Dos aulas en las mismas notas
   → la fila queda sin tocar y se registra. Solo escribe `notas` y `lugar`.
   Después, "Regenerar horario" lleva el aula a los bloques ya generados.
+- **Auditoría `auditarDatos()`** (`apps-script/Auditoria.gs`, desde el
+  editor): **solo lectura**. Revisa Alumnos (repetidos, homónimos sin
+  apellido, curso/colegio fuera del catálogo, tarifa y forma de pago),
+  Horario y Bloques (Fractal sin alumnos, otras áreas con alumnos, ids de
+  alumno inexistentes, título que nombra más alumnos que los vinculados,
+  nombre todavía en el título), series (huérfanas, `(vacío)`, bloques
+  generados que no heredaron los alumnos de su regla, separando pasados y
+  futuros) y bloques de prueba (ids raros, títulos de ejemplo de la
+  documentación). Escribe en el Logger cada problema con cuántas filas
+  afecta, ejemplos con número de fila y una propuesta. Motivo de que sea
+  una función del editor: Claude no tiene acceso al Sheet real (ni el ID
+  ni el token), así que la auditoría la corre Gerardo y comparte el
+  registro.
 - **Función manual `vincularAlumnosEnHorario()`** (`apps-script/Setup.gs`,
   se ejecuta desde el editor de Apps Script): solo para las **reglas** de
   `Horario` de Fractal con `alumno_id` vacío. Lee los nombres del título
@@ -909,7 +927,8 @@ KODAMA/
 │   ├── Setup.gs               # funciones manuales: configurarHojas, generarToken, vincularAlumnosEnHorario, moverAulasALugar
 │   ├── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
 │   ├── Alumnos.gs             # hojas Alumnos/Cursos/Colegios, ABM y migración de Fractal
-│   └── Importar.gs            # importador de filas pegadas (alumnos y reglas)
+│   ├── Importar.gs            # importador de filas pegadas (alumnos y reglas)
+│   └── Auditoria.gs           # auditarDatos(): revisión de coherencia, solo lectura
 ├── docs/
 │   ├── setup-google.md      # pasos exactos para Sheet + Apps Script
 │   ├── datos-prueba.md       # cómo cargar bloques de prueba a mano
