@@ -10,17 +10,22 @@ Abrí tu Sheet → pestaña **Horario** (el Web App la crea sola la primera vez
 que la app le pide algo; si no aparece, recargá la hoja o mandá cualquier
 acción desde la app una vez).
 
-Columnas, en este orden — **dejá la primera columna (`id`) vacía**, se
-completa sola la primera vez que generás:
+> **La columna `id` NO se toca: se deja la celda en blanco.** El generador
+> la completa solo. Si escribís algo ahí, lo va a reemplazar.
+
+Columnas, en este orden (la columna `id` va vacía, por eso aparece en
+blanco en los ejemplos):
 
 | id | título | área | días | inicio | fin | desde | hasta | etiqueta | notas |
 |---|---|---|---|---|---|---|---|---|---|
-| *(vacío)* | Cálculo II | Universidad | Lun, Mié | 09:00 | 10:30 | 2026-09-01 | 2026-12-15 | | |
-| *(vacío)* | Clase con Valentina | Academia Fractal | Mar | 15:00 | 16:00 | 2026-09-01 | 2026-12-15 | | |
-| *(vacío)* | Standup | Startup | Lun, Mié, Vie | 09:00 | 09:15 | 2026-09-01 | 2026-12-15 | Nerak | |
+| | Cálculo II | Universidad | Lun, Mié | 09:00 | 10:30 | 2026-09-01 | 2026-12-15 | | |
+| | Clase con Valentina | Academia Fractal | Mar | 15:00 | 16:00 | 2026-09-01 | 2026-12-15 | | |
+| | Standup | Startup | Lun, Mié, Vie | 09:00 | 09:15 | 2026-09-01 | 2026-12-15 | Nerak | |
 
 **Cómo escribir cada columna:**
 
+- **id**: no escribas nada. Se completa solo con algo como `h3f9a21bc` la
+  primera vez que generás, y a partir de ahí no cambia.
 - **título**: el nombre que vas a ver en la app.
 - **área**: exactamente `Universidad`, `Academia Fractal`, `Startup` o
   `Personal` (tal cual están en la hoja `Areas`).
@@ -85,3 +90,17 @@ muestra todo. Se acuerda de la última capa que elegiste en ese dispositivo.
 Si dos bloques de ese día se superponen en horario, se muestran uno al
 lado del otro. No hay ningún aviso de "choque": es una decisión a propósito
 para no complicar el MVP.
+
+## Borrar los bloques de una serie
+
+Para limpiar bloques generados (por ejemplo los de una prueba) sin tocar el
+Sheet a mano:
+
+1. Abrí `config.html`.
+2. Bajá a **"Limpiar bloques generados"** y tocá **"Ver series generadas"**.
+3. Elegí una serie (o "Todas las series") y tocá **"Borrar los bloques de
+   esta serie"**.
+
+Borra de verdad, no archiva, y no se puede deshacer. Solo toca bloques
+generados por el horario: las reuniones y los bloques cargados a mano no se
+tocan nunca.

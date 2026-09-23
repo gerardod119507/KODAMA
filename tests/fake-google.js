@@ -167,6 +167,14 @@ class FakeHoja {
     return this;
   }
 
+  deleteRow(fila) {
+    if (fila < 1 || fila > this.celdas.length) {
+      throw new Error('deleteRow fuera de rango: ' + fila);
+    }
+    this.celdas.splice(fila - 1, 1);
+    return this;
+  }
+
   setFrozenRows(n) { this.filasCongeladas = n; return this; }
 
   /** Atajo para las pruebas: cargar filas de golpe. */
@@ -254,7 +262,12 @@ function crearEntorno(opciones) {
     },
 
     Utilities: {
-      getUuid: () => 'uuid' + String(++contadorUuid).padStart(4, '0') + '-0000-0000-0000-000000000000',
+      // Hexadecimal como el de verdad: el generador valida que el id de
+      // serie sea "h" + 8 hex, así que un uuid falso no-hex rompería.
+      getUuid: () => {
+        const hex = String(++contadorUuid).padStart(8, '0');
+        return hex + '-0000-4000-8000-000000000000';
+      },
       formatDate: (fecha, zona, patron) => {
         // Las pruebas fijan "ahora"; el código solo usa estos 2 patrones.
         const instante = new Date(config.ahora || '2026-09-23T12:00:00Z');

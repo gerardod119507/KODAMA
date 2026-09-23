@@ -83,3 +83,80 @@ document.getElementById('generar-horario').addEventListener('click', async funct
     resultadoHorario.textContent = 'Error: ' + error.message;
   }
 });
+
+const zonaSeries = document.getElementById('zona-series');
+const selectorSerie = document.getElementById('serie');
+const resultadoSeries = document.getElementById('resultado-series');
+const TODAS = '__todas__';
+
+let seriesCargadas = [];
+
+document.getElementById('ver-series').addEventListener('click', async function () {
+  resultadoSeries.textContent = 'Buscando series...';
+  selectorSerie.replaceChildren();
+  zonaSeries.hidden = true;
+  try {
+    const respuesta = await KodamaApi.llamar(campoUrl.value, campoToken.value, 'listarSeries');
+    if (!respuesta.ok) {
+      resultadoSeries.textContent = 'Error: ' + respuesta.error;
+      return;
+    }
+    seriesCargadas = respuesta.data;
+    if (seriesCargadas.length === 0) {
+      resultadoSeries.textContent = 'No hay bloques generados por ninguna serie.';
+      return;
+    }
+
+    const total = seriesCargadas.reduce(function (suma, serie) { return suma + serie.cantidad; }, 0);
+    const opcionTodas = document.createElement('option');
+    opcionTodas.value = TODAS;
+    opcionTodas.textContent = 'Todas las series (' + total + ' bloques)';
+    selectorSerie.appendChild(opcionTodas);
+
+    seriesCargadas.forEach(function (serie) {
+      const opcion = document.createElement('option');
+      opcion.value = serie.idSerie;
+      opcion.textContent = (serie.titulo || '(sin fila en Horario)') + ' — ' + serie.cantidad + ' bloques';
+      selectorSerie.appendChild(opcion);
+    });
+
+    zonaSeries.hidden = false;
+    resultadoSeries.textContent = seriesCargadas.length + ' serie(s) encontrada(s).';
+  } catch (error) {
+    resultadoSeries.textContent = 'Error: ' + error.message;
+  }
+});
+
+document.getElementById('borrar-serie').addEventListener('click', async function () {
+  const elegida = selectorSerie.value;
+  const aBorrar = elegida === TODAS
+    ? seriesCargadas.map(function (serie) { return serie.idSerie; })
+    : [elegida];
+
+  const cuantos = seriesCargadas
+    .filter(function (serie) { return aBorrar.indexOf(serie.idSerie) !== -1; })
+    .reduce(function (suma, serie) { return suma + serie.cantidad; }, 0);
+
+  if (!confirm('Se van a borrar ' + cuantos + ' bloques. Esto no se puede deshacer. ¿Seguir?')) {
+    return;
+  }
+
+  resultadoSeries.textContent = 'Borrando...';
+  let borrados = 0;
+  try {
+    for (const idSerie of aBorrar) {
+      const respuesta = await KodamaApi.llamar(
+        campoUrl.value, campoToken.value, 'borrarSerie', { idSerie: idSerie });
+      if (!respuesta.ok) {
+        resultadoSeries.textContent = 'Error: ' + respuesta.error;
+        return;
+      }
+      borrados += respuesta.data.borrados;
+    }
+    resultadoSeries.textContent = 'Listo: ' + borrados + ' bloques borrados.';
+    zonaSeries.hidden = true;
+    seriesCargadas = [];
+  } catch (error) {
+    resultadoSeries.textContent = 'Error: ' + error.message;
+  }
+});

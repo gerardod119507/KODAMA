@@ -55,9 +55,14 @@ function generarHorario() {
     const fila = filasHorario[f];
     if (!fila[1]) continue; // fila sin título: vacía, se ignora
 
-    let id = fila[0];
-    if (!id) {
-      id = 'h' + Utilities.getUuid().slice(0, 8);
+    // El id lo pone siempre el generador. Cualquier cosa que no tenga la
+    // forma exacta de un id de serie (vacío, un texto pegado a mano, un
+    // resto de una prueba) se reemplaza por uno nuevo y se escribe en la
+    // hoja, así queda estable de ahí en adelante.
+    let id = String(fila[0] || '').trim();
+    if (!esIdDeSerie(id)) {
+      id = nuevoIdDeSerie(idsDeSerieUsados(filasHorario));
+      filasHorario[f][0] = id;
       hojaHorario.getRange(f + 1, 1).setValue(id);
     }
 
@@ -125,6 +130,110 @@ function generarHorario() {
   hojaBloques.getRange(1, 1, grillaFinal.length, COLUMNAS_BLOQUES.length).setValues(grillaFinal);
 
   return { creados: creados, actualizados: actualizados, archivados: archivados };
+}
+
+// Un id de serie es SIEMPRE "h" + 8 caracteres hexadecimales. Tener una
+// forma fija permite distinguir un id puesto por el generador de cualquier
+// texto que haya quedado en la celda.
+const PATRON_ID_SERIE = /^h[0-9a-f]{8}$/;
+
+function esIdDeSerie(valor) {
+  return PATRON_ID_SERIE.test(String(valor || '').trim());
+}
+
+function idsDeSerieUsados(filasHorario) {
+  const usados = {};
+  filasHorario.forEach(function (fila) {
+    const id = String(fila[0] || '').trim();
+    if (esIdDeSerie(id)) {
+      usados[id] = true;
+    }
+  });
+  return usados;
+}
+
+function nuevoIdDeSerie(usados) {
+  for (let intento = 0; intento < 20; intento++) {
+    const id = 'h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toLowerCase();
+    if (esIdDeSerie(id) && !usados[id]) {
+      usados[id] = true;
+      return id;
+    }
+  }
+  throw new Error('no_se_pudo_generar_id_de_serie');
+}
+
+/**
+ * Separa el id de un bloque generado en { idSerie, fecha }. Devuelve null
+ * si el bloque no viene de una serie (por ejemplo una reunión suelta).
+ */
+function partirIdDeBloque(idBloque) {
+  const partes = String(idBloque || '').match(/^(.+)-(\d{4}-\d{2}-\d{2})$/);
+  return partes ? { idSerie: partes[1], fecha: partes[2] } : null;
+}
+
+/**
+ * Series que hoy tienen bloques en la hoja Bloques, con cuántos y de qué
+ * regla vienen. Incluye series huérfanas (cuya fila de Horario ya no
+ * existe o cambió de id), que son justamente las que hay que poder
+ * limpiar.
+ */
+function listarSeries() {
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  const filasHorario = libro.getSheetByName(HOJA_HORARIO).getDataRange().getDisplayValues();
+  const filasBloques = libro.getSheetByName(HOJA_BLOQUES).getDataRange().getDisplayValues();
+
+  const tituloPorId = {};
+  filasHorario.slice(1).forEach(function (fila) {
+    const id = String(fila[0] || '').trim();
+    if (id) {
+      tituloPorId[id] = fila[1];
+    }
+  });
+
+  const series = {};
+  filasBloques.slice(1).forEach(function (fila) {
+    const partes = partirIdDeBloque(fila[0]);
+    if (!partes) return;
+    if (!series[partes.idSerie]) {
+      series[partes.idSerie] = { idSerie: partes.idSerie, titulo: tituloPorId[partes.idSerie] || '', cantidad: 0 };
+    }
+    series[partes.idSerie].cantidad++;
+  });
+
+  return Object.keys(series).map(function (id) { return series[id]; });
+}
+
+/**
+ * Borra (de verdad, no archiva) las filas de Bloques generadas por una
+ * serie. Es la excepción a "archivar en vez de borrar": existe para poder
+ * limpiar datos de prueba sin editar el Sheet a mano, y solo toca filas
+ * cuyo id pertenece a esa serie.
+ */
+function borrarSerie(idSerie) {
+  const id = String(idSerie || '').trim();
+  if (!id) {
+    throw new Error('falta_id_serie');
+  }
+
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
+  const filas = hoja.getDataRange().getDisplayValues();
+  const aBorrar = [];
+
+  for (let f = 1; f < filas.length; f++) {
+    const partes = partirIdDeBloque(filas[f][0]);
+    if (partes && partes.idSerie === id) {
+      aBorrar.push(f + 1); // número de fila en la hoja (1-indexado)
+    }
+  }
+
+  // De abajo hacia arriba: si se borrara de arriba hacia abajo, cada
+  // borrado correría las filas siguientes y los índices quedarían mal.
+  for (let i = aBorrar.length - 1; i >= 0; i--) {
+    hoja.deleteRow(aBorrar[i]);
+  }
+
+  return { borrados: aBorrar.length };
 }
 
 function filaARegla(fila, id) {
