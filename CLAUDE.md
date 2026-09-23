@@ -220,8 +220,9 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   días con y sin tilde, límites de `desde`/`hasta`, respeto del pasado al
   regenerar, idempotencia, y convivencia con lo editado a mano.
 - `tests/frontend.test.js` — lógica pura del navegador: filtro de capas
-  (qué se muestra completo y qué como "ocupado") y agrupación de bloques
-  que se pisan.
+  (qué se muestra completo y qué como "ocupado"). El reparto lado a lado y
+  los huecos están en `semana.test.js`/`huecos.test.js`: la vista de día
+  usa la misma grilla que la semana.
 - `tests/escritura.test.js` — las acciones de escritura del Checkpoint 5:
   crear/editar/archivar bloques y reglas, validaciones que fallan sin tocar
   la hoja, y que todas exijan token.
@@ -470,13 +471,13 @@ reintentos) que no se justifica para un uso personal.
 Desde el Checkpoint 5 **no hace falta abrir el Sheet para nada de uso
 diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
 
-- **Vista de día** (`index.html`): botón `+` (bloque completo) y botón
-  "Reunión" (modo rápido: solo título y hora, el resto por defecto) siempre
-  visibles. Tocar un bloque abre su **ficha** (ver abajo).
-  `js/ui/formulario.js` es un solo diálogo con tres modos: completo, rápido
-  (oculta `.solo-completo`) y mover (oculta `.oculto-al-mover`: quedan solo
-  fecha y hora). Los modos ocultan campos por CSS en vez de duplicar el
-  formulario.
+- **Un solo botón `+`**, siempre visible, para crear cualquier bloque; el
+  tipo (fijo, variable, reunión) se elige adentro. Hasta el Checkpoint 6.5
+  había además un botón "Reunión" con un formulario reducido; se quitó por
+  redundante. Tocar un bloque abre su **ficha** (ver abajo).
+  `js/ui/formulario.js` es un solo diálogo con dos modos: completo (crear,
+  editar, duplicar) y mover (oculta `.oculto-al-mover`: quedan solo fecha y
+  hora). El modo oculta campos por CSS en vez de duplicar el formulario.
 - **Ficha de bloque** (`js/ui/ficha.js`, Checkpoint 6.5): solo lectura —
   tipo y área (con el ícono), título, fecha y horario, etiqueta y notas
   (las vacías no se muestran) — con **Editar** (formulario completo),
@@ -494,9 +495,8 @@ diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
 - **Editor de horario** (`horario.html` + `js/horario.js`): lista de reglas,
   crear/editar/archivar, y botón "Regenerar horario".
 - **Valores por defecto**: fecha = el día que se está viendo; inicio = la
-  próxima media hora en `America/La_Paz`; fin = +60 min (bloque) o +30 min
-  (reunión); área = la capa activa, o Universidad si la capa es General;
-  tipo = `variable` (bloque) o `reunión` (rápido).
+  próxima media hora en `America/La_Paz`; fin = +60 min; área = la capa
+  activa, o Universidad si la capa es General; tipo = `variable`.
 - **Celular primero**: `type="date"` y `type="time"` para que salga el
   selector nativo, `type="text"` y `<textarea>` en título y notas para que
   funcione el dictado por voz del teclado, y `font-size: max(1rem, 16px)` en
@@ -505,7 +505,18 @@ diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
   falla, **el diálogo queda abierto con todo lo escrito** y muestra el error
   del backend. Nunca se cierra ni se limpia un formulario que no se guardó.
 
-## Vista de semana (Checkpoint 6)
+## Vista de semana (Checkpoint 6) y de día
+
+**La vista de día usa la misma grilla horaria que la semana**, con una sola
+columna (`KodamaDia.render` → `KodamaSemana.render` con `unDia: true`):
+cada bloque en su hora y con alto proporcional a su duración, las mismas
+casillas "ocupado", el mismo colapso de huecos en el celular y el mismo
+borde de superposición. Diferencias: no tiene encabezado de día (la fecha
+ya está arriba), usa la escala normal también en el celular (una columna
+ancha tiene lugar para el texto) y cada bloque muestra horario · área ·
+etiqueta. Si el día no tiene ningún bloque, se ve el estado vacío con la
+mascota. Antes (hasta el Checkpoint 6.5) el día era una lista de tarjetas
+apiladas, sin eje de horas.
 
 `index.html` tiene dos modos, **Día** y **Semana** (`js/vista.js`). La
 elección se guarda en `localStorage` (`kodama.vista`); si nunca se eligió,
@@ -538,11 +549,15 @@ una pantalla de 900px o más arranca en semana y el celular en día.
   desplazamiento lateral. Horas más bajas (`--escala-semana` menor), columna
   de horas angosta (solo "07", sin ":00"), encabezados "lun / 22" en dos
   líneas, bloques con fondo del color del área (tenue, con `color-mix`),
-  borde e ícono de tipo, y el título cortado en sílabas (`hyphens: auto`,
-  `lang="es"`) sin el horario. El título completo está en la ficha. En
-  pantallas de 700px o más la semana queda igual que en el Checkpoint 6.
-- **Huecos colapsados (solo celular, `max-width: 699px`):** si una franja
-  está vacía en **todos** los días visibles y dura **más de 2 horas**, se
+  borde e ícono de tipo, y el título sin el horario. El título completo
+  está en la ficha. En pantallas de 700px o más la semana queda igual que
+  en el Checkpoint 6.
+- **Texto que no entra (celular, día y semana):** se recorta en una línea
+  con puntos suspensivos (`text-overflow: ellipsis`), nunca se parte letra
+  por letra. (Se probó cortar en sílabas con `hyphens`, pero depende del
+  diccionario del navegador y en columnas angostas igual partía letras.)
+- **Huecos colapsados (solo celular, `max-width: 699px`, en día y en
+  semana):** si una franja está vacía en **todos** los días visibles y dura **más de 2 horas**, se
   colapsa en una línea fina ("3 h libres · 12:00–15:00") que se toca para
   expandirla. Se colapsa el hueco menos 30 min a cada lado, para que un
   bloque corto pegado al hueco nunca quede tapado. La posición vertical la
@@ -566,8 +581,9 @@ capa elegida se guarda en `localStorage` (dispositivo), no en el Sheet.
 **Bloques de otras áreas → "ocupado"**: en una capa filtrada, cada bloque
 de otra área se dibuja como una casilla **en la misma posición y del mismo
 tamaño** que el bloque real (el reparto lado a lado se calcula con todos los
-bloques del día, igual que en General), que solo dice "ocupado": sin
-título, sin área, sin horario, y no se puede tocar. Se ve con rayado
+bloques del día, igual que en General), que dice "ocupado" y su horario:
+se ve **cuándo** está ocupado, nunca **qué** es (sin título, área ni
+etiqueta), y no se puede tocar. Se ve con rayado
 diagonal tenue (`--ocupado-raya`) y una barra vertical saturada
 (`--ocupado-barra`, gris azulado para no confundirse con ningún color de
 área) en claro y en oscuro. En `General` no hay casillas "ocupado". La
@@ -580,10 +596,8 @@ antes de que el otro termine; tocarse no cuenta—, los dos llevan un borde
 con el color de reunión (`--tipo-reunion`, `#9D3D2E`) arriba, a la derecha
 y abajo; a la izquierda sigue la barra del área. `KodamaDia.idsSolapados()`
 decide cuáles, en día y en semana. No hay texto, ícono ni alerta. Los
-bloques que se pisan se siguen dibujando lado a lado: en el día,
-`js/ui/dia.js` los agrupa en la misma fila visual (`.fila-simultanea`),
-agrupando por **cadena** de solapamiento (si A se pisa con B y B con C, los
-3 van juntos).
+bloques que se pisan se siguen dibujando lado a lado (`distribuir()` en
+`js/ui/semana.js`, igual en día y en semana).
 
 ## Paleta y tema
 
@@ -672,7 +686,8 @@ tenga.
 1. Hojas `Areas` y `Bloques` (ver modelo de datos).
 2. Vista de día (celular) y de semana (escritorio), color por área + ícono/
    borde por tipo.
-3. Captura rápida de una reunión desde cualquier vista, en 1 toque.
+3. Crear cualquier bloque (incluida una reunión) desde el `+`, siempre
+   visible en día y en semana; el tipo se elige en el formulario.
 4. Horario fijo del semestre generado desde la hoja `Horario` (filas
    individuales, sin recurrencia).
 5. Editar y archivar bloques (nunca borrar).
@@ -709,7 +724,7 @@ KODAMA/
 │   ├── capas.js                 # selector de capa (día y semana): leer/guardar/filtrar
 │   ├── vista.js                 # modo día/semana, recordado en el dispositivo
 │   └── ui/
-│       ├── dia.js                # render de bloques (agrupa los que se pisan)
+│       ├── dia.js                # vista de día (grilla de una columna) y estados vacío/carga/error
 │       ├── semana.js             # grilla de semana: días × horas
 │       ├── formulario.js          # diálogo de alta/edición/mover/duplicar
 │       ├── ficha.js               # ficha de solo lectura al tocar un bloque
