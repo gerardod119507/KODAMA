@@ -14,7 +14,7 @@ const path = require('path');
 const vm = require('vm');
 
 const CARPETA_GS = path.join(__dirname, '..', 'apps-script');
-const ARCHIVOS_GS = ['Code.gs', 'Bloques.gs', 'Horario.gs', 'Setup.gs'];
+const ARCHIVOS_GS = ['Code.gs', 'Bloques.gs', 'Horario.gs', 'Alumnos.gs', 'Importar.gs', 'Setup.gs'];
 
 const FILAS_POR_DEFECTO = 1000;
 

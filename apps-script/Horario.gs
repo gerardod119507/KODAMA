@@ -12,12 +12,18 @@
  */
 
 const HOJA_HORARIO = 'Horario';
-const COLUMNAS_HORARIO = ['id', 'titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado'];
-const ENCABEZADOS_HORARIO = ['id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado'];
+// alumno_id (Checkpoint 7) al final, igual que en Bloques.
+const COLUMNAS_HORARIO = ['id', 'titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado', 'alumno_id'];
+const ENCABEZADOS_HORARIO = ['id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado', 'alumno_id'];
 
 // Campos que la app puede escribir en una regla. El id y archivado los
 // maneja el backend.
-const CAMPOS_EDITABLES_REGLA = ['titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas'];
+const CAMPOS_EDITABLES_REGLA = ['titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'alumno_id'];
+
+/** Una fila de Horario cuenta si tiene título o alumnos (Checkpoint 7). */
+function filaDeHorarioConContenido(fila) {
+  return Boolean(fila[COLUMNAS_HORARIO.indexOf('titulo')] || fila[COLUMNAS_HORARIO.indexOf('alumno_id')]);
+}
 
 // Primeras 3 letras, sin tilde, en minúscula. parseDias() normaliza así
 // cualquier variante ("Mié", "mie", "MIE...") antes de buscar acá.
@@ -32,6 +38,7 @@ function asegurarHojaHorario(libro) {
     aplicarSugerenciasEtiqueta(hoja, ENCABEZADOS_HORARIO.indexOf('etiqueta') + 1);
   } else {
     migrarColumnaArchivadoHorario(hoja);
+    migrarColumnaAlFinal(hoja, ENCABEZADOS_HORARIO, 'alumno_id');
   }
   return hoja;
 }
@@ -73,7 +80,7 @@ function generarHorario() {
 
   for (let f = 1; f < filasHorario.length; f++) {
     const fila = filasHorario[f];
-    if (!fila[1]) continue; // fila sin título: vacía, se ignora
+    if (!filaDeHorarioConContenido(fila)) continue; // fila vacía, se ignora
 
     // El id lo pone siempre el generador. Cualquier cosa que no tenga la
     // forma exacta de un id de serie (vacío, un texto pegado a mano, un
@@ -111,6 +118,7 @@ function generarHorario() {
         bloque.tipo = 'fijo';
         bloque.inicio = regla.inicio;
         bloque.fin = regla.fin;
+        bloque.alumno_id = regla.alumno_id;
         bloque.actualizado = ahora;
         datosBloques[indiceExistente] = bloqueAFila(bloque);
         actualizados++;
@@ -118,7 +126,8 @@ function generarHorario() {
         const bloqueNuevo = {
           id: idBloque, titulo: regla.titulo, area: regla.area, tipo: 'fijo',
           fecha: fecha, inicio: regla.inicio, fin: regla.fin, etiqueta: regla.etiqueta,
-          notas: '', creado: ahora, actualizado: ahora, archivado: ''
+          notas: '', creado: ahora, actualizado: ahora, archivado: '',
+          alumno_id: regla.alumno_id
         };
         datosBloques.push(bloqueAFila(bloqueNuevo));
         indicePorId[idBloque] = datosBloques.length - 1;
@@ -271,7 +280,7 @@ function listarHorario() {
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_HORARIO);
   return hoja.getDataRange().getDisplayValues()
     .slice(1)
-    .filter(function (fila) { return fila[1]; })
+    .filter(filaDeHorarioConContenido)
     .map(function (fila) {
       const regla = {};
       COLUMNAS_HORARIO.forEach(function (clave, indice) { regla[clave] = fila[indice] || ''; });
@@ -289,6 +298,7 @@ function crearRegla(datos) {
     const valor = entrada[campo];
     regla[campo] = campo === 'notas' ? String(valor || '') : String(valor || '').trim();
   });
+  regla.alumno_id = normalizarIdsAlumnos(regla.alumno_id);
 
   validarRegla(regla);
   hoja.appendRow(reglaAFila(regla));
@@ -304,6 +314,7 @@ function actualizarRegla(id, cambios) {
       regla[campo] = campo === 'notas' ? String(cambios[campo]) : String(cambios[campo]).trim();
     }
   });
+  regla.alumno_id = normalizarIdsAlumnos(regla.alumno_id);
 
   validarRegla(regla);
   ubicacion.hoja
@@ -351,15 +362,20 @@ function reglaAFila(regla) {
 
 /** Misma validación que usa el generador, para fallar al guardar y no después. */
 function validarRegla(regla) {
-  if (!regla.titulo) {
+  // Una clase de Fractal se identifica por sus alumnos: el título es
+  // opcional si tiene alumnos (el nombre sale del vínculo, no del título).
+  if (!regla.titulo && !regla.alumno_id) {
     throw new Error('falta_titulo');
   }
   validarArea(regla.area);
+  validarIdsAlumnos(regla.alumno_id);
   filaARegla(reglaAFila(regla), regla.id);
 }
 
 function filaARegla(fila, id) {
-  const titulo = fila[1];
+  const alumnoId = fila[COLUMNAS_HORARIO.indexOf('alumno_id')] || '';
+  // En los mensajes de error, una regla sin título se nombra por sus alumnos.
+  const titulo = fila[1] || alumnoId;
   const area = fila[2];
   const diasTexto = fila[3];
   const inicio = fila[4];
@@ -381,8 +397,9 @@ function filaARegla(fila, id) {
   }
 
   return {
-    id: id, titulo: titulo, area: area, dias: parseDias(diasTexto, titulo),
-    inicio: inicio, fin: fin, desde: desde, hasta: hasta, etiqueta: etiqueta
+    id: id, titulo: fila[1] || '', area: area, dias: parseDias(diasTexto, titulo),
+    inicio: inicio, fin: fin, desde: desde, hasta: hasta, etiqueta: etiqueta,
+    alumno_id: alumnoId
   };
 }
 

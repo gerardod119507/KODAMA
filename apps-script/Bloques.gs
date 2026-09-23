@@ -10,7 +10,7 @@ const TIPOS_BLOQUE = ['fijo', 'variable', 'reunión'];
 
 // Campos que la app puede escribir. El resto (id, creado, actualizado,
 // archivado) los maneja el backend.
-const CAMPOS_EDITABLES_BLOQUE = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas'];
+const CAMPOS_EDITABLES_BLOQUE = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'alumno_id'];
 
 function crearBloque(datos) {
   const entrada = datos || {};
@@ -26,7 +26,8 @@ function crearBloque(datos) {
     notas: String(entrada.notas || ''),
     creado: ahoraEnTexto(),
     actualizado: ahoraEnTexto(),
-    archivado: ''
+    archivado: '',
+    alumno_id: normalizarIdsAlumnos(entrada.alumno_id)
   };
 
   validarBloque(bloque);
@@ -47,6 +48,7 @@ function actualizarBloque(id, cambios) {
       bloque[campo] = campo === 'notas' ? String(cambios[campo]) : String(cambios[campo]).trim();
     }
   });
+  bloque.alumno_id = normalizarIdsAlumnos(bloque.alumno_id);
   bloque.actualizado = ahoraEnTexto();
 
   validarBloque(bloque);
@@ -88,10 +90,13 @@ function buscarFilaDeBloque(id) {
 }
 
 function validarBloque(bloque) {
-  if (!bloque.titulo) {
+  // Con alumnos vinculados el título es opcional: el nombre que se ve en la
+  // app sale de la hoja Alumnos, no del título (Checkpoint 7).
+  if (!bloque.titulo && !bloque.alumno_id) {
     throw new Error('falta_titulo');
   }
   validarArea(bloque.area);
+  validarIdsAlumnos(bloque.alumno_id);
   if (TIPOS_BLOQUE.indexOf(bloque.tipo) === -1) {
     throw new Error('tipo_invalido: "' + bloque.tipo + '" (usá ' + TIPOS_BLOQUE.join(', ') + ')');
   }

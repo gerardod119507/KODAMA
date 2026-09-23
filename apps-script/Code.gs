@@ -14,13 +14,16 @@ const ZONA_HORARIA = 'America/La_Paz';
 
 // Mismo orden que los encabezados que crea asegurarHojaBloques().
 // Claves en ASCII (sin tildes) para que el JSON no dependa de codificación.
+// alumno_id (Checkpoint 7) va AL FINAL, para no mover ninguna columna de
+// una hoja que ya tiene datos: ids de la hoja Alumnos separados por coma
+// (una clase puede tener varios alumnos).
 const COLUMNAS_BLOQUES = [
   'id', 'titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin',
-  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado'
+  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id'
 ];
 const ENCABEZADOS_BLOQUES = [
   'id', 'título', 'área', 'tipo', 'fecha', 'inicio', 'fin',
-  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado'
+  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id'
 ];
 
 // Sugerencias de "etiqueta" (no restringen: se cargan con "permitir
@@ -77,6 +80,27 @@ const ACCIONES = {
   },
   borrarSerie: function (peticion) {
     return borrarSerie(peticion.idSerie);
+  },
+  listarAlumnos: function () {
+    return listarAlumnos();
+  },
+  crearAlumno: function (peticion) {
+    return crearAlumno(peticion.alumno);
+  },
+  actualizarAlumno: function (peticion) {
+    return actualizarAlumno(peticion.id, peticion.cambios);
+  },
+  archivarAlumno: function (peticion) {
+    return archivarAlumno(peticion.id);
+  },
+  guardarCatalogo: function (peticion) {
+    return guardarCatalogo(peticion.tipo, peticion.anterior, peticion.item);
+  },
+  importar: function (peticion) {
+    return importar(peticion.modo, peticion.texto, peticion.aplicar === true);
+  },
+  migrarAlumnosFractal: function (peticion) {
+    return migrarAlumnosFractal(peticion.aplicar === true, peticion.ids);
   }
 };
 
@@ -114,7 +138,7 @@ function doPost(e) {
  * sin tener que acordarse de nada al desplegar.
  */
 function firmaEstructura() {
-  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO]);
+  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO, COLUMNAS_ALUMNOS, HOJAS_CATALOGO]);
 }
 
 function asegurarEstructuraSiHaceFalta() {
@@ -279,6 +303,9 @@ function asegurarEstructura() {
   asegurarHojaAreas(libro);
   asegurarHojaBloques(libro);
   asegurarHojaHorario(libro);
+  asegurarHojaAlumnos(libro);
+  asegurarCatalogo(libro, HOJA_CURSOS, CURSOS_INICIALES);
+  asegurarCatalogo(libro, HOJA_COLEGIOS, COLEGIOS_INICIALES);
 }
 
 function asegurarHojaAreas(libro) {
@@ -309,8 +336,35 @@ function asegurarHojaBloques(libro) {
     // La hoja ya existía desde antes del Checkpoint 4 (sin columna
     // "etiqueta"). Se agrega sin tocar las filas que ya tenía.
     migrarColumnaEtiqueta(hoja);
+    migrarColumnaAlFinal(hoja, ENCABEZADOS_BLOQUES, 'alumno_id');
   }
   return hoja;
+}
+
+/**
+ * Agrega una columna nueva en su lugar (siempre al final de las que ya
+ * existían), con formato de texto, si todavía no está. No toca ninguna
+ * fila con datos. Idempotente.
+ */
+function migrarColumnaAlFinal(hoja, encabezadosEsperados, nombre) {
+  const encabezados = hoja.getRange(1, 1, 1, Math.max(1, hoja.getLastColumn())).getDisplayValues()[0];
+  if (encabezados.indexOf(nombre) !== -1) {
+    return;
+  }
+  const columnaNueva = encabezadosEsperados.indexOf(nombre) + 1;
+  hoja.getRange(1, columnaNueva, hoja.getMaxRows(), 1).setNumberFormat('@');
+  hoja.getRange(1, columnaNueva).setValue(nombre);
+}
+
+/**
+ * Texto para comparar sin que importen tildes, mayúsculas ni espacios de
+ * más: "  Agustín  ALIENDRE " → "agustin aliendre". Lo usan el buscador de
+ * alumnos, el importador y la migración.
+ */
+function normalizarTexto(texto) {
+  return String(texto == null ? '' : texto)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 function migrarColumnaEtiqueta(hoja) {
