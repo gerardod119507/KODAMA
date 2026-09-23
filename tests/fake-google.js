@@ -72,6 +72,8 @@ class FakeRango {
   }
 
   getDisplayValues() {
+    // Contador para las pruebas de velocidad: cuántas celdas se leyeron.
+    this.hoja.celdasLeidas += this.numFilas * this.numColumnas;
     const resultado = [];
     for (let i = 0; i < this.numFilas; i++) {
       const fila = [];
@@ -93,6 +95,30 @@ class FakeRango {
     return this;
   }
 
+  /** Como Range.sort de Sheets con [{ column, ascending }] (columnas absolutas). */
+  sort(criterios) {
+    const filas = [];
+    for (let i = 0; i < this.numFilas; i++) {
+      const fila = [];
+      for (let j = 0; j < this.numColumnas; j++) {
+        fila.push((this.hoja.celdas[this.fila - 1 + i] || [])[this.columna - 1 + j]);
+      }
+      filas.push(fila);
+    }
+    filas.sort((a, b) => {
+      for (const criterio of criterios) {
+        const indice = criterio.column - this.columna;
+        const comparacion = texto(a[indice]).localeCompare(texto(b[indice]));
+        if (comparacion !== 0) return criterio.ascending === false ? -comparacion : comparacion;
+      }
+      return 0;
+    });
+    filas.forEach((fila, i) => fila.forEach((valor, j) => {
+      this.hoja._escribir(this.fila - 1 + i, this.columna - 1 + j, valor);
+    }));
+    return this;
+  }
+
   setDataValidation(regla) {
     this.hoja.validaciones.push({
       fila: this.fila, columna: this.columna,
@@ -108,6 +134,7 @@ class FakeHoja {
     this.celdas = [];
     this.formatos = {};
     this.validaciones = [];
+    this.celdasLeidas = 0;
     this.filasCongeladas = 0;
     this.maxFilas = FILAS_POR_DEFECTO;
   }
@@ -255,7 +282,8 @@ function crearEntorno(opciones) {
     PropertiesService: {
       getScriptProperties: () => ({
         getProperty: (clave) => (clave in propiedades ? propiedades[clave] : null),
-        setProperty: (clave, valor) => { propiedades[clave] = valor; }
+        setProperty: (clave, valor) => { propiedades[clave] = valor; },
+        deleteProperty: (clave) => { delete propiedades[clave]; }
       })
     },
 

@@ -141,11 +141,18 @@ function generarHorario() {
     });
   }
 
+  // Se escribe ordenado por fecha e inicio (el encabezado queda primero):
+  // así las lecturas por semana leen un tramo corto (leerFilasEntreFechas).
+  // Ordenar en memoria no cuesta ninguna llamada extra a Sheets.
+  const encabezado = datosBloques[0];
+  const filasOrdenadas = datosBloques.slice(1).sort(compararPorFechaEInicio);
+
   // Se normaliza el ancho de cada fila: getDataRange() devuelve tantas
   // columnas como tenga la hoja, y si alguien escribió algo a la derecha de
   // "archivado" la escritura fallaría por dimensiones que no coinciden.
-  // Las columnas extra quedan intactas (no entran en el rango que se pisa).
-  const grillaFinal = datosBloques.map(function (fila) {
+  // (Esas columnas extra no entran en el rango que se pisa, así que no se
+  // reordenan con el resto de la fila.)
+  const grillaFinal = [encabezado].concat(filasOrdenadas).map(function (fila) {
     return COLUMNAS_BLOQUES.map(function (_, indice) {
       return fila[indice] != null ? fila[indice] : '';
     });

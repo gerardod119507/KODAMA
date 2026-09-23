@@ -6,6 +6,8 @@
  */
 
 const PROPIEDAD_TOKEN = 'KODAMA_TOKEN';
+// Firma de la estructura ya verificada (ver asegurarEstructuraSiHaceFalta).
+const PROPIEDAD_ESTRUCTURA = 'KODAMA_ESTRUCTURA';
 const HOJA_AREAS = 'Areas';
 const HOJA_BLOQUES = 'Bloques';
 const ZONA_HORARIA = 'America/La_Paz';
@@ -91,14 +93,39 @@ function doPost(e) {
   }
 
   try {
-    // Se ejecuta en cada request autorizado (no solo en un setup manual) para
-    // que un Sheet nuevo, o uno al que le falte una hoja, quede utilizable
-    // sin que Gerardo tenga que abrir el editor de Apps Script.
-    asegurarEstructura();
+    // Un Sheet nuevo, o uno al que le falte una hoja, queda utilizable sin
+    // que Gerardo tenga que abrir el editor de Apps Script.
+    asegurarEstructuraSiHaceFalta();
     return responderJson({ ok: true, data: ejecutarAccion(peticion) });
   } catch (err) {
+    // Ante cualquier error, la próxima petición vuelve a verificar todo:
+    // si el error vino de una hoja borrada o cambiada a mano, se repara ahí.
+    PropertiesService.getScriptProperties().deleteProperty(PROPIEDAD_ESTRUCTURA);
     return responderJson({ ok: false, error: String(err && err.message ? err.message : err) });
   }
+}
+
+/**
+ * asegurarEstructura() hace unas 15 llamadas a Sheets, y correrla en cada
+ * petición era la mayor parte del trabajo de una lectura. Ahora corre solo
+ * si la estructura esperada cambió desde la última vez que se verificó: la
+ * "firma" son los encabezados y la zona horaria, así que un cambio de
+ * columnas en el código (una migración nueva) dispara la verificación solo,
+ * sin tener que acordarse de nada al desplegar.
+ */
+function firmaEstructura() {
+  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO]);
+}
+
+function asegurarEstructuraSiHaceFalta() {
+  const propiedades = PropertiesService.getScriptProperties();
+  const firma = firmaEstructura();
+  if (propiedades.getProperty(PROPIEDAD_ESTRUCTURA) === firma) {
+    return false;
+  }
+  asegurarEstructura();
+  propiedades.setProperty(PROPIEDAD_ESTRUCTURA, firma);
+  return true;
 }
 
 function doGet() {
@@ -136,12 +163,67 @@ function listarBloquesDia(fecha) {
     throw new Error('falta_fecha');
   }
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
-  return hoja.getDataRange().getDisplayValues()
-    .slice(1)
+  return leerFilasEntreFechas(hoja, fecha, fecha)
     .filter(function (fila) { return fila[0]; })
     .map(filaABloque)
     .filter(function (bloque) { return bloque.fecha === fecha && bloque.archivado !== 'TRUE'; })
     .sort(function (a, b) { return a.inicio.localeCompare(b.inicio); });
+}
+
+/**
+ * Lee de Bloques solo las filas que pueden caer entre dos fechas, en vez
+ * de la hoja entera: primero la columna "fecha" sola (una columna, no 12),
+ * y después únicamente el tramo de filas entre la primera y la última que
+ * coinciden. Como la hoja se mantiene ordenada por fecha (ver
+ * ordenarHojaBloques), ese tramo es justo la semana pedida.
+ *
+ * No depende de que el orden sea correcto: si alguien desordena la hoja a
+ * mano, el tramo es más largo (más lento) pero sigue incluyendo todo — el
+ * filtro por fecha de quien llama deja solo lo que corresponde.
+ */
+function leerFilasEntreFechas(hoja, desde, hasta) {
+  const ultimaFila = hoja.getLastRow();
+  if (ultimaFila < 2) {
+    return [];
+  }
+  const columnaFecha = COLUMNAS_BLOQUES.indexOf('fecha') + 1;
+  const fechas = hoja.getRange(2, columnaFecha, ultimaFila - 1, 1).getDisplayValues();
+  let primera = -1;
+  let ultima = -1;
+  for (let i = 0; i < fechas.length; i++) {
+    const fecha = fechas[i][0];
+    if (fecha >= desde && fecha <= hasta) {
+      if (primera === -1) primera = i;
+      ultima = i;
+    }
+  }
+  if (primera === -1) {
+    return [];
+  }
+  return hoja.getRange(primera + 2, 1, ultima - primera + 1, COLUMNAS_BLOQUES.length).getDisplayValues();
+}
+
+/**
+ * Deja Bloques ordenada por fecha y hora de inicio (una sola operación de
+ * Sheets). Se llama después de cada escritura que puede romper el orden,
+ * para que leerFilasEntreFechas lea un tramo corto.
+ */
+function ordenarHojaBloques(hoja) {
+  const ultimaFila = hoja.getLastRow();
+  if (ultimaFila < 3) {
+    return; // 0 o 1 bloque: ya está ordenada
+  }
+  hoja.getRange(2, 1, ultimaFila - 1, COLUMNAS_BLOQUES.length).sort([
+    { column: COLUMNAS_BLOQUES.indexOf('fecha') + 1, ascending: true },
+    { column: COLUMNAS_BLOQUES.indexOf('inicio') + 1, ascending: true }
+  ]);
+}
+
+function compararPorFechaEInicio(filaA, filaB) {
+  const fecha = COLUMNAS_BLOQUES.indexOf('fecha');
+  const inicio = COLUMNAS_BLOQUES.indexOf('inicio');
+  return String(filaA[fecha]).localeCompare(String(filaB[fecha])) ||
+    String(filaA[inicio]).localeCompare(String(filaB[inicio]));
 }
 
 /**
@@ -158,8 +240,7 @@ function listarBloquesRango(desde, hasta) {
     throw new Error('rango_invalido: "desde" (' + desde + ') es posterior a "hasta" (' + hasta + ')');
   }
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
-  return hoja.getDataRange().getDisplayValues()
-    .slice(1)
+  return leerFilasEntreFechas(hoja, desde, hasta)
     .filter(function (fila) { return fila[0]; })
     .map(filaABloque)
     .filter(function (bloque) {
