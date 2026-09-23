@@ -12,8 +12,12 @@
  */
 
 const HOJA_HORARIO = 'Horario';
-const COLUMNAS_HORARIO = ['id', 'titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas'];
-const ENCABEZADOS_HORARIO = ['id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas'];
+const COLUMNAS_HORARIO = ['id', 'titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado'];
+const ENCABEZADOS_HORARIO = ['id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado'];
+
+// Campos que la app puede escribir en una regla. El id y archivado los
+// maneja el backend.
+const CAMPOS_EDITABLES_REGLA = ['titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas'];
 
 // Primeras 3 letras, sin tilde, en minúscula. parseDias() normaliza así
 // cualquier variante ("Mié", "mie", "MIE...") antes de buscar acá.
@@ -26,8 +30,24 @@ function asegurarHojaHorario(libro) {
     hoja.getRange(1, 1, 1, ENCABEZADOS_HORARIO.length).setValues([ENCABEZADOS_HORARIO]);
     hoja.setFrozenRows(1);
     aplicarSugerenciasEtiqueta(hoja, ENCABEZADOS_HORARIO.indexOf('etiqueta') + 1);
+  } else {
+    migrarColumnaArchivadoHorario(hoja);
   }
   return hoja;
+}
+
+/**
+ * La hoja Horario del Checkpoint 4 no tenía columna "archivado". Se agrega
+ * al final (no en el medio) para no mover ninguna columna existente.
+ */
+function migrarColumnaArchivadoHorario(hoja) {
+  const encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getDisplayValues()[0];
+  if (encabezados.indexOf('archivado') !== -1) {
+    return;
+  }
+  const columnaNueva = ENCABEZADOS_HORARIO.indexOf('archivado') + 1;
+  hoja.getRange(1, columnaNueva, hoja.getMaxRows(), 1).setNumberFormat('@');
+  hoja.getRange(1, columnaNueva).setValue('archivado');
 }
 
 function generarHorario() {
@@ -66,8 +86,11 @@ function generarHorario() {
       hojaHorario.getRange(f + 1, 1).setValue(id);
     }
 
+    // Una regla archivada no genera nada, pero igual pasa por el barrido
+    // de abajo para que sus bloques futuros queden archivados.
+    const archivada = String(fila[COLUMNAS_HORARIO.indexOf('archivado')] || '').trim() === 'TRUE';
     const regla = filaARegla(fila, id);
-    const ocurrencias = calcularOcurrencias(regla, hoy);
+    const ocurrencias = archivada ? [] : calcularOcurrencias(regla, hoy);
     const idsValidos = {};
 
     ocurrencias.forEach(function (fecha) {
@@ -234,6 +257,98 @@ function borrarSerie(idSerie) {
   }
 
   return { borrados: aBorrar.length };
+}
+
+/** Devuelve las reglas tal como están en la hoja, para el editor de la app. */
+function listarHorario() {
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_HORARIO);
+  return hoja.getDataRange().getDisplayValues()
+    .slice(1)
+    .filter(function (fila) { return fila[1]; })
+    .map(function (fila) {
+      const regla = {};
+      COLUMNAS_HORARIO.forEach(function (clave, indice) { regla[clave] = fila[indice] || ''; });
+      return regla;
+    });
+}
+
+function crearRegla(datos) {
+  const entrada = datos || {};
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_HORARIO);
+  const filas = hoja.getDataRange().getDisplayValues();
+
+  const regla = { id: nuevoIdDeSerie(idsDeSerieUsados(filas)), archivado: '' };
+  CAMPOS_EDITABLES_REGLA.forEach(function (campo) {
+    const valor = entrada[campo];
+    regla[campo] = campo === 'notas' ? String(valor || '') : String(valor || '').trim();
+  });
+
+  validarRegla(regla);
+  hoja.appendRow(reglaAFila(regla));
+  return regla;
+}
+
+function actualizarRegla(id, cambios) {
+  const ubicacion = buscarFilaDeRegla(id);
+  const regla = ubicacion.regla;
+
+  CAMPOS_EDITABLES_REGLA.forEach(function (campo) {
+    if (cambios && cambios[campo] !== undefined && cambios[campo] !== null) {
+      regla[campo] = campo === 'notas' ? String(cambios[campo]) : String(cambios[campo]).trim();
+    }
+  });
+
+  validarRegla(regla);
+  ubicacion.hoja
+    .getRange(ubicacion.fila, 1, 1, COLUMNAS_HORARIO.length)
+    .setValues([reglaAFila(regla)]);
+  return regla;
+}
+
+/**
+ * Archiva una regla: deja de generar bloques. Los bloques futuros que ya
+ * había generado se archivan en la próxima corrida de generarHorario().
+ */
+function archivarRegla(id) {
+  const ubicacion = buscarFilaDeRegla(id);
+  const regla = ubicacion.regla;
+  regla.archivado = 'TRUE';
+  ubicacion.hoja
+    .getRange(ubicacion.fila, 1, 1, COLUMNAS_HORARIO.length)
+    .setValues([reglaAFila(regla)]);
+  return regla;
+}
+
+function buscarFilaDeRegla(id) {
+  const buscado = String(id || '').trim();
+  if (!buscado) {
+    throw new Error('falta_id_regla');
+  }
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_HORARIO);
+  const filas = hoja.getDataRange().getDisplayValues();
+  for (let f = 1; f < filas.length; f++) {
+    if (filas[f][0] === buscado) {
+      const regla = {};
+      COLUMNAS_HORARIO.forEach(function (clave, indice) { regla[clave] = filas[f][indice] || ''; });
+      return { hoja: hoja, fila: f + 1, regla: regla };
+    }
+  }
+  throw new Error('regla_no_encontrada: ' + buscado);
+}
+
+function reglaAFila(regla) {
+  return COLUMNAS_HORARIO.map(function (clave) {
+    return regla[clave] != null ? regla[clave] : '';
+  });
+}
+
+/** Misma validación que usa el generador, para fallar al guardar y no después. */
+function validarRegla(regla) {
+  if (!regla.titulo) {
+    throw new Error('falta_titulo');
+  }
+  validarArea(regla.area);
+  filaARegla(reglaAFila(regla), regla.id);
 }
 
 function filaARegla(fila, id) {

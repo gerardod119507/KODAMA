@@ -9,7 +9,7 @@ const ENCABEZADOS_BLOQUES = [
   'etiqueta', 'notas', 'creado', 'actualizado', 'archivado'
 ];
 const ENCABEZADOS_HORARIO = [
-  'id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas'
+  'id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado'
 ];
 
 // Esta es la prueba de regresión del fallo del Checkpoint 4: la hoja

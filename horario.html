@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KODAMA — Horario</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="cabecera">
+    <h1>Horario</h1>
+    <nav class="enlaces-cabecera">
+      <a href="index.html">Día</a>
+      <a href="config.html">Configuración</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="nota">
+      Cada fila es una regla del semestre. "Regenerar" crea los bloques de
+      cada fecha; nunca toca fechas pasadas.
+    </p>
+
+    <button id="regenerar" type="button">Regenerar horario</button>
+    <p id="resultado-regenerar" role="status"></p>
+
+    <div id="lista-reglas"></div>
+  </main>
+
+  <div class="acciones-flotantes">
+    <button id="nueva-regla" type="button" class="fab" aria-label="Nueva regla">+</button>
+  </div>
+
+  <dialog id="dialogo-regla">
+    <form id="form-regla">
+      <h2 id="titulo-dialogo-regla">Nueva regla</h2>
+
+      <label for="regla-titulo">Título</label>
+      <input id="regla-titulo" type="text" autocapitalize="sentences"
+             autocomplete="off" enterkeyhint="done" />
+
+      <label for="regla-area">Área</label>
+      <select id="regla-area"></select>
+
+      <label for="regla-dias">Días</label>
+      <input id="regla-dias" type="text" autocomplete="off"
+             placeholder="Lun, Mié, Vie" autocapitalize="words" />
+
+      <div class="fila-horas">
+        <div>
+          <label for="regla-inicio">Inicio</label>
+          <input id="regla-inicio" type="time" />
+        </div>
+        <div>
+          <label for="regla-fin">Fin</label>
+          <input id="regla-fin" type="time" />
+        </div>
+      </div>
+
+      <div class="fila-horas">
+        <div>
+          <label for="regla-desde">Desde</label>
+          <input id="regla-desde" type="date" />
+        </div>
+        <div>
+          <label for="regla-hasta">Hasta</label>
+          <input id="regla-hasta" type="date" />
+        </div>
+      </div>
+
+      <label for="regla-etiqueta">Etiqueta</label>
+      <input id="regla-etiqueta" type="text" list="sugerencias-etiqueta-regla" autocomplete="off" />
+      <datalist id="sugerencias-etiqueta-regla">
+        <option value="Nerak"></option>
+        <option value="Data cocha"></option>
+        <option value="otro"></option>
+      </datalist>
+
+      <label for="regla-notas">Notas</label>
+      <textarea id="regla-notas" rows="3" autocapitalize="sentences"></textarea>
+
+      <p id="error-regla" class="error" role="alert"></p>
+
+      <div class="acciones-dialogo">
+        <button type="button" id="cancelar-regla" class="secundario">Cancelar</button>
+        <button type="button" id="archivar-regla" class="fantasma" hidden>Archivar</button>
+        <button type="submit" id="guardar-regla">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/fecha.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/horario.js"></script>
+</body>
+</html>

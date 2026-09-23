@@ -354,3 +354,192 @@ ul {
   font-size: var(--texto-sm);
   opacity: 0.7;
 }
+
+/* Tarjetas de bloque como botón (tocar para editar) */
+
+.bloque {
+  margin: 0;
+  width: 100%;
+  color: var(--fg);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+}
+
+.bloque:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+/* Acciones flotantes (siempre visibles sobre la vista de día) */
+
+.acciones-flotantes {
+  position: fixed;
+  right: var(--espacio-4);
+  bottom: var(--espacio-4);
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  z-index: 10;
+}
+
+.fab {
+  margin: 0;
+  min-height: 3.25rem;
+  padding: 0 var(--espacio-4);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-sm);
+  font-size: var(--texto-base);
+}
+
+.fab[aria-label="Nuevo bloque"],
+.fab[aria-label="Nueva regla"] {
+  width: 3.25rem;
+  padding: 0;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.fab--secundario {
+  color: var(--forest);
+  background: var(--bone);
+  border-color: var(--forest);
+}
+
+/* Diálogo de formulario */
+
+dialog {
+  width: min(100%, 32rem);
+  max-height: 90vh;
+  padding: var(--espacio-5);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+dialog::backdrop {
+  background: rgba(14, 23, 19, 0.5);
+}
+
+dialog h2 {
+  margin-top: 0;
+}
+
+dialog select,
+dialog textarea {
+  width: 100%;
+  padding: var(--espacio-3);
+  font: inherit;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--fg);
+  border-radius: var(--radio-sm);
+}
+
+/* Campos cómodos en el celular: nunca menos de 16px, o iOS hace zoom. */
+dialog input,
+dialog select,
+dialog textarea {
+  font-size: max(1rem, 16px);
+  min-height: 2.75rem;
+}
+
+.fila-horas {
+  display: flex;
+  gap: var(--espacio-3);
+}
+
+.fila-horas > div {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.modo-rapido .solo-completo {
+  display: none;
+}
+
+.acciones-dialogo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+  justify-content: flex-end;
+  margin-top: var(--espacio-4);
+}
+
+.acciones-dialogo button {
+  margin-top: 0;
+}
+
+.error {
+  color: var(--tipo-reunion);
+  font-weight: 600;
+  margin: var(--espacio-3) 0 0;
+  overflow-wrap: anywhere;
+}
+
+.error:empty {
+  margin: 0;
+}
+
+/* Editor de reglas del horario */
+
+.enlaces-cabecera {
+  display: flex;
+  gap: var(--espacio-3);
+}
+
+.enlaces-cabecera a {
+  color: var(--fg);
+  font-size: var(--texto-sm);
+  opacity: 0.75;
+  text-decoration: none;
+}
+
+.enlaces-cabecera a:hover,
+.enlaces-cabecera a:focus-visible {
+  opacity: 1;
+}
+
+#lista-reglas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  margin-top: var(--espacio-4);
+  padding-bottom: 5rem;
+}
+
+.regla {
+  margin: 0;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--fg);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-md);
+  padding: var(--espacio-3) var(--espacio-4);
+  cursor: pointer;
+}
+
+.regla--archivada {
+  opacity: 0.55;
+}
+
+.regla__titulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.regla__meta {
+  margin: var(--espacio-1) 0 0;
+  font-size: var(--texto-sm);
+  opacity: 0.75;
+}
+
+main {
+  padding-bottom: 6rem;
+}

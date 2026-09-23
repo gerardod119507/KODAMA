@@ -9,7 +9,10 @@
 <body>
   <header class="cabecera">
     <h1>KODAMA</h1>
-    <a class="enlace-config" href="config.html">Configuración</a>
+    <nav class="enlaces-cabecera">
+      <a href="horario.html">Horario</a>
+      <a href="config.html">Configuración</a>
+    </nav>
   </header>
 
   <main>
@@ -24,6 +27,64 @@
     <div id="vista-dia"></div>
   </main>
 
+  <div class="acciones-flotantes">
+    <button id="nueva-reunion" type="button" class="fab fab--secundario">Reunión</button>
+    <button id="nuevo-bloque" type="button" class="fab" aria-label="Nuevo bloque">+</button>
+  </div>
+
+  <dialog id="dialogo-bloque">
+    <form id="form-bloque">
+      <h2 id="titulo-dialogo">Nuevo bloque</h2>
+
+      <label for="campo-titulo">Título</label>
+      <input id="campo-titulo" type="text" autocapitalize="sentences"
+             autocomplete="off" enterkeyhint="done" />
+
+      <div class="solo-completo">
+        <label for="campo-area">Área</label>
+        <select id="campo-area"></select>
+
+        <label for="campo-tipo">Tipo</label>
+        <select id="campo-tipo"></select>
+
+        <label for="campo-fecha">Fecha</label>
+        <input id="campo-fecha" type="date" />
+      </div>
+
+      <div class="fila-horas">
+        <div>
+          <label for="campo-inicio">Inicio</label>
+          <input id="campo-inicio" type="time" />
+        </div>
+        <div>
+          <label for="campo-fin">Fin</label>
+          <input id="campo-fin" type="time" />
+        </div>
+      </div>
+
+      <div class="solo-completo">
+        <label for="campo-etiqueta">Etiqueta</label>
+        <input id="campo-etiqueta" type="text" list="sugerencias-etiqueta" autocomplete="off" />
+        <datalist id="sugerencias-etiqueta">
+          <option value="Nerak"></option>
+          <option value="Data cocha"></option>
+          <option value="otro"></option>
+        </datalist>
+
+        <label for="campo-notas">Notas</label>
+        <textarea id="campo-notas" rows="3" autocapitalize="sentences"></textarea>
+      </div>
+
+      <p id="error-bloque" class="error" role="alert"></p>
+
+      <div class="acciones-dialogo">
+        <button type="button" id="cancelar-bloque" class="secundario">Cancelar</button>
+        <button type="button" id="archivar-bloque" class="fantasma" hidden>Archivar</button>
+        <button type="submit" id="guardar-bloque">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="js/fecha.js"></script>
   <script src="js/api.js"></script>
   <script src="js/state.js"></script>
@@ -31,6 +92,7 @@
   <script src="js/ui/iconos.js"></script>
   <script src="js/ui/espiritu.js"></script>
   <script src="js/ui/dia.js"></script>
+  <script src="js/ui/formulario.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

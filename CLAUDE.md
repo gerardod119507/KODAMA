@@ -212,6 +212,9 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   regenerar, idempotencia, y convivencia con lo editado a mano.
 - `tests/frontend.test.js` — lógica pura del navegador: filtro de capas y
   agrupación de bloques que se pisan.
+- `tests/escritura.test.js` — las acciones de escritura del Checkpoint 5:
+  crear/editar/archivar bloques y reglas, validaciones que fallan sin tocar
+  la hoja, y que todas exijan token.
 
 **Qué NO cubren:** nada que necesite un navegador o el Sheet real (render
 del DOM, CSS, permisos de Google, que el despliegue efectivamente sirva la
@@ -266,7 +269,7 @@ Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
 
 ### Hoja `Horario` (Checkpoint 4)
 Columnas: `id`, `título`, `área`, `días`, `inicio`, `fin`, `desde`, `hasta`,
-`etiqueta`, `notas`. Cada fila es una **regla** ("esta clase se repite estos
+`etiqueta`, `notas`, `archivado`. Cada fila es una **regla** ("esta clase se repite estos
 días, entre estas fechas"), no una clase puntual.
 
 - **`id`**: lo asigna siempre `generarHorario()` y lo escribe de vuelta en
@@ -287,6 +290,11 @@ días, entre estas fechas"), no una clase puntual.
 - **`inicio`/`fin`**: `HH:mm`. **`desde`/`hasta`**: `YYYY-MM-DD`. Mismo
   formato de texto que en `Bloques`, mismo motivo (Sheets no debe
   autoconvertirlas).
+- **`archivado`** (Checkpoint 5): `TRUE` o vacío. Una regla archivada deja
+  de generar bloques, y sus bloques futuros se archivan en la próxima
+  corrida. Se agregó **al final** de la hoja (no en el medio) para no mover
+  ninguna columna existente; `migrarColumnaArchivadoHorario()` en Horario.gs
+  lo hace solo y es idempotente.
 
 **`generarHorario()` (Horario.gs) — cómo genera:**
 
@@ -354,6 +362,26 @@ con el código, el código manda:
 - `generarHorario` — sin parámetros. Lee la hoja `Horario`, crea/actualiza
   bloques fijos en `Bloques` (ver "Modelo de datos" para el algoritmo
   completo) y devuelve `{ creados, actualizados, archivados }`.
+- `crearBloque` — parámetro `bloque` con `{ titulo, area, tipo, fecha,
+  inicio, fin, etiqueta, notas }`. Valida todo antes de escribir (área
+  existente, tipo válido, formatos de fecha/hora, `inicio < fin`) y falla
+  sin tocar la hoja si algo está mal. El id es `b` + 8 hexadecimales, **sin
+  sufijo de fecha**, así el generador del horario nunca lo confunde con un
+  bloque de serie. Devuelve el bloque creado.
+- `actualizarBloque` — parámetros `id` y `cambios`. Solo toca los campos que
+  vienen en `cambios`; el resto queda como estaba. Revalida el bloque
+  completo antes de escribir.
+- `archivarBloque` — parámetro `id`. Marca `archivado = TRUE`. Nunca borra.
+- `listarHorario` — sin parámetros. Devuelve todas las reglas de la hoja
+  `Horario`, incluidas las archivadas (con `archivado: "TRUE"`), para el
+  editor de la app.
+- `crearRegla` — parámetro `regla`. Asigna el id de serie y valida con la
+  misma función que usa el generador, así un error se ve al guardar y no
+  recién al regenerar.
+- `actualizarRegla` — parámetros `id` y `cambios`, misma lógica parcial que
+  `actualizarBloque`.
+- `archivarRegla` — parámetro `id`. La regla deja de generar bloques; sus
+  bloques futuros se archivan en la próxima corrida de `generarHorario`.
 - `listarSeries` — sin parámetros. Devuelve
   `[{ idSerie, titulo, cantidad }]` con las series que hoy tienen bloques,
   incluidas las **huérfanas** (sin fila en `Horario`), que son las que hay
@@ -383,6 +411,30 @@ conexión). Crear o editar un bloque **requiere conexión** — si falla el
 POST, se muestra error y no se guarda nada localmente. No hay cola offline
 ni sincronización diferida en el MVP: se agrega complejidad (conflictos,
 reintentos) que no se justifica para un uso personal.
+
+## Escritura desde la app (Checkpoint 5)
+
+Desde el Checkpoint 5 **no hace falta abrir el Sheet para nada de uso
+diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
+
+- **Vista de día** (`index.html`): botón `+` (bloque completo) y botón
+  "Reunión" (modo rápido: solo título y hora, el resto por defecto) siempre
+  visibles. Tocar un bloque lo abre para editar o archivar.
+  `js/ui/formulario.js` es un solo diálogo con dos modos; el rápido oculta
+  los campos `.solo-completo` por CSS en vez de duplicar el formulario.
+- **Editor de horario** (`horario.html` + `js/horario.js`): lista de reglas,
+  crear/editar/archivar, y botón "Regenerar horario".
+- **Valores por defecto**: fecha = el día que se está viendo; inicio = la
+  próxima media hora en `America/La_Paz`; fin = +60 min (bloque) o +30 min
+  (reunión); área = la capa activa, o Universidad si la capa es General;
+  tipo = `variable` (bloque) o `reunión` (rápido).
+- **Celular primero**: `type="date"` y `type="time"` para que salga el
+  selector nativo, `type="text"` y `<textarea>` en título y notas para que
+  funcione el dictado por voz del teclado, y `font-size: max(1rem, 16px)` en
+  los campos del diálogo porque iOS hace zoom automático con menos de 16px.
+- **Escribir requiere conexión** (igual que dice "Caché local"): si el POST
+  falla, **el diálogo queda abierto con todo lo escrito** y muestra el error
+  del backend. Nunca se cierra ni se limpia un formulario que no se guardó.
 
 ## Capas (vista de día)
 
@@ -507,7 +559,8 @@ KODAMA/
 ├── .gitignore               # .clasp.json / .clasprc.json (nunca al repo)
 ├── package.json             # sin dependencias: solo el comando de pruebas
 ├── tests/                   # pruebas con el runner de Node (ver "Pruebas automáticas")
-├── index.html              # vista principal (día/semana)
+├── index.html              # vista de día + alta/edición de bloques
+├── horario.html            # editor de las reglas del semestre
 ├── config.html             # URL del Web App + token, y prueba de conexión
 ├── manifest.webmanifest    # PWA (checkpoint 7)
 ├── sw.js                   # service worker (checkpoint 7)
@@ -517,17 +570,20 @@ KODAMA/
 │   ├── app.js               # bootstrap de index.html (vista de día)
 │   ├── api.js                # fetch al Web App (POST text/plain)
 │   ├── config.js              # lógica de config.html
+│   ├── horario.js              # lógica de horario.html (editor de reglas)
 │   ├── state.js               # estado en memoria + cache local (lectura)
 │   ├── fecha.js                # fecha "hoy" y formato legible en America/La_Paz
 │   ├── capas.js                 # selector de capa (día): leer/guardar/filtrar
 │   └── ui/
 │       ├── dia.js                # render de bloques (agrupa los que se pisan)
+│       ├── formulario.js          # diálogo de alta/edición de bloque
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
 ├── icons/                   # íconos PWA
 ├── apps-script/
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
 │   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
+│   ├── Bloques.gs             # crear/editar/archivar bloques desde la app
 │   ├── Setup.gs               # configurarHojas() y generarToken(), un solo uso
 │   └── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
 ├── docs/

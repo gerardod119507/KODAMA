@@ -74,9 +74,13 @@ const KodamaDia = (function () {
     contenedor.appendChild(vacio);
   }
 
-  function crearTarjeta(bloque, indice) {
-    const tarjeta = document.createElement('div');
+  function crearTarjeta(bloque, indice, alTocar) {
+    const tarjeta = document.createElement('button');
+    tarjeta.type = 'button';
     tarjeta.className = 'bloque bloque--' + normalizarTipo(bloque.tipo);
+    if (alTocar) {
+      tarjeta.addEventListener('click', function () { alTocar(bloque); });
+    }
     tarjeta.style.setProperty('--color-bloque', colorDeBloque(bloque));
     tarjeta.style.setProperty('--indice', String(indice));
 
@@ -132,7 +136,7 @@ const KodamaDia = (function () {
     return grupos;
   }
 
-  function renderLista(contenedor, bloques) {
+  function renderLista(contenedor, bloques, alTocar) {
     contenedor.replaceChildren();
     const lista = document.createElement('ul');
     lista.className = 'lista-bloques';
@@ -141,11 +145,11 @@ const KodamaDia = (function () {
     agruparPorSolapamiento(bloques).forEach(function (grupo) {
       const li = document.createElement('li');
       if (grupo.length === 1) {
-        li.appendChild(crearTarjeta(grupo[0], indice++));
+        li.appendChild(crearTarjeta(grupo[0], indice++, alTocar));
       } else {
         li.className = 'fila-simultanea';
         grupo.forEach(function (bloque) {
-          li.appendChild(crearTarjeta(bloque, indice++));
+          li.appendChild(crearTarjeta(bloque, indice++, alTocar));
         });
       }
       lista.appendChild(li);
@@ -154,11 +158,12 @@ const KodamaDia = (function () {
     contenedor.appendChild(lista);
   }
 
-  function render(contenedor, bloques, opcionesVacio) {
+  function render(contenedor, bloques, opciones) {
+    const config = opciones || {};
     if (bloques.length === 0) {
-      renderVacio(contenedor, opcionesVacio);
+      renderVacio(contenedor, config);
     } else {
-      renderLista(contenedor, bloques);
+      renderLista(contenedor, bloques, config.alTocar);
     }
   }
 

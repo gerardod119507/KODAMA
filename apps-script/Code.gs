@@ -46,6 +46,27 @@ const ACCIONES = {
   generarHorario: function () {
     return generarHorario();
   },
+  crearBloque: function (peticion) {
+    return crearBloque(peticion.bloque);
+  },
+  actualizarBloque: function (peticion) {
+    return actualizarBloque(peticion.id, peticion.cambios);
+  },
+  archivarBloque: function (peticion) {
+    return archivarBloque(peticion.id);
+  },
+  listarHorario: function () {
+    return listarHorario();
+  },
+  crearRegla: function (peticion) {
+    return crearRegla(peticion.regla);
+  },
+  actualizarRegla: function (peticion) {
+    return actualizarRegla(peticion.id, peticion.cambios);
+  },
+  archivarRegla: function (peticion) {
+    return archivarRegla(peticion.id);
+  },
   listarSeries: function () {
     return listarSeries();
   },
