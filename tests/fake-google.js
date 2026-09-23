@@ -14,7 +14,7 @@ const path = require('path');
 const vm = require('vm');
 
 const CARPETA_GS = path.join(__dirname, '..', 'apps-script');
-const ARCHIVOS_GS = ['Code.gs', 'Horario.gs', 'Setup.gs'];
+const ARCHIVOS_GS = ['Code.gs', 'Bloques.gs', 'Horario.gs', 'Setup.gs'];
 
 const FILAS_POR_DEFECTO = 1000;
 
@@ -176,6 +176,12 @@ class FakeHoja {
   }
 
   setFrozenRows(n) { this.filasCongeladas = n; return this; }
+
+  appendRow(valores) {
+    const fila = this.getLastRow(); // 0-indexado para la fila nueva
+    valores.forEach((valor, j) => this._escribir(fila, j, valor));
+    return this;
+  }
 
   /** Atajo para las pruebas: cargar filas de golpe. */
   sembrar(filas) {

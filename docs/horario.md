@@ -4,6 +4,12 @@ Esto reemplaza tener que escribir a mano cada clase de cada semana en
 `Bloques`. Escribís **una fila por materia/actividad fija** en `Horario`, y
 un botón genera todas las fechas.
 
+> **Desde el Checkpoint 5 podés hacer todo esto desde la app**, sin abrir
+> el Sheet: abrí `horario.html` (enlace "Horario" arriba), tocá `+` para
+> agregar una regla, tocá una regla para editarla o archivarla, y usá
+> "Regenerar horario". Lo de abajo sigue valiendo si preferís escribir
+> directo en la hoja.
+
 ## 1. Llenar la hoja `Horario`
 
 Abrí tu Sheet → pestaña **Horario** (el Web App la crea sola la primera vez

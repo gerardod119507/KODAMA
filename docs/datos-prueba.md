@@ -1,7 +1,8 @@
 # Agregar bloques de prueba (Checkpoint 3)
 
-Esto es solo para probar la vista de día. Más adelante (Checkpoint 5) vas a
-poder crear bloques desde la app; por ahora se agregan a mano en el Sheet.
+> **Desde el Checkpoint 5 ya no hace falta.** Podés crear bloques desde la
+> app con el botón `+` de la vista de día. Esto queda como referencia del
+> formato de las columnas.
 
 1. Abrí tu hoja **KODAMA** en <https://sheets.google.com>.
 2. Andá a la pestaña **Bloques** (abajo).

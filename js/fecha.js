@@ -27,5 +27,36 @@ const KodamaFecha = (function () {
     return formateadorLegible.format(fecha);
   }
 
-  return { hoy: hoy, legible: legible };
+  const formateadorHora = new Intl.DateTimeFormat('en-GB', {
+    timeZone: ZONA_HORARIA,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+
+  /** Hora actual en La Paz, redondeada hacia arriba a la media hora. */
+  function proximaMediaHora() {
+    const [horas, minutos] = formateadorHora.format(new Date()).split(':').map(Number);
+    const totalMinutos = horas * 60 + minutos;
+    const redondeado = Math.ceil(totalMinutos / 30) * 30;
+    return minutosATexto(Math.min(redondeado, 23 * 60 + 30));
+  }
+
+  function sumarMinutos(hora, minutos) {
+    const [h, m] = hora.split(':').map(Number);
+    return minutosATexto(Math.min(h * 60 + m + minutos, 23 * 60 + 59));
+  }
+
+  function minutosATexto(total) {
+    const h = String(Math.floor(total / 60)).padStart(2, '0');
+    const m = String(total % 60).padStart(2, '0');
+    return h + ':' + m;
+  }
+
+  return {
+    hoy: hoy,
+    legible: legible,
+    proximaMediaHora: proximaMediaHora,
+    sumarMinutos: sumarMinutos
+  };
 })();
