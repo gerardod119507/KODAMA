@@ -1,6 +1,8 @@
 /**
- * Diálogo para crear/editar un bloque. Un solo formulario con dos modos:
- * completo y rápido (solo título y hora, para una reunión imprevista).
+ * Diálogo para crear/editar un bloque. Un solo formulario con tres modos:
+ * completo, rápido (solo título y hora, para una reunión imprevista) y
+ * mover (solo fecha y hora). Cada modo oculta campos por CSS en vez de
+ * duplicar el formulario.
  *
  * Si guardar falla, el diálogo queda abierto con todo lo escrito: escribir
  * requiere conexión, pero perder lo tipeado no es aceptable.
@@ -8,6 +10,7 @@
 const KodamaFormulario = (function () {
   const AREAS = ['Universidad', 'Academia Fractal', 'Startup', 'Personal'];
   const TIPOS = ['fijo', 'variable', 'reunión'];
+  const CAMPOS = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas'];
 
   let dialogo;
   let campos;
@@ -50,25 +53,45 @@ const KodamaFormulario = (function () {
     });
   }
 
-  function abrirNuevo(valoresPorDefecto, modoRapido) {
-    idEnEdicion = null;
-    document.getElementById('titulo-dialogo').textContent = modoRapido ? 'Reunión rápida' : 'Nuevo bloque';
-    document.getElementById('archivar-bloque').hidden = true;
-    dialogo.classList.toggle('modo-rapido', Boolean(modoRapido));
-    escribirCampos(valoresPorDefecto);
+  function preparar(titulo, subtitulo, modo, id) {
+    idEnEdicion = id;
+    document.getElementById('titulo-dialogo').textContent = titulo;
+    const sub = document.getElementById('subtitulo-dialogo');
+    sub.textContent = subtitulo || '';
+    sub.hidden = !subtitulo;
+    document.getElementById('archivar-bloque').hidden = modo !== 'edicion';
+    dialogo.classList.toggle('modo-rapido', modo === 'rapido');
+    dialogo.classList.toggle('modo-mover', modo === 'mover');
     mostrarError('');
+  }
+
+  function abrirNuevo(valoresPorDefecto, modoRapido) {
+    preparar(modoRapido ? 'Reunión rápida' : 'Nuevo bloque', '', modoRapido ? 'rapido' : 'nuevo', null);
+    escribirCampos(valoresPorDefecto);
     dialogo.showModal();
     campos.titulo.focus();
   }
 
   function abrirEdicion(bloque) {
-    idEnEdicion = bloque.id;
-    document.getElementById('titulo-dialogo').textContent = 'Editar bloque';
-    document.getElementById('archivar-bloque').hidden = false;
-    dialogo.classList.remove('modo-rapido');
+    preparar('Editar bloque', '', 'edicion', bloque.id);
     escribirCampos(bloque);
-    mostrarError('');
     dialogo.showModal();
+  }
+
+  /** Solo fecha y hora; el resto del bloque viaja igual, sin cambios. */
+  function abrirMover(bloque) {
+    preparar('Mover bloque', bloque.titulo, 'mover', bloque.id);
+    escribirCampos(bloque);
+    dialogo.showModal();
+    campos.fecha.focus();
+  }
+
+  /** Un bloque nuevo con los mismos datos; se suele cambiar la fecha. */
+  function abrirDuplicado(bloque) {
+    preparar('Duplicar bloque', 'Copia de "' + (bloque.titulo || '') + '". Cambiá lo que haga falta y guardá.', 'nuevo', null);
+    escribirCampos(valoresDuplicado(bloque));
+    dialogo.showModal();
+    campos.fecha.focus();
   }
 
   function escribirCampos(valores) {
@@ -132,5 +155,24 @@ const KodamaFormulario = (function () {
     dialogo.close();
   }
 
-  return { iniciar: iniciar, abrirNuevo: abrirNuevo, abrirEdicion: abrirEdicion };
+  /**
+   * Los datos de un bloque para crear uno igual: sin id ni fechas de
+   * registro. Un duplicado de una clase del horario ("fijo") queda como
+   * bloque suelto: su id nuevo no tiene sufijo de fecha, así que el
+   * generador nunca lo toca.
+   */
+  function valoresDuplicado(bloque) {
+    const copia = {};
+    CAMPOS.forEach(function (campo) { copia[campo] = bloque[campo] != null ? bloque[campo] : ''; });
+    return copia;
+  }
+
+  return {
+    iniciar: iniciar,
+    abrirNuevo: abrirNuevo,
+    abrirEdicion: abrirEdicion,
+    abrirMover: abrirMover,
+    abrirDuplicado: abrirDuplicado,
+    valoresDuplicado: valoresDuplicado
+  };
 })();

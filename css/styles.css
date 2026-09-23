@@ -15,13 +15,18 @@
   --fg: var(--forest);
   --superficie: rgba(22, 55, 43, 0.05);
   --borde: rgba(22, 55, 43, 0.18);
+  /* Horas ocupadas por otras áreas (capa filtrada): gris tenue, neutro. */
+  --ocupado: rgba(110, 110, 110, 0.14);
 
   /* Tipografía */
+  --texto-xs: 0.68rem;
   --texto-sm: 0.85rem;
   --texto-base: 1rem;
   --texto-lg: 1.3rem;
 
   /* Espaciado */
+  --espacio-px: 1px;
+  --espacio-0: 0.125rem;
   --espacio-1: 0.25rem;
   --espacio-2: 0.5rem;
   --espacio-3: 0.75rem;
@@ -53,6 +58,7 @@
   --fg: var(--bone);
   --superficie: rgba(245, 241, 232, 0.06);
   --borde: rgba(245, 241, 232, 0.18);
+  --ocupado: rgba(200, 200, 200, 0.10);
   --sombra-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
 
   /* Ajustados para mantener contraste WCAG AA (>=4.5:1) sobre el fondo
@@ -132,10 +138,45 @@ h2 {
   margin-bottom: var(--espacio-4);
 }
 
-.fecha {
+.fecha-y-estado {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espacio-2);
   margin: 0;
+}
+
+.fecha {
+  display: inline-block; /* ::first-letter no aplica a elementos inline */
   font-size: var(--texto-sm);
   opacity: 0.8;
+}
+
+/* "actualizando": discreto, con un punto que late (quieto si se pidió
+   menos movimiento, por la regla global de prefers-reduced-motion). */
+.actualizando {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-1);
+  font-size: var(--texto-xs);
+  opacity: 0.6;
+}
+
+.actualizando[hidden] {
+  display: none;
+}
+
+.actualizando::before {
+  content: "";
+  width: var(--espacio-2);
+  height: var(--espacio-2);
+  border-radius: 50%;
+  background: currentColor;
+  animation: latido 1s var(--curva) infinite alternate;
+}
+
+@keyframes latido {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
 }
 
 /* Solo la primera letra ("Miércoles, 23 de septiembre", no "23 De"). */
@@ -469,8 +510,14 @@ dialog textarea {
   min-width: 0;
 }
 
-.modo-rapido .solo-completo {
+.modo-rapido .solo-completo,
+.modo-mover .oculto-al-mover {
   display: none;
+}
+
+#subtitulo-dialogo {
+  margin: 0;
+  opacity: 0.8;
 }
 
 .acciones-dialogo {
@@ -737,4 +784,187 @@ body.modo-semana .cabecera {
 .bloque-semana__hora {
   opacity: 0.75;
   font-variant-numeric: tabular-nums;
+}
+
+/* Horas ocupadas por otras áreas (capa filtrada): sin título ni aviso */
+
+.franja-ocupada {
+  padding: var(--espacio-1) var(--espacio-4);
+  border-radius: var(--radio-md);
+  background: var(--ocupado);
+  font-size: var(--texto-xs);
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+.semana__ocupado {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--min-inicio) * var(--escala-semana));
+  height: calc(var(--min-duracion) * var(--escala-semana));
+  background: var(--ocupado);
+  pointer-events: none;
+}
+
+/* Ficha de bloque (solo lectura) */
+
+.ficha {
+  position: relative;
+  border-top: 4px solid var(--color-bloque);
+}
+
+.ficha__cerrar {
+  position: absolute;
+  top: var(--espacio-2);
+  right: var(--espacio-2);
+  margin: 0;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  font-size: var(--texto-base);
+}
+
+.ficha__tipo {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin: 0 0 var(--espacio-1);
+  font-size: var(--texto-sm);
+  opacity: 0.85;
+}
+
+#ficha-tipo-area {
+  display: inline-block;
+}
+
+#ficha-tipo-area::first-letter {
+  text-transform: uppercase;
+}
+
+.ficha__tipo .bloque__icono {
+  color: var(--color-bloque);
+}
+
+.ficha h2 {
+  padding-right: var(--espacio-6);
+  overflow-wrap: anywhere;
+}
+
+.ficha__horario {
+  margin: 0 0 var(--espacio-3);
+}
+
+.ficha__horario::first-letter {
+  text-transform: uppercase;
+}
+
+.ficha__datos {
+  margin: 0;
+}
+
+.ficha__datos > div {
+  margin-bottom: var(--espacio-3);
+}
+
+.ficha__datos dt {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.ficha__datos dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ficha__notas {
+  white-space: pre-wrap;
+}
+
+.acciones-ficha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-4);
+}
+
+.acciones-ficha button {
+  margin: 0;
+  min-height: 2.75rem;
+}
+
+/* Semana compacta en el celular: los 7 días entran en la pantalla, sin
+   desplazamiento lateral. Horas más bajas, columnas angostas, bloques con
+   color de fondo y título corto. En pantallas anchas no cambia nada. */
+@media (max-width: 699px) {
+  .semana {
+    --escala-semana: 0.034rem;
+    --ancho-columna-hora: 1.5rem;
+    grid-template-columns: var(--ancho-columna-hora) repeat(7, minmax(0, 1fr));
+  }
+
+  .semana-desplazable {
+    overflow-x: visible;
+  }
+
+  .semana__dia {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--espacio-1) 0;
+    font-size: var(--texto-xs);
+    line-height: 1.2;
+  }
+
+  .semana__dia-numero {
+    font-size: var(--texto-sm);
+  }
+
+  .semana__hora {
+    right: var(--espacio-1);
+    font-size: var(--texto-xs);
+  }
+
+  .semana__hora-min {
+    display: none;
+  }
+
+  .bloque-semana {
+    padding: var(--espacio-px) var(--espacio-0);
+    border-width: 0;
+    border-left: 3px solid var(--color-bloque);
+    border-radius: var(--radio-sm);
+    box-shadow: none;
+    font-size: var(--texto-xs);
+    line-height: 1.15;
+    /* Relleno del color del área (tenue, para que el texto siga legible);
+       el borde izquierdo y el ícono siguen siendo los otros canales. */
+    background: var(--superficie);
+    background: color-mix(in srgb, var(--color-bloque) 22%, var(--bg));
+  }
+
+  .bloque-semana__cabeza {
+    gap: var(--espacio-px);
+  }
+
+  .bloque-semana .bloque__icono svg {
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-top: var(--espacio-px);
+  }
+
+  /* Título corto: se corta en sílabas con guion (lang="es") en vez de
+     letra por letra, y lo que no entra en el alto del bloque no se ve. El
+     título completo está en la ficha. */
+  .bloque-semana__titulo {
+    font-weight: 500;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .bloque-semana__hora,
+  .bloque-semana--corto .bloque-semana__hora {
+    display: none;
+  }
 }

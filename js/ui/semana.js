@@ -142,19 +142,25 @@ const KodamaSemana = (function () {
   }
 
   /**
-   * opciones: { dias: [7 fechas], hoy, bloques, alTocar }
+   * opciones: { dias: [7 fechas], hoy, bloques (los de la capa), todos
+   * (sin filtrar: la franja horaria no cambia al cambiar de capa),
+   * ocupados (franjas de otras áreas), alTocar }
    */
   function render(contenedor, opciones) {
-    const franja = calcularFranja(opciones.bloques);
+    const franja = calcularFranja(opciones.todos || opciones.bloques);
     const porDia = {};
-    opciones.dias.forEach(function (fecha) { porDia[fecha] = []; });
+    const ocupadosPorDia = {};
+    opciones.dias.forEach(function (fecha) { porDia[fecha] = []; ocupadosPorDia[fecha] = []; });
     opciones.bloques.forEach(function (bloque) {
       if (porDia[bloque.fecha]) porDia[bloque.fecha].push(bloque);
+    });
+    (opciones.ocupados || []).forEach(function (ocupado) {
+      if (ocupadosPorDia[ocupado.fecha]) ocupadosPorDia[ocupado.fecha].push(ocupado);
     });
 
     contenedor.replaceChildren();
 
-    if (opciones.bloques.length === 0) {
+    if (opciones.bloques.length === 0 && (opciones.ocupados || []).length === 0) {
       const vacio = document.createElement('p');
       vacio.className = 'estado';
       vacio.textContent = 'Semana libre. No hay bloques en estos 7 días.';
@@ -177,7 +183,15 @@ const KodamaSemana = (function () {
     opciones.dias.forEach(function (fecha) {
       const encabezado = document.createElement('div');
       encabezado.className = 'semana__dia';
-      encabezado.textContent = KodamaFecha.diaCorto(fecha);
+      // "lun" y "22" por separado: en el celular van en dos líneas.
+      const partes = KodamaFecha.diaCorto(fecha).split(' ');
+      const nombre = document.createElement('span');
+      nombre.className = 'semana__dia-nombre';
+      nombre.textContent = partes[0];
+      const numero = document.createElement('span');
+      numero.className = 'semana__dia-numero';
+      numero.textContent = partes[1];
+      encabezado.append(nombre, ' ', numero);
       if (fecha === opciones.hoy) {
         encabezado.classList.add('semana__dia--hoy');
         encabezado.setAttribute('aria-current', 'date');
@@ -192,7 +206,14 @@ const KodamaSemana = (function () {
       const etiqueta = document.createElement('span');
       etiqueta.className = 'semana__hora';
       etiqueta.style.setProperty('--min-inicio', String(m - franja.desde));
-      etiqueta.textContent = horaTexto(m);
+      // "07" + ":00": en el celular se oculta ":00" para ganar ancho.
+      const texto = horaTexto(m).split(':');
+      const hora = document.createElement('span');
+      hora.textContent = texto[0];
+      const minutos = document.createElement('span');
+      minutos.className = 'semana__hora-min';
+      minutos.textContent = ':' + texto[1];
+      etiqueta.append(hora, minutos);
       horas.appendChild(etiqueta);
     }
     grilla.appendChild(horas);
@@ -202,6 +223,16 @@ const KodamaSemana = (function () {
       const columna = document.createElement('div');
       columna.className = 'semana__columna';
       if (fecha === opciones.hoy) columna.classList.add('semana__columna--hoy');
+      ocupadosPorDia[fecha].forEach(function (ocupado) {
+        const t = tramo(ocupado);
+        if (!t) return;
+        const banda = document.createElement('div');
+        banda.className = 'semana__ocupado';
+        banda.setAttribute('aria-hidden', 'true');
+        banda.style.setProperty('--min-inicio', String(t.inicio - franja.desde));
+        banda.style.setProperty('--min-duracion', String(t.fin - t.inicio));
+        columna.appendChild(banda);
+      });
       distribuir(porDia[fecha]).forEach(function (posicion) {
         columna.appendChild(crearBloque(posicion, franja, indice++, opciones.alTocar));
       });

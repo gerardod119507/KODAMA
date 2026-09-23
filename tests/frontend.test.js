@@ -140,3 +140,46 @@ test('una lista vacía no produce filas', () => {
   const env = cargarModulos(MODULOS_DIA);
   assert.deepStrictEqual(agrupar(env, []), []);
 });
+
+// ---------------------------------------------------------------
+// Capa filtrada: horas ocupadas por otras áreas (franja gris, sin título)
+// ---------------------------------------------------------------
+
+function conFecha(fecha, inicio, fin, area) {
+  return Object.assign(bloque(inicio, fin, area), { fecha: fecha });
+}
+
+test('en General no hay franjas de ocupado', () => {
+  const env = cargarModulos(MODULOS_CAPAS);
+  const bloques = [conFecha('2026-09-23', '09:00', '10:00', 'Universidad')];
+  assert.deepStrictEqual(env.ejecutar('KodamaCapas.ocupadosPorOtras(__arg, "General")', bloques), []);
+});
+
+test('en una capa, las otras áreas quedan como franjas sin título ni área', () => {
+  const env = cargarModulos(MODULOS_CAPAS);
+  const bloques = [
+    conFecha('2026-09-23', '09:00', '10:00', 'Universidad'),
+    conFecha('2026-09-23', '11:00', '12:00', 'Startup'),
+    conFecha('2026-09-24', '15:00', '16:00', 'Personal')
+  ];
+  assert.deepStrictEqual(env.ejecutar('KodamaCapas.ocupadosPorOtras(__arg, "Startup")', bloques), [
+    { fecha: '2026-09-23', inicio: '09:00', fin: '10:00' },
+    { fecha: '2026-09-24', inicio: '15:00', fin: '16:00' }
+  ]);
+});
+
+test('las franjas que se pisan o se tocan el mismo día se funden en una', () => {
+  const env = cargarModulos(MODULOS_CAPAS);
+  const bloques = [
+    conFecha('2026-09-23', '09:00', '10:00', 'Universidad'),
+    conFecha('2026-09-23', '09:30', '11:00', 'Personal'),
+    conFecha('2026-09-23', '11:00', '11:30', 'Academia Fractal'),
+    conFecha('2026-09-23', '14:00', '15:00', 'Universidad'),
+    conFecha('2026-09-24', '09:00', '10:00', 'Universidad')
+  ];
+  assert.deepStrictEqual(env.ejecutar('KodamaCapas.ocupadosPorOtras(__arg, "Startup")', bloques), [
+    { fecha: '2026-09-23', inicio: '09:00', fin: '11:30' },
+    { fecha: '2026-09-23', inicio: '14:00', fin: '15:00' },
+    { fecha: '2026-09-24', inicio: '09:00', fin: '10:00' }
+  ]);
+});
