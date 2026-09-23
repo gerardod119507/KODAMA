@@ -66,3 +66,20 @@ document.getElementById('probar-malo').addEventListener('click', async function 
     mostrar('Error: ' + error.message);
   }
 });
+
+document.getElementById('generar-horario').addEventListener('click', async function () {
+  const resultadoHorario = document.getElementById('resultado-horario');
+  resultadoHorario.textContent = 'Generando...';
+  try {
+    const respuesta = await KodamaApi.llamar(campoUrl.value, campoToken.value, 'generarHorario');
+    if (!respuesta.ok) {
+      resultadoHorario.textContent = 'Error: ' + respuesta.error;
+      return;
+    }
+    const datos = respuesta.data;
+    resultadoHorario.textContent = 'Listo: ' + datos.creados + ' creados, ' +
+      datos.actualizados + ' actualizados, ' + datos.archivados + ' archivados.';
+  } catch (error) {
+    resultadoHorario.textContent = 'Error: ' + error.message;
+  }
+});

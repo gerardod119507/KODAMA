@@ -190,7 +190,8 @@ tipo de bloque):
 
 ### Hoja `Bloques`
 Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
-`fecha`, `inicio`, `fin`, `notas`, `creado`, `actualizado`, `archivado`.
+`fecha`, `inicio`, `fin`, `etiqueta`, `notas`, `creado`, `actualizado`,
+`archivado`.
 
 - **Fecha y hora se guardan como TEXTO**, formato `YYYY-MM-DD` y `HH:mm`
   (ej. `2026-09-22`, `14:30`). Motivo: si se guardan como tipo Fecha/Hora,
@@ -203,11 +204,73 @@ Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
   cálculos de fecha/hora en Apps Script quedan desfasados.
 - **Archivar, no borrar:** `archivado` es `TRUE`/`FALSE` (o vacío). Borrar un
   bloque de verdad no es parte del MVP.
+- **`etiqueta`** (Checkpoint 4): texto libre, opcional. Para Startup se
+  sugieren "Nerak", "Data cocha" y "otro" — sugieren, no restringen: la
+  celda tiene una lista desplegable de Sheets con "permitir inválido"
+  activado (`SpreadsheetApp` → `DataValidationBuilder.setAllowInvalid(true)`),
+  así que se puede escribir cualquier otra cosa. Cambiarla nunca requiere
+  regenerar nada: el generador del horario (ver más abajo) nunca toca
+  `etiqueta` ni `notas` en un bloque que ya existía, solo las completa al
+  crearlo por primera vez.
+- **Columna agregada en el Checkpoint 4 a una hoja que ya tenía datos:**
+  `asegurarHojaBloques()` (Code.gs) detecta si falta `etiqueta` en el
+  encabezado y, si falta, inserta la columna justo antes de `notas` con
+  `insertColumnBefore` — corre las columnas existentes sin tocar ninguna
+  fila. Si la hoja ya tiene `etiqueta`, no hace nada (idempotente).
 
-### Hoja `Horario` (checkpoint 4)
-Define las clases fijas del semestre; una función de Apps Script la lee y
-genera una fila individual por cada clase en `Bloques`. Sin recurrencia
-compleja: se materializan filas, no reglas.
+### Hoja `Horario` (Checkpoint 4)
+Columnas: `id`, `título`, `área`, `días`, `inicio`, `fin`, `desde`, `hasta`,
+`etiqueta`, `notas`. Cada fila es una **regla** ("esta clase se repite estos
+días, entre estas fechas"), no una clase puntual.
+
+- **`id`**: lo asigna solo `generarHorario()` la primera vez que procesa esa
+  fila (si la celda está vacía), y lo escribe de vuelta en la hoja. No hace
+  falta completarlo a mano. Sirve para que los bloques que genera esa regla
+  sean identificables y siempre los mismos aunque cambie el título.
+- **`días`**: abreviaturas en español separadas por lo que sea (coma,
+  espacio, guion, barra) — `Lun`, `Mar`, `Mié`, `Jue`, `Vie`, `Sáb`, `Dom`,
+  con o sin tilde, mayúscula o minúscula (`parseDias()` en Horario.gs solo
+  mira las primeras 3 letras sin tilde). Un día no reconocido tira un error
+  que nombra el token y la fila, no falla en silencio.
+- **`inicio`/`fin`**: `HH:mm`. **`desde`/`hasta`**: `YYYY-MM-DD`. Mismo
+  formato de texto que en `Bloques`, mismo motivo (Sheets no debe
+  autoconvertirlas).
+
+**`generarHorario()` (Horario.gs) — cómo genera:**
+
+1. Por cada fila de `Horario` con título, calcula todas las fechas entre
+   `desde` y `hasta` cuyo día de semana está en `días`.
+2. **Nunca toca el pasado**: de esas fechas, solo procesa las que son de
+   hoy en adelante (`fecha >= hoy`, comparación de texto `YYYY-MM-DD`, que
+   ordena igual que una fecha real). Aunque `desde` sea anterior a hoy, esas
+   fechas pasadas simplemente no se generan ni se tocan.
+3. El `id` de cada bloque generado es `idDeLaRegla + '-' + fecha` — estable
+   entre corridas, así una fecha ya generada se **actualiza** (no se
+   duplica) la próxima vez.
+4. Si el bloque para esa fecha **ya existe y está archivado** (Gerardo
+   canceló esa clase puntual archivándola), no se toca — ni se actualiza ni
+   se "revive".
+5. Si el bloque ya existe y no está archivado, se refrescan `título`,
+   `área`, `tipo` (siempre `fijo`), `inicio`, `fin`; **nunca** se tocan
+   `etiqueta`, `notas` ni `archivado` (son del bloque puntual, no de la
+   regla).
+6. Si el bloque no existe, se crea con `etiqueta` copiada de la regla,
+   `notas` vacío.
+7. Si una fecha futura **ya existía** de una corrida anterior pero la regla
+   editada ya no la genera (se acortó `hasta`, se sacó un día), esa fila se
+   **archiva** — nunca se borra (regla del proyecto).
+8. Todo el cálculo se hace en memoria y se escribe con una sola lectura y
+   una sola escritura de toda la hoja `Bloques` (no una llamada a Sheets por
+   fila), para que no sea lento con varias reglas.
+
+Devuelve `{ creados, actualizados, archivados }`. El botón "Generar horario
+del semestre" en `config.html` llama a la acción `generarHorario` y muestra
+ese resumen.
+
+**Cancelar una clase puntual** (un feriado, una clase que no fue): se
+archiva esa fila específica directamente en `Bloques`, nunca se edita
+`Horario` para eso — `Horario` son las reglas generales, no el detalle de
+cada semana.
 
 ## API (acciones del Web App)
 
@@ -234,8 +297,11 @@ con el código, el código manda:
   bloques de ese día no archivados, ordenados por `inicio`. Cada bloque usa
   claves en ASCII —`titulo`, `area`, sin tildes— aunque en la hoja las
   columnas se llamen `título`/`área`, para que el JSON no dependa de
-  codificación: `{ id, titulo, area, tipo, fecha, inicio, fin, notas,
-  creado, actualizado, archivado }`.
+  codificación: `{ id, titulo, area, tipo, fecha, inicio, fin, etiqueta,
+  notas, creado, actualizado, archivado }`.
+- `generarHorario` — sin parámetros. Lee la hoja `Horario`, crea/actualiza
+  bloques fijos en `Bloques` (ver "Modelo de datos" para el algoritmo
+  completo) y devuelve `{ creados, actualizados, archivados }`.
 
 Se agrega una acción por checkpoint; esta lista se mantiene al día.
 
@@ -256,6 +322,22 @@ conexión). Crear o editar un bloque **requiere conexión** — si falla el
 POST, se muestra error y no se guarda nada localmente. No hay cola offline
 ni sincronización diferida en el MVP: se agrega complejidad (conflictos,
 reintentos) que no se justifica para un uso personal.
+
+## Capas (vista de día)
+
+Selector en la vista de día (`js/capas.js`): **General**, Universidad,
+Academia Fractal, Startup, Personal. Filtra client-side sobre los bloques
+que ya trajo `listarBloquesDia` — no pega otra vez al Web App, así que
+cambiar de capa es instantáneo. `General` muestra todo, sin filtrar. La
+capa elegida se guarda en `localStorage` (dispositivo), no en el Sheet.
+
+**Sin avisos de choques ni solapamientos, en ninguna capa** (decisión
+explícita del alcance): si dos bloques comparten horario, `js/ui/dia.js`
+los agrupa en la misma fila visual y los pinta lado a lado
+(`.fila-simultanea` en `css/styles.css`) — nada más. La agrupación es por
+**cadena** de solapamiento (si A se pisa con B y B con C, los 3 van
+juntos), calculada sobre los bloques ya ordenados por `inicio` que devuelve
+el backend.
 
 ## Paleta y tema
 
@@ -373,20 +455,21 @@ KODAMA/
 │   ├── config.js              # lógica de config.html
 │   ├── state.js               # estado en memoria + cache local (lectura)
 │   ├── fecha.js                # fecha "hoy" y formato legible en America/La_Paz
+│   ├── capas.js                 # selector de capa (día): leer/guardar/filtrar
 │   └── ui/
-│       ├── dia.js                # render de la lista de bloques del día
+│       ├── dia.js                # render de bloques (agrupa los que se pisan)
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
 ├── icons/                   # íconos PWA
 ├── apps-script/
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
-│   ├── Code.gs               # Web App: doPost, validación de token
+│   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
 │   ├── Setup.gs               # configurarHojas() y generarToken(), un solo uso
-│   ├── Bloques.gs             # CRUD de la hoja Bloques
-│   └── Horario.gs             # generador de clases fijas → filas
+│   └── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
 ├── docs/
 │   ├── setup-google.md      # pasos exactos para Sheet + Apps Script
-│   └── datos-prueba.md       # cómo cargar bloques de prueba a mano
+│   ├── datos-prueba.md       # cómo cargar bloques de prueba a mano
+│   └── horario.md             # cómo llenar la hoja Horario y usar el generador
 └── CLAUDE.md
 ```
 

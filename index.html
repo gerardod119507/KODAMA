@@ -13,7 +13,13 @@
   </header>
 
   <main>
-    <p id="fecha" class="fecha"></p>
+    <div class="barra-dia">
+      <p id="fecha" class="fecha"></p>
+      <label class="capas">
+        <span class="capas__etiqueta">Capa</span>
+        <select id="capa"></select>
+      </label>
+    </div>
     <p id="aviso-offline" class="aviso-offline" hidden>Mostrando lo último guardado. Sin conexión.</p>
     <div id="vista-dia"></div>
   </main>
@@ -21,6 +27,7 @@
   <script src="js/fecha.js"></script>
   <script src="js/api.js"></script>
   <script src="js/state.js"></script>
+  <script src="js/capas.js"></script>
   <script src="js/ui/iconos.js"></script>
   <script src="js/ui/espiritu.js"></script>
   <script src="js/ui/dia.js"></script>

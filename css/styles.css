@@ -90,6 +90,11 @@ h1 {
   margin: 0;
 }
 
+h2 {
+  font-size: var(--texto-lg);
+  margin: 0 0 var(--espacio-2);
+}
+
 .cabecera {
   display: flex;
   align-items: center;
@@ -111,11 +116,43 @@ h1 {
   opacity: 1;
 }
 
+.barra-dia {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--espacio-2) var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+}
+
 .fecha {
-  margin: 0 0 var(--espacio-4);
+  margin: 0;
   font-size: var(--texto-sm);
   text-transform: capitalize;
   opacity: 0.8;
+}
+
+.capas {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin: 0;
+  font-weight: 400;
+}
+
+.capas__etiqueta {
+  font-size: var(--texto-sm);
+  opacity: 0.75;
+}
+
+.capas select {
+  font: inherit;
+  font-size: var(--texto-sm);
+  color: var(--fg);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-sm);
+  padding: var(--espacio-1) var(--espacio-2);
 }
 
 .aviso-offline {
@@ -236,6 +273,25 @@ ul {
   opacity: 0;
   animation: entrada-bloque var(--duracion-base) var(--curva) forwards;
   animation-delay: calc(var(--indice, 0) * 40ms);
+}
+
+/* Dos o más bloques con horarios que se pisan: van lado a lado, sin ningún
+   aviso de choque — la regla del proyecto es no detectar conflictos, solo
+   mostrarlos uno junto al otro. */
+.fila-simultanea {
+  display: flex;
+  gap: var(--espacio-2);
+  align-items: stretch;
+}
+
+.fila-simultanea .bloque {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.fila-simultanea .bloque__titulo,
+.fila-simultanea .bloque__meta {
+  overflow-wrap: break-word;
 }
 
 @keyframes entrada-bloque {

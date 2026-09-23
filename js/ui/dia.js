@@ -74,16 +74,16 @@ const KodamaDia = (function () {
     contenedor.appendChild(vacio);
   }
 
-  function crearItem(bloque, indice) {
-    const li = document.createElement('li');
-    li.className = 'bloque bloque--' + normalizarTipo(bloque.tipo);
-    li.style.setProperty('--color-bloque', colorDeBloque(bloque));
-    li.style.setProperty('--indice', String(indice));
+  function crearTarjeta(bloque, indice) {
+    const tarjeta = document.createElement('div');
+    tarjeta.className = 'bloque bloque--' + normalizarTipo(bloque.tipo);
+    tarjeta.style.setProperty('--color-bloque', colorDeBloque(bloque));
+    tarjeta.style.setProperty('--indice', String(indice));
 
     const icono = document.createElement('span');
     icono.className = 'bloque__icono';
     icono.innerHTML = KodamaIconos.svgTipo(normalizarTipo(bloque.tipo));
-    li.appendChild(icono);
+    tarjeta.appendChild(icono);
 
     const info = document.createElement('div');
     info.className = 'bloque__info';
@@ -95,20 +95,62 @@ const KodamaDia = (function () {
 
     const meta = document.createElement('p');
     meta.className = 'bloque__meta';
-    meta.textContent = bloque.inicio + '–' + bloque.fin + ' · ' + bloque.area;
+    let textoMeta = bloque.inicio + '–' + bloque.fin + ' · ' + bloque.area;
+    if (bloque.etiqueta) {
+      textoMeta += ' · ' + bloque.etiqueta;
+    }
+    meta.textContent = textoMeta;
     info.appendChild(meta);
 
-    li.appendChild(info);
-    return li;
+    tarjeta.appendChild(info);
+    return tarjeta;
+  }
+
+  // No hay aviso de choques ni solapamientos: si dos bloques comparten
+  // horario, simplemente se agrupan en la misma fila visual y se muestran
+  // lado a lado (ver css .fila-simultanea). Agrupa por cadena de
+  // solapamiento (A se pisa con B, B con C => los 3 van juntos), no solo
+  // pares — así una fila nunca queda a medias.
+  function agruparPorSolapamiento(bloques) {
+    const grupos = [];
+    let grupoActual = null;
+    let finMaximo = null;
+
+    bloques.forEach(function (bloque) {
+      if (grupoActual && bloque.inicio < finMaximo) {
+        grupoActual.push(bloque);
+        if (bloque.fin > finMaximo) {
+          finMaximo = bloque.fin;
+        }
+      } else {
+        grupoActual = [bloque];
+        grupos.push(grupoActual);
+        finMaximo = bloque.fin;
+      }
+    });
+
+    return grupos;
   }
 
   function renderLista(contenedor, bloques) {
     contenedor.replaceChildren();
     const lista = document.createElement('ul');
     lista.className = 'lista-bloques';
-    bloques.forEach(function (bloque, indice) {
-      lista.appendChild(crearItem(bloque, indice));
+    let indice = 0;
+
+    agruparPorSolapamiento(bloques).forEach(function (grupo) {
+      const li = document.createElement('li');
+      if (grupo.length === 1) {
+        li.appendChild(crearTarjeta(grupo[0], indice++));
+      } else {
+        li.className = 'fila-simultanea';
+        grupo.forEach(function (bloque) {
+          li.appendChild(crearTarjeta(bloque, indice++));
+        });
+      }
+      lista.appendChild(li);
     });
+
     contenedor.appendChild(lista);
   }
 

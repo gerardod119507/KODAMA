@@ -14,8 +14,16 @@ const ZONA_HORARIA = 'America/La_Paz';
 // Claves en ASCII (sin tildes) para que el JSON no dependa de codificación.
 const COLUMNAS_BLOQUES = [
   'id', 'titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin',
-  'notas', 'creado', 'actualizado', 'archivado'
+  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado'
 ];
+const ENCABEZADOS_BLOQUES = [
+  'id', 'título', 'área', 'tipo', 'fecha', 'inicio', 'fin',
+  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado'
+];
+
+// Sugerencias de "etiqueta" (no restringen: se cargan con "permitir
+// inválido" para que se pueda escribir cualquier otra cosa).
+const SUGERENCIAS_ETIQUETA = ['Nerak', 'Data cocha', 'otro'];
 
 // ÚNICA fuente de verdad de qué acciones existen: el nombre acá tiene que
 // ser IDÉNTICO, carácter por carácter, al que manda el frontend (ver
@@ -34,6 +42,9 @@ const ACCIONES = {
   },
   listarBloquesDia: function (peticion) {
     return listarBloquesDia(peticion.fecha);
+  },
+  generarHorario: function () {
+    return generarHorario();
   }
 };
 
@@ -109,12 +120,19 @@ function filaABloque(fila) {
   return bloque;
 }
 
+function bloqueAFila(bloque) {
+  return COLUMNAS_BLOQUES.map(function (clave) {
+    return bloque[clave] != null ? bloque[clave] : '';
+  });
+}
+
 /**
  * Crea las hojas que falten, con encabezados y datos iniciales, y fija la
  * zona horaria del libro. Se llama en cada POST autorizado (ver doPost) y
  * también puede correrse a mano desde el editor via Setup.gs.
  *
- * Idempotente: si una hoja ya tiene filas, no la toca.
+ * Idempotente: si una hoja ya tiene filas, no la toca (salvo la migración
+ * de la columna "etiqueta" en Bloques, ver migrarColumnaEtiqueta).
  */
 function asegurarEstructura() {
   const libro = SpreadsheetApp.getActiveSpreadsheet();
@@ -123,6 +141,7 @@ function asegurarEstructura() {
   }
   asegurarHojaAreas(libro);
   asegurarHojaBloques(libro);
+  asegurarHojaHorario(libro);
 }
 
 function asegurarHojaAreas(libro) {
@@ -145,14 +164,40 @@ function asegurarHojaBloques(libro) {
   if (hoja.getLastRow() === 0) {
     // El formato de texto va ANTES de escribir nada: si no, Sheets convierte
     // "2026-09-22" en fecha y "14:30" en hora, y se pierde el formato.
-    hoja.getRange('A:K').setNumberFormat('@');
-    hoja.getRange(1, 1, 1, 11).setValues([[
-      'id', 'título', 'área', 'tipo', 'fecha', 'inicio', 'fin',
-      'notas', 'creado', 'actualizado', 'archivado'
-    ]]);
+    hoja.getRange(1, 1, hoja.getMaxRows(), ENCABEZADOS_BLOQUES.length).setNumberFormat('@');
+    hoja.getRange(1, 1, 1, ENCABEZADOS_BLOQUES.length).setValues([ENCABEZADOS_BLOQUES]);
     hoja.setFrozenRows(1);
+    aplicarSugerenciasEtiqueta(hoja, ENCABEZADOS_BLOQUES.indexOf('etiqueta') + 1);
+  } else {
+    // La hoja ya existía desde antes del Checkpoint 4 (sin columna
+    // "etiqueta"). Se agrega sin tocar las filas que ya tenía.
+    migrarColumnaEtiqueta(hoja);
   }
   return hoja;
+}
+
+function migrarColumnaEtiqueta(hoja) {
+  const encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getDisplayValues()[0];
+  if (encabezados.indexOf('etiqueta') !== -1) {
+    return; // ya migrada
+  }
+  const indiceNotas = encabezados.indexOf('notas');
+  if (indiceNotas === -1) {
+    return; // encabezados inesperados: no tocar nada a ciegas
+  }
+  const columnaNueva = indiceNotas + 1; // insertar ANTES de "notas" (1-indexado)
+  hoja.insertColumnBefore(columnaNueva);
+  hoja.getRange(1, columnaNueva, hoja.getMaxRows(), 1).setNumberFormat('@');
+  hoja.getRange(1, columnaNueva).setValue('etiqueta');
+  aplicarSugerenciasEtiqueta(hoja, columnaNueva);
+}
+
+function aplicarSugerenciasEtiqueta(hoja, columna) {
+  const regla = SpreadsheetApp.newDataValidation()
+    .requireValueInList(SUGERENCIAS_ETIQUETA, true)
+    .setAllowInvalid(true) // sugiere, pero nunca bloquea escribir otra cosa
+    .build();
+  hoja.getRange(2, columna, hoja.getMaxRows() - 1, 1).setDataValidation(regla);
 }
 
 function responderJson(objeto) {
