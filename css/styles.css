@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   /* Colores de marca */
   --forest: #16372B;
   --bone: #F5F1E8;
@@ -13,6 +14,10 @@
 
   --bg: var(--bone);
   --fg: var(--forest);
+  /* Botón principal y opción activa: relleno de marca con texto claro. */
+  --acento-fondo: var(--forest);
+  --acento-texto: var(--bone);
+  --fondo-dialogo: var(--bone);
   --superficie: rgba(22, 55, 43, 0.05);
   --borde: rgba(22, 55, 43, 0.18);
   /* "Ocupado" (bloque de otra área en una capa filtrada): rayado diagonal
@@ -61,8 +66,15 @@
 }
 
 [data-theme="dark"] {
+  /* Controles nativos (fecha, hora, listas) también en oscuro. */
+  color-scheme: dark;
   --bg: var(--bg-dark);
   --fg: var(--bone);
+  /* En oscuro el botón principal se invierte (bone sobre forest casi no
+     se distingue del fondo #0E1713). */
+  --acento-fondo: var(--bone);
+  --acento-texto: var(--forest);
+  --fondo-dialogo: #15211C;
   --superficie: rgba(245, 241, 232, 0.06);
   --borde: rgba(245, 241, 232, 0.18);
   --ocupado-fondo: rgba(245, 241, 232, 0.05);
@@ -76,7 +88,7 @@
   --area-fractal: #B37500;
   --area-startup: #8875BC;
   --area-personal: #5B896C;
-  --tipo-reunion: #CB5E4D;
+  --tipo-reunion: #D86C5A;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -168,7 +180,7 @@ h2 {
   align-items: center;
   gap: var(--espacio-1);
   font-size: var(--texto-xs);
-  opacity: 0.6;
+  opacity: 0.75;
 }
 
 .actualizando[hidden] {
@@ -244,7 +256,7 @@ input {
 }
 
 input:focus-visible {
-  outline: 2px solid var(--forest);
+  outline: 2px solid var(--fg);
   outline-offset: 2px;
 }
 
@@ -252,9 +264,9 @@ button {
   margin-top: var(--espacio-4);
   padding: var(--espacio-3) var(--espacio-4);
   font: inherit;
-  color: var(--bone);
-  background: var(--forest);
-  border: 1px solid var(--forest);
+  color: var(--acento-texto);
+  background: var(--acento-fondo);
+  border: 1px solid var(--acento-fondo);
   border-radius: var(--radio-sm);
   cursor: pointer;
   transition: transform var(--duracion-rapida) var(--curva),
@@ -263,6 +275,12 @@ button {
 
 button:active {
   transform: scale(0.97);
+}
+
+/* El toque ya se ve con la escala de arriba; sin el destello azul del navegador. */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 button.secundario {
@@ -275,7 +293,7 @@ button.fantasma {
   color: var(--fg);
   background: transparent;
   border-color: transparent;
-  opacity: 0.6;
+  opacity: 0.75;
   font-size: var(--texto-sm);
   padding: var(--espacio-2) var(--espacio-1);
 }
@@ -357,7 +375,7 @@ ul {
 .boceto p {
   margin: var(--espacio-1) 0 0;
   font-size: var(--texto-sm);
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 /* Acciones flotantes (siempre visibles sobre la vista de día) */
@@ -397,7 +415,7 @@ dialog {
   padding: var(--espacio-5);
   border: 1px solid var(--borde);
   border-radius: var(--radio-lg);
-  background: var(--bg);
+  background: var(--fondo-dialogo);
   color: var(--fg);
 }
 
@@ -513,7 +531,7 @@ dialog textarea {
 }
 
 .regla--archivada {
-  opacity: 0.55;
+  opacity: 0.75;
 }
 
 .regla__titulo {
@@ -565,9 +583,9 @@ main {
 
 /* El modo activo se marca con relleno Y con peso de letra, no solo color. */
 .selector-vista .boton-barra[aria-pressed="true"] {
-  color: var(--bone);
-  background: var(--forest);
-  border-color: var(--forest);
+  color: var(--acento-texto);
+  background: var(--acento-fondo);
+  border-color: var(--acento-fondo);
   font-weight: 600;
 }
 
@@ -619,7 +637,7 @@ body.modo-semana .cabecera {
   right: var(--espacio-2);
   transform: translateY(-50%);
   font-size: var(--texto-sm);
-  opacity: 0.7;
+  opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
 
@@ -683,7 +701,7 @@ body.modo-semana .cabecera {
 }
 
 .semana__hueco-rango {
-  opacity: 0.7;
+  opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1267,7 +1285,7 @@ main textarea {
 }
 
 .fila-importar__numero {
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .fila-importar__detalle {
@@ -1298,7 +1316,7 @@ main textarea {
 }
 
 .bloque--cancelada {
-  opacity: 0.5;
+  opacity: 0.75;
 }
 
 .bloque--cancelada .bloque-semana__titulo,
@@ -1484,4 +1502,117 @@ button.cobro {
 
 .fila-con-boton button {
   margin: 0;
+}
+
+/* --- Checkpoint 9: formularios prácticos, plantillas y tema -------------- */
+
+.boton-tema {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.fila-fecha {
+  display: flex;
+  gap: var(--espacio-2);
+}
+
+.fila-fecha input {
+  flex: 1;
+  min-width: 0;
+}
+
+.fila-fecha button {
+  margin: 0;
+  padding: var(--espacio-2) var(--espacio-3);
+}
+
+/* Aviso de algo que la app corrigió sola (no es un error). */
+.aviso {
+  margin: var(--espacio-2) 0 0;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.aviso:empty {
+  margin: 0;
+}
+
+.modo-duplicar .oculto-al-duplicar {
+  display: none;
+}
+
+.etiqueta-campo {
+  margin: var(--espacio-4) 0 var(--espacio-1);
+  font-weight: 600;
+}
+
+/* Días de la semana: 7 botones que se marcan tocando. El marcado se ve
+   con relleno Y con una línea gruesa abajo, no solo por color. */
+.botones-dias {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--espacio-1);
+}
+
+.boton-dia {
+  margin: 0;
+  padding: var(--espacio-2) 0;
+  min-height: 2.75rem;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--fg);
+  font-size: var(--texto-sm);
+}
+
+.boton-dia[aria-pressed="true"] {
+  color: var(--acento-texto);
+  background: var(--acento-fondo);
+  border-color: var(--acento-fondo);
+  font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--acento-texto);
+}
+
+/* Plantillas: una fila de botones arriba del formulario de un bloque nuevo. */
+.plantillas {
+  margin-bottom: var(--espacio-2);
+}
+
+.plantillas__titulo {
+  margin: 0 0 var(--espacio-2);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.plantillas__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.plantilla {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--fg);
+  border-radius: var(--radio-sm);
+  overflow: hidden;
+}
+
+.plantilla button {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  color: var(--fg);
+  background: transparent;
+  min-height: 2.75rem;
+}
+
+.plantilla__usar {
+  padding: var(--espacio-2) var(--espacio-3);
+  font-weight: 600;
+}
+
+.plantilla__quitar {
+  padding: var(--espacio-2);
+  border-left: 1px solid var(--borde) !important;
+  font-size: var(--texto-sm);
 }
