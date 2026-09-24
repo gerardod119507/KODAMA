@@ -41,6 +41,18 @@ const ALIAS_HORARIO = {
 };
 const ORDEN_HORARIO = ['titulo', 'area', 'dias', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'alumnos', 'lugar'];
 
+// Histórico (Checkpoint 8): clases pasadas ya dictadas de Academia Fractal.
+const ALIAS_HISTORICO = {
+  alumnos: ['alumno', 'alumnos', 'nombre', 'estudiante'],
+  fecha: ['fecha', 'dia'],
+  inicio: ['inicio', 'hora inicio', 'desde'],
+  fin: ['fin', 'hora fin', 'hasta'],
+  tema: ['tema', 'titulo', 'materia'],
+  lugar: ['lugar', 'aula'],
+  notas: ['notas', 'nota', 'observaciones']
+};
+const ORDEN_HISTORICO = ['alumnos', 'fecha', 'inicio', 'fin', 'tema', 'lugar', 'notas'];
+
 // ---------------------------------------------------------------------
 // Lectura del texto pegado
 // ---------------------------------------------------------------------
@@ -116,7 +128,8 @@ function mensajeDe(error) {
 function importar(modo, texto, aplicar) {
   if (modo === 'alumnos') return importarAlumnos(texto, aplicar);
   if (modo === 'horario') return importarHorario(texto, aplicar);
-  throw new Error('modo_desconocido: "' + modo + '" (usá alumnos u horario)');
+  if (modo === 'historico') return importarHistorico(texto, aplicar);
+  throw new Error('modo_desconocido: "' + modo + '" (usá alumnos, horario o historico)');
 }
 
 function resumenDe(filas) {
@@ -386,4 +399,156 @@ function importarHorario(texto, aplicar) {
     catalogosNuevos: { cursos: [], colegios: [] },
     filas: filas.map(function (f) { return { numero: f.numero, estado: f.estado, detalle: f.detalle }; })
   };
+}
+
+// ---------------------------------------------------------------------
+// Histórico: clases pasadas ya dictadas
+// ---------------------------------------------------------------------
+
+/**
+ * Carga clases de Academia Fractal que ya pasaron, como bloques con estado
+ * "dictada" (así suman horas y monto en Estadísticas y Cobros).
+ *
+ * - Columnas: alumno (uno o varios separados por coma), fecha, inicio, fin,
+ *   y opcionales tema, lugar y notas. Fechas dd/mm/aaaa y horas 9:00 valen.
+ * - Un alumno que no existe se crea (nombre = primera palabra, apellido =
+ *   el resto), una sola vez aunque aparezca en varias filas. Un nombre sin
+ *   apellido que tienen varios alumnos es un error de esa fila: nunca se
+ *   crea un alumno por las dudas.
+ * - Solo fechas de hoy o anteriores: el histórico no programa el futuro.
+ * - Sin duplicar: la misma clase (mismos alumnos, fecha y hora de inicio)
+ *   que ya está en Bloques queda "sin cambios".
+ */
+function importarHistorico(texto, aplicar) {
+  const leido = leerFilasPegadas(texto, ALIAS_HISTORICO, ORDEN_HISTORICO);
+  const alumnos = leerAlumnos(!aplicar);
+  const hoy = hoyEnTexto();
+  const nuevos = []; // alumnos a crear, sin repetir
+  const usados = {};
+  alumnos.forEach(function (a) { usados[a.id] = true; });
+
+  // Clases que ya están: alumnos + fecha + inicio.
+  const hojaB = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
+  const existentes = {};
+  hojaB.getDataRange().getDisplayValues().slice(1).forEach(function (fila) {
+    const b = filaABloque(fila);
+    if (b.id && b.archivado !== 'TRUE' && b.alumno_id) existentes[claveDeClase(b.alumno_id, b.fecha, b.inicio)] = true;
+  });
+  const vistas = {};
+
+  function alumnoPara(texto) {
+    const nombreCompleto = texto.split(/\s+[—–-]\s+/)[0].trim();
+    const palabras = nombreCompleto.split(/\s+/);
+    const nombre = palabras[0];
+    const apellido = palabras.slice(1).join(' ');
+    const todos = alumnos.concat(nuevos);
+    const exacto = candidatosPorNombre(todos, nombre, apellido);
+    if (apellido && exacto.length) return exacto[0];
+    if (!apellido) {
+      if (exacto.length === 1) return exacto[0];
+      if (exacto.length > 1) {
+        throw new Error('"' + nombre + '" es ambiguo (' + exacto.map(function (a) {
+          return (a.nombre + ' ' + a.apellido).trim();
+        }).join(' / ') + '): escribí también el apellido');
+      }
+    }
+    const nuevo = {
+      id: nuevoIdDeAlumno(usados), nombre: nombre, apellido: apellido, curso: '', colegio: '',
+      tarifa_hora: '', forma_calculo: FORMA_CALCULO, forma_pago: 'hora', notas: '', archivado: '', lugar: '',
+      esNuevo: true
+    };
+    nuevos.push(nuevo);
+    return nuevo;
+  }
+
+  const filas = leido.filas.map(function (fila) {
+    const v = fila.valores;
+    const resultado = { numero: fila.numero, estado: 'error', detalle: '' };
+    try {
+      const nombres = String(v.alumnos || '').split(/[,;]/).map(function (t) { return t.trim(); }).filter(Boolean);
+      if (!nombres.length) throw new Error('falta el alumno');
+      const fecha = normalizarFechaPegada(v.fecha);
+      const inicio = normalizarHoraPegada(v.inicio);
+      const fin = normalizarHoraPegada(v.fin);
+      validarFecha(fecha, nombres.join(', '), 'fecha');
+      validarHora(inicio, nombres.join(', '), 'inicio');
+      validarHora(fin, nombres.join(', '), 'fin');
+      if (inicio >= fin) throw new Error('el inicio (' + inicio + ') es después del fin (' + fin + ')');
+      if (fecha > hoy) throw new Error('la fecha ' + fecha + ' es futura: el histórico es solo para clases que ya pasaron');
+
+      // Primero se resuelven todos los nombres; si uno falla, la fila no
+      // deja alumnos nuevos a medias.
+      const antes = nuevos.length;
+      let vinculados;
+      try {
+        vinculados = nombres.map(alumnoPara);
+      } catch (error) {
+        nuevos.splice(antes);
+        throw error;
+      }
+      const ids = normalizarIdsAlumnos(vinculados.map(function (a) { return a.id; }).join(','));
+      const clave = claveDeClase(ids, fecha, inicio);
+      const detalle = vinculados.map(function (a) {
+        return (a.nombre + ' ' + a.apellido).trim() + (a.esNuevo ? ' (alumno nuevo)' : '');
+      }).join(', ') + ' · ' + fecha + ' ' + inicio + '–' + fin;
+      if (vistas[clave]) throw new Error('repetida: ya está en la fila ' + vistas[clave] + ' de lo pegado');
+      vistas[clave] = fila.numero;
+      if (existentes[clave]) {
+        resultado.estado = 'sin_cambios';
+        resultado.detalle = detalle + ' (ya está cargada)';
+        return resultado;
+      }
+      resultado.estado = 'crear';
+      resultado.detalle = detalle;
+      resultado.bloque = {
+        id: 'b' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toLowerCase(),
+        titulo: String(v.tema || '').trim(), area: AREA_FRACTAL, tipo: 'fijo',
+        fecha: fecha, inicio: inicio, fin: fin, etiqueta: '', notas: String(v.notas || ''),
+        creado: '', actualizado: '', archivado: '', alumno_id: ids, lugar: String(v.lugar || '').trim(),
+        estado: 'dictada', fecha_original: '', inicio_original: '', fin_original: '', motivo: ''
+      };
+      resultado.vinculados = vinculados;
+      return resultado;
+    } catch (error) {
+      resultado.detalle = mensajeDe(error);
+      return resultado;
+    }
+  });
+
+  const aCrear = filas.filter(function (f) { return f.estado === 'crear'; });
+  // Solo se crean los alumnos que usa alguna fila que se importa.
+  const nuevosUsados = nuevos.filter(function (a) {
+    return aCrear.some(function (f) { return f.vinculados.indexOf(a) !== -1; });
+  });
+
+  if (aplicar && aCrear.length) {
+    if (nuevosUsados.length) {
+      const hojaA = hojaAlumnos();
+      hojaA.getRange(hojaA.getLastRow() + 1, 1, nuevosUsados.length, COLUMNAS_ALUMNOS.length)
+        .setValues(nuevosUsados.map(alumnoAFila));
+    }
+    const ahora = ahoraEnTexto();
+    const nuevasFilas = aCrear.map(function (f) {
+      f.bloque.creado = ahora;
+      f.bloque.actualizado = ahora;
+      return bloqueAFila(f.bloque);
+    });
+    hojaB.getRange(hojaB.getLastRow() + 1, 1, nuevasFilas.length, COLUMNAS_BLOQUES.length).setValues(nuevasFilas);
+    ordenarHojaBloques(hojaB);
+  }
+
+  return {
+    modo: 'historico',
+    aplicado: Boolean(aplicar),
+    conEncabezado: leido.conEncabezado,
+    resumen: resumenDe(filas),
+    catalogosNuevos: { cursos: [], colegios: [] },
+    alumnosNuevos: nuevosUsados.map(function (a) { return (a.nombre + ' ' + a.apellido).trim(); }),
+    filas: filas.map(function (f) { return { numero: f.numero, estado: f.estado, detalle: f.detalle }; })
+  };
+}
+
+/** Misma clase = mismos alumnos (en cualquier orden), fecha y hora de inicio. */
+function claveDeClase(idsAlumnos, fecha, inicio) {
+  return String(idsAlumnos).split(',').sort().join(',') + '|' + fecha + '|' + inicio;
 }
