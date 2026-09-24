@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>KODAMA</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <meta name="theme-color" content="#F5F1E8" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icono.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="KODAMA" />
+  <script src="js/tema.js"></script>
 </head>
 <body>
   <header class="cabecera">
@@ -15,6 +22,7 @@
       <a href="cobros.html">Cobros</a>
       <a href="estadisticas.html">Estadísticas</a>
       <a href="config.html">Configuración</a>
+      <button type="button" class="boton-tema fantasma">☾ Oscuro</button>
     </nav>
   </header>
 
@@ -64,7 +72,13 @@
       <h2 id="titulo-dialogo">Nuevo bloque</h2>
       <p id="subtitulo-dialogo" class="nota" hidden></p>
 
-      <!-- .oculto-al-mover se oculta en "Mover" (solo quedan fecha y hora). -->
+      <!-- Solo en un bloque nuevo, si hay plantillas guardadas. -->
+      <div id="plantillas-nuevo" class="plantillas oculto-al-mover" hidden>
+        <p class="plantillas__titulo">Desde una plantilla</p>
+        <div id="lista-plantillas" class="plantillas__lista"></div>
+      </div>
+
+      <!-- .oculto-al-mover se oculta en "Mover" y "Duplicar" (quedan fecha y hora; al duplicar, solo la fecha). -->
       <div class="oculto-al-mover">
         <label for="campo-area">Área</label>
         <select id="campo-area"></select>
@@ -84,10 +98,14 @@
 
       <div>
         <label for="campo-fecha">Fecha</label>
-        <input id="campo-fecha" type="date" />
+        <div class="fila-fecha">
+          <input id="campo-fecha" type="date" />
+          <button type="button" id="fecha-hoy" class="secundario">Hoy</button>
+          <button type="button" id="fecha-manana" class="secundario">Mañana</button>
+        </div>
       </div>
 
-      <div class="fila-horas">
+      <div class="fila-horas oculto-al-duplicar">
         <div>
           <label for="campo-inicio">Inicio</label>
           <input id="campo-inicio" type="time" />
@@ -97,6 +115,8 @@
           <input id="campo-fin" type="time" />
         </div>
       </div>
+
+      <p id="aviso-horas" class="aviso oculto-al-duplicar" role="status"></p>
 
       <div class="oculto-al-mover">
         <label for="campo-lugar">Lugar</label>
@@ -152,10 +172,19 @@
       </div>
     </dl>
     <p id="error-ficha" class="error" role="alert"></p>
+    <p id="ficha-aviso" class="aviso" role="status"></p>
     <div class="acciones-estado">
       <button type="button" id="ficha-dictada">✓ Marcar dictada</button>
       <button type="button" id="ficha-cancelar" class="secundario">Cancelar clase</button>
       <button type="button" id="ficha-reactivar" class="secundario" hidden></button>
+    </div>
+    <div id="ficha-plantilla" class="ficha__cancelacion" hidden>
+      <label for="ficha-nombre-plantilla">Nombre de la plantilla</label>
+      <input type="text" id="ficha-nombre-plantilla" maxlength="60" autocomplete="off" autocapitalize="sentences" />
+      <div class="acciones-dialogo">
+        <button type="button" id="ficha-plantilla-volver" class="secundario">Volver</button>
+        <button type="button" id="ficha-plantilla-guardar">Guardar plantilla</button>
+      </div>
     </div>
     <div id="ficha-cancelacion" class="ficha__cancelacion" hidden>
       <label for="ficha-motivo">Motivo (opcional)</label>
@@ -169,6 +198,7 @@
       <button type="button" id="ficha-editar">Editar</button>
       <button type="button" id="ficha-mover" class="secundario">Mover</button>
       <button type="button" id="ficha-duplicar" class="secundario">Duplicar</button>
+      <button type="button" id="ficha-plantilla-abrir" class="secundario">Guardar como plantilla</button>
       <button type="button" id="ficha-archivar" class="fantasma">Archivar</button>
     </div>
   </dialog>
@@ -179,14 +209,18 @@
   <script src="js/capas.js"></script>
   <script src="js/alumnos.js"></script>
   <script src="js/clases.js"></script>
+  <script src="js/formas.js"></script>
+  <script src="js/plantillas.js"></script>
   <script src="js/vista.js"></script>
   <script src="js/ui/iconos.js"></script>
   <script src="js/ui/espiritu.js"></script>
   <script src="js/ui/dia.js"></script>
   <script src="js/ui/semana.js"></script>
   <script src="js/ui/selector-alumnos.js"></script>
+  <script src="js/ui/horas.js"></script>
   <script src="js/ui/formulario.js"></script>
   <script src="js/ui/ficha.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/pwa.js"></script>
 </body>
 </html>

@@ -127,6 +127,15 @@ const ACCIONES = {
   },
   archivarPago: function (peticion) {
     return archivarPago(peticion.id);
+  },
+  listarPlantillas: function () {
+    return listarPlantillas();
+  },
+  crearPlantilla: function (peticion) {
+    return crearPlantilla(peticion.plantilla);
+  },
+  archivarPlantilla: function (peticion) {
+    return archivarPlantilla(peticion.id);
   }
 };
 
@@ -164,7 +173,7 @@ function doPost(e) {
  * sin tener que acordarse de nada al desplegar.
  */
 function firmaEstructura() {
-  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO, COLUMNAS_ALUMNOS, HOJAS_CATALOGO, COLUMNAS_PAGOS]);
+  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO, COLUMNAS_ALUMNOS, HOJAS_CATALOGO, COLUMNAS_PAGOS, COLUMNAS_PLANTILLAS]);
 }
 
 function asegurarEstructuraSiHaceFalta() {
@@ -333,6 +342,7 @@ function asegurarEstructura() {
   asegurarCatalogo(libro, HOJA_CURSOS, CURSOS_INICIALES);
   asegurarCatalogo(libro, HOJA_COLEGIOS, COLEGIOS_INICIALES);
   asegurarHojaPagos(libro);
+  asegurarHojaPlantillas(libro);
 }
 
 function asegurarHojaAreas(libro) {

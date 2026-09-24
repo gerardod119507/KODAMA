@@ -143,7 +143,7 @@ test('la estructura se verifica en la primera petición y no en las siguientes',
   post(env, { action: 'listarBloquesRango', desde: '2026-10-12', hasta: '2026-10-18' });
   post(env, { action: 'listarAreas' });
   assert.strictEqual(verificaciones(), 1);
-  assert.deepStrictEqual(env.libro.nombresDeHojas().sort(), ['Alumnos', 'Areas', 'Bloques', 'Colegios', 'Cursos', 'Horario', 'Pagos']);
+  assert.deepStrictEqual(env.libro.nombresDeHojas().sort(), ['Alumnos', 'Areas', 'Bloques', 'Colegios', 'Cursos', 'Horario', 'Pagos', 'Plantillas']);
 });
 
 test('después de un error, la próxima petición vuelve a verificar y repara', () => {

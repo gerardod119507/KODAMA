@@ -1,8 +1,13 @@
 /**
- * Diálogo para crear/editar un bloque. Un solo formulario con dos modos:
- * completo (crear, editar, duplicar; el tipo —fijo, variable, reunión— se
- * elige adentro) y mover (solo fecha y hora, oculta el resto por CSS en vez
- * de duplicar el formulario).
+ * Diálogo para crear/editar un bloque. Un solo formulario con varios
+ * modos: completo (crear, editar; el tipo —fijo, variable, reunión— se
+ * elige adentro), mover (solo fecha y hora) y duplicar (solo la fecha
+ * nueva: el resto se copia). Los modos ocultan campos por CSS en vez de
+ * duplicar el formulario.
+ *
+ * Checkpoint 9: el fin se completa solo con la duración (KodamaHoras), la
+ * fecha tiene "Hoy" y "Mañana", y un bloque nuevo puede salir de una
+ * plantilla con un toque.
  *
  * Si guardar falla, el diálogo queda abierto con todo lo escrito: escribir
  * requiere conexión, pero perder lo tipeado no es aceptable.
@@ -18,7 +23,9 @@ const KodamaFormulario = (function () {
   let alGuardar;
   let alArchivar;
   let idEnEdicion = null;
-  let modoActual = null; // nuevo | edicion | mover
+  let modoActual = null; // nuevo | edicion | mover | duplicar
+  let horas = null;
+  let alArchivarPlantilla = null;
   let selectorAlumnos = null;
   // En un bloque NUEVO, el lugar se completa con el lugar habitual del
   // alumno elegido mientras no lo hayas escrito tú (si lo tocas, manda lo tuyo).
@@ -39,6 +46,19 @@ const KodamaFormulario = (function () {
     };
     alGuardar = opciones.alGuardar;
     alArchivar = opciones.alArchivar;
+    alArchivarPlantilla = opciones.alArchivarPlantilla;
+
+    horas = KodamaHoras.conectar({
+      area: campos.area, tipo: campos.tipo, inicio: campos.inicio, fin: campos.fin,
+      aviso: document.getElementById('aviso-horas')
+    });
+    document.getElementById('fecha-hoy').addEventListener('click', function () {
+      campos.fecha.value = KodamaFecha.hoy();
+    });
+    document.getElementById('fecha-manana').addEventListener('click', function () {
+      campos.fecha.value = KodamaFecha.sumarDias(KodamaFecha.hoy(), 1);
+    });
+    KodamaPlantillas.alCambiar(function () { if (modoActual === 'nuevo') pintarPlantillas(); });
 
     llenarOpciones(campos.area, AREAS);
     llenarOpciones(campos.tipo, TIPOS);
@@ -80,14 +100,18 @@ const KodamaFormulario = (function () {
     sub.textContent = subtitulo || '';
     sub.hidden = !subtitulo;
     document.getElementById('archivar-bloque').hidden = modo !== 'edicion';
-    dialogo.classList.toggle('modo-mover', modo === 'mover');
+    dialogo.classList.toggle('modo-mover', modo === 'mover' || modo === 'duplicar');
+    dialogo.classList.toggle('modo-duplicar', modo === 'duplicar');
+    document.getElementById('plantillas-nuevo').hidden = true;
     mostrarError('');
   }
 
   function abrirNuevo(valoresPorDefecto) {
     preparar('Nuevo bloque', '', 'nuevo', null);
     escribirCampos(valoresPorDefecto);
+    horas.reiniciar(true);
     lugarAutomatico = !campos.lugar.value;
+    pintarPlantillas();
     dialogo.showModal();
     if (esFractal()) selectorAlumnos.enfocar();
     else campos.titulo.focus();
@@ -96,24 +120,71 @@ const KodamaFormulario = (function () {
   function abrirEdicion(bloque) {
     preparar('Editar bloque', '', 'edicion', bloque.id);
     escribirCampos(bloque);
+    horas.reiniciar(false);
     dialogo.showModal();
   }
 
   /** Solo fecha y hora; el resto del bloque viaja igual, sin cambios. */
   function abrirMover(bloque) {
-    preparar('Mover bloque', bloque.titulo, 'mover', bloque.id);
+    preparar('Mover bloque', bloque.tituloMostrado || bloque.titulo, 'mover', bloque.id);
     escribirCampos(bloque);
+    horas.reiniciar(false);
     dialogo.showModal();
     campos.fecha.focus();
   }
 
-  /** Un bloque nuevo con los mismos datos; se suele cambiar la fecha. */
+  /** Un bloque nuevo igual (misma hora, mismos datos): solo se pide la fecha. */
   function abrirDuplicado(bloque) {
-    preparar('Duplicar bloque', 'Copia de "' + (bloque.titulo || '') + '". Cambia lo que haga falta y guarda.', 'nuevo', null);
+    preparar('Duplicar bloque', 'Copia de "' + (bloque.tituloMostrado || bloque.titulo || '') + '", ' +
+      bloque.inicio + '–' + bloque.fin + '. Elige la fecha nueva.', 'duplicar', null);
     escribirCampos(valoresDuplicado(bloque));
-    lugarAutomatico = !campos.lugar.value;
+    campos.fecha.value = ''; // vacía a propósito: que no se duplique sin querer en el mismo día
+    horas.reiniciar(false);
     dialogo.showModal();
     campos.fecha.focus();
+  }
+
+  /** Botones de plantillas arriba del formulario (solo en un bloque nuevo). */
+  function pintarPlantillas() {
+    const lista = KodamaPlantillas.actual();
+    const zona = document.getElementById('plantillas-nuevo');
+    const contenedor = document.getElementById('lista-plantillas');
+    contenedor.replaceChildren();
+    zona.hidden = lista.length === 0;
+    lista.forEach(function (plantilla) {
+      const item = document.createElement('span');
+      item.className = 'plantilla';
+      const usar = document.createElement('button');
+      usar.type = 'button';
+      usar.className = 'plantilla__usar';
+      usar.textContent = plantilla.nombre;
+      usar.title = plantilla.area + ' · ' + plantilla.duracion + ' min' + (plantilla.lugar ? ' · ' + plantilla.lugar : '');
+      usar.addEventListener('click', function () { usarPlantilla(plantilla); });
+      const quitar = document.createElement('button');
+      quitar.type = 'button';
+      quitar.className = 'plantilla__quitar';
+      quitar.textContent = '✕';
+      quitar.setAttribute('aria-label', 'Quitar la plantilla ' + plantilla.nombre);
+      quitar.addEventListener('click', async function () {
+        if (!confirm('¿Quitar la plantilla "' + plantilla.nombre + '"? Los bloques ya creados no cambian.')) return;
+        try {
+          await alArchivarPlantilla(plantilla.id);
+        } catch (error) {
+          mostrarError('No se pudo quitar la plantilla: ' + error.message);
+        }
+      });
+      item.append(usar, quitar);
+      contenedor.appendChild(item);
+    });
+  }
+
+  /** Un toque: todo lo de la plantilla, con la fecha y la hora de inicio que ya están. */
+  function usarPlantilla(plantilla) {
+    escribirCampos(KodamaPlantillas.valoresDesde(plantilla, campos.fecha.value, campos.inicio.value));
+    horas.reiniciar(true, true);
+    lugarAutomatico = false;
+    mostrarError('');
+    campos.inicio.focus();
   }
 
   function esFractal() {
@@ -156,6 +227,16 @@ const KodamaFormulario = (function () {
 
   async function guardar() {
     const datos = leerCampos();
+    if (!datos.fecha) {
+      mostrarError('Elige la fecha.');
+      campos.fecha.focus();
+      return;
+    }
+    if (!horas.valido()) {
+      mostrarError('El fin tiene que ser después del inicio.');
+      campos.fin.focus();
+      return;
+    }
     if (!datos.titulo.trim() && !datos.alumno_id) {
       if (esFractal()) {
         mostrarError('Elige al menos un alumno (o escribe un tema).');

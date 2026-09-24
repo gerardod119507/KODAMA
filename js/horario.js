@@ -27,7 +27,6 @@
   const campos = {
     titulo: document.getElementById('regla-titulo'),
     area: document.getElementById('regla-area'),
-    dias: document.getElementById('regla-dias'),
     inicio: document.getElementById('regla-inicio'),
     fin: document.getElementById('regla-fin'),
     desde: document.getElementById('regla-desde'),
@@ -39,6 +38,13 @@
 
   let idEnEdicion = null;
   let reglas = [];
+
+  // Días como botones Lun–Dom (Checkpoint 9) y el fin que se completa solo.
+  const botonesDias = KodamaBotonesDias.crear(document.getElementById('regla-dias'));
+  const horas = KodamaHoras.conectar({
+    area: campos.area, inicio: campos.inicio, fin: campos.fin,
+    aviso: document.getElementById('aviso-horas-regla')
+  });
 
   AREAS.forEach(function (area) {
     const opcion = document.createElement('option');
@@ -153,6 +159,7 @@
       campos[clave].value = valores[clave] != null ? valores[clave] : '';
     });
     selectorAlumnos.fijar(valores.alumno_id || '');
+    botonesDias.fijar(valores.dias || '');
     actualizarSegunArea();
   }
 
@@ -161,9 +168,11 @@
     document.getElementById('titulo-dialogo-regla').textContent = 'Nueva regla';
     document.getElementById('archivar-regla').hidden = true;
     escribirCampos({
-      titulo: '', area: 'Universidad', dias: '', inicio: '09:00', fin: '10:00',
+      titulo: '', area: 'Universidad', dias: '', inicio: '09:00',
+      fin: KodamaFormas.finPara('09:00', KodamaFormas.porArea('Universidad').duracion),
       desde: KodamaFecha.hoy(), hasta: '', lugar: '', etiqueta: '', notas: ''
     });
+    horas.reiniciar(true);
     lugarAutomatico = true;
     mostrarError('');
     dialogo.showModal();
@@ -175,6 +184,7 @@
     document.getElementById('titulo-dialogo-regla').textContent = 'Editar regla';
     document.getElementById('archivar-regla').hidden = regla.archivado === 'TRUE';
     escribirCampos(regla);
+    horas.reiniciar(false);
     mostrarError('');
     dialogo.showModal();
   }
@@ -184,6 +194,18 @@
     const datos = {};
     Object.keys(campos).forEach(function (clave) { datos[clave] = campos[clave].value; });
     datos.alumno_id = esFractal() ? selectorAlumnos.valor() : '';
+    datos.dias = botonesDias.valor();
+
+    if (!datos.dias) {
+      mostrarError('Marca al menos un día.');
+      botonesDias.enfocar();
+      return;
+    }
+    if (!horas.valido()) {
+      mostrarError('El fin tiene que ser después del inicio.');
+      campos.fin.focus();
+      return;
+    }
 
     if (!datos.titulo.trim() && !datos.alumno_id) {
       mostrarError(esFractal() ? 'Elige al menos un alumno (o escribe un tema).' : 'Falta el título.');
