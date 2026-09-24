@@ -155,6 +155,16 @@ test('solo se marcan los bloques que se pisan de verdad, el mismo día', () => {
   assert.deepStrictEqual(ids, ['A', 'B']);
 });
 
+test('una clase cancelada no se pisa con nada (su horario quedó libre)', () => {
+  const env = cargarModulos(MODULOS_SEMANA);
+  const ids = env.ejecutar('KodamaDia.idsSolapados(__arg).sort()', [
+    b(SEMANA[0], '09:00', '10:00', { id: 'A' }),
+    b(SEMANA[0], '09:30', '10:30', { id: 'B', estado: 'cancelada' }),
+    b(SEMANA[0], '09:45', '10:15', { id: 'C', estado: 'dictada' })
+  ]);
+  assert.deepStrictEqual(ids, ['A', 'C']);
+});
+
 test('una cadena A–B–C marca a los tres solo si se pisan de a pares', () => {
   const env = cargarModulos(MODULOS_SEMANA);
   const ids = env.ejecutar('KodamaDia.idsSolapados(__arg).sort()', [

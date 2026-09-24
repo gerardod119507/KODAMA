@@ -196,12 +196,19 @@ const KodamaSemana = (function () {
     if (solapado) {
       boton.classList.add('bloque--solapado');
     }
+    // Estado de la clase (Checkpoint 8): dictada lleva ✓; cancelada se ve
+    // tenue y tachada. Nunca solo por color.
+    const estado = String(bloque.estado || '').trim() || 'programada';
+    if (estado === 'dictada' || estado === 'cancelada') {
+      boton.classList.add('bloque--' + estado);
+    }
     boton.style.setProperty('--color-bloque', KodamaDia.colorDeBloque(bloque));
     boton.style.setProperty('--indice', String(indice));
     ubicar(boton, posicion, escala);
     // Texto completo al pasar el mouse (los bloques cortos lo recortan).
     boton.title = nombreVisible(bloque) + ' · ' + bloque.inicio + '–' + bloque.fin +
-      (bloque.lugar ? ' · ' + bloque.lugar : '') + ' · ' + bloque.area;
+      (bloque.lugar ? ' · ' + bloque.lugar : '') + ' · ' + bloque.area +
+      (estado === 'dictada' || estado === 'cancelada' ? ' · ' + estado : '');
     if (alTocar) {
       boton.addEventListener('click', function () { alTocar(bloque); });
     }
@@ -217,6 +224,13 @@ const KodamaSemana = (function () {
     const titulo = document.createElement('span');
     titulo.className = 'bloque-semana__titulo';
     titulo.textContent = nombreVisible(bloque);
+    if (estado === 'dictada') {
+      const marca = document.createElement('span');
+      marca.className = 'bloque-semana__marca';
+      marca.textContent = '✓';
+      marca.setAttribute('aria-label', 'dictada');
+      cabeza.appendChild(marca);
+    }
     cabeza.appendChild(titulo);
     boton.appendChild(cabeza);
 
@@ -404,7 +418,8 @@ const KodamaSemana = (function () {
         if (esDeLaCapa(posicion.bloque)) {
           columna.appendChild(crearBloque(posicion, escala, indice++, opciones.alTocar,
             solapados[posicion.bloque.id], opciones.unDia));
-        } else {
+        } else if (String(posicion.bloque.estado || '').trim() !== 'cancelada') {
+          // De otra área: "ocupado". Si se canceló, ese horario quedó libre.
           columna.appendChild(crearOcupado(posicion, escala));
         }
       });

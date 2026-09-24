@@ -18,6 +18,7 @@ const KodamaFormulario = (function () {
   let alGuardar;
   let alArchivar;
   let idEnEdicion = null;
+  let modoActual = null; // nuevo | edicion | mover
   let selectorAlumnos = null;
   // En un bloque NUEVO, el lugar se completa con el lugar habitual del
   // alumno elegido mientras no lo hayas escrito vos (si lo tocás, manda lo tuyo).
@@ -73,6 +74,7 @@ const KodamaFormulario = (function () {
 
   function preparar(titulo, subtitulo, modo, id) {
     idEnEdicion = id;
+    modoActual = modo;
     document.getElementById('titulo-dialogo').textContent = titulo;
     const sub = document.getElementById('subtitulo-dialogo');
     sub.textContent = subtitulo || '';
@@ -168,7 +170,7 @@ const KodamaFormulario = (function () {
     mostrarError('');
     ocupado(true);
     try {
-      await alGuardar(idEnEdicion, datos);
+      await alGuardar(idEnEdicion, datos, modoActual);
       cerrar();
     } catch (error) {
       // No se cierra ni se limpia: lo escrito sigue ahí para reintentar.
