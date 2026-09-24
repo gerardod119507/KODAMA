@@ -111,6 +111,9 @@ function generarHorario() {
         if (bloque.archivado === 'TRUE') {
           return; // cancelada a mano (bloque archivado): no se toca
         }
+        if (bloque.fecha_original) {
+          return; // movida a otro día u hora: manda lo que eligió Gerardo
+        }
         // Se refrescan los campos que vienen de la regla; notas, etiqueta
         // y archivado quedan como estén (son del bloque puntual, no de la
         // regla, y no deben perderse al regenerar).

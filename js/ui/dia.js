@@ -94,7 +94,9 @@ const KodamaDia = (function () {
    * solo llevan el borde con el color de reunión (.bloque--solapado). Las
    * horas son texto HH:mm, que se compara bien como texto.
    */
-  function idsSolapados(bloques) {
+  function idsSolapados(todos) {
+    // Una clase cancelada no ocupa su horario: no se pisa con nada.
+    const bloques = todos.filter(function (b) { return String(b.estado || '').trim() !== 'cancelada'; });
     const ids = {};
     for (let i = 0; i < bloques.length; i++) {
       for (let j = i + 1; j < bloques.length; j++) {

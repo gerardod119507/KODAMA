@@ -1,6 +1,8 @@
 /**
- * Ficha de un bloque: solo lectura (título, área, horario, etiqueta, notas)
- * con las acciones Editar, Mover, Duplicar y Archivar.
+ * Ficha de un bloque: solo lectura (título, área, horario, estado, lugar,
+ * etiqueta, notas) con las acciones Editar, Mover, Duplicar y Archivar, y
+ * el estado de la clase (Checkpoint 8): "Marcar dictada" es un solo toque;
+ * "Cancelar clase" pide un motivo opcional antes de confirmar.
  *
  * Todo lo que viene del Sheet se escribe con textContent. Ninguna acción
  * navega a otra página: todo pasa en diálogos sobre la misma vista.
@@ -32,6 +34,31 @@ const KodamaFicha = (function () {
     });
     document.getElementById('ficha-archivar').addEventListener('click', archivar);
 
+    document.getElementById('ficha-dictada').addEventListener('click', function () {
+      cambiarEstado('dictada', '', this);
+    });
+    document.getElementById('ficha-reactivar').addEventListener('click', function () {
+      cambiarEstado('programada', '', this);
+    });
+    document.getElementById('ficha-cancelar').addEventListener('click', function () {
+      document.getElementById('ficha-cancelacion').hidden = false;
+      const motivo = document.getElementById('ficha-motivo');
+      motivo.value = '';
+      motivo.focus();
+    });
+    document.getElementById('ficha-cancelar-volver').addEventListener('click', function () {
+      document.getElementById('ficha-cancelacion').hidden = true;
+    });
+    document.getElementById('ficha-cancelar-confirmar').addEventListener('click', function () {
+      cambiarEstado('cancelada', document.getElementById('ficha-motivo').value, this);
+    });
+    document.getElementById('ficha-motivo').addEventListener('keydown', function (evento) {
+      if (evento.key === 'Enter') {
+        evento.preventDefault();
+        cambiarEstado('cancelada', this.value, document.getElementById('ficha-cancelar-confirmar'));
+      }
+    });
+
     // Tocar fuera de la ficha la cierra (es de solo lectura: no hay nada
     // escrito que se pueda perder).
     dialogo.addEventListener('click', function (evento) {
@@ -60,12 +87,49 @@ const KodamaFicha = (function () {
     escribir('ficha-tipo-area', (bloque.tipo || 'variable') + ' · ' + bloque.area);
     escribir('ficha-titulo', bloque.tituloMostrado || bloque.titulo || '(sin título)');
     escribir('ficha-horario', KodamaFecha.legible(bloque.fecha) + ' · ' + bloque.inicio + '–' + bloque.fin);
+    pintarEstado(bloque);
     mostrarFila('ficha-fila-lugar', bloque.lugar);
     mostrarFila('ficha-fila-etiqueta', bloque.etiqueta);
     mostrarFila('ficha-fila-notas', bloque.notas);
     escribir('error-ficha', '');
 
     dialogo.showModal();
+  }
+
+  const SIMBOLO = { programada: '', dictada: '✓ ', movida: '↷ ', cancelada: '✕ ' };
+
+  function pintarEstado(bloque) {
+    const estado = KodamaClases.estado(bloque);
+    const texto = document.getElementById('ficha-estado');
+    texto.textContent = SIMBOLO[estado] + KodamaClases.textoEstado(bloque);
+    texto.dataset.estado = estado;
+    const movida = document.getElementById('ficha-movida');
+    movida.textContent = KodamaClases.textoMovida(bloque);
+    movida.hidden = !movida.textContent;
+
+    // Programada o movida: se puede dictar o cancelar. Dictada o
+    // cancelada: un solo botón para deshacerlo.
+    const pendiente = estado === 'programada' || estado === 'movida';
+    document.getElementById('ficha-dictada').hidden = !pendiente;
+    document.getElementById('ficha-cancelar').hidden = !pendiente;
+    const reactivar = document.getElementById('ficha-reactivar');
+    reactivar.hidden = pendiente;
+    reactivar.textContent = estado === 'dictada' ? 'Desmarcar dictada' : 'Reactivar clase';
+    document.getElementById('ficha-cancelacion').hidden = true;
+  }
+
+  async function cambiarEstado(estado, motivo, boton) {
+    if (!bloqueActual) return;
+    boton.disabled = true;
+    escribir('error-ficha', '');
+    try {
+      await acciones.alCambiarEstado(bloqueActual.id, estado, motivo);
+      cerrar(); // la grilla ya muestra el cambio (✓, tachada…)
+    } catch (error) {
+      escribir('error-ficha', 'No se pudo guardar: ' + error.message);
+    } finally {
+      boton.disabled = false;
+    }
   }
 
   async function archivar() {

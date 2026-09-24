@@ -18,14 +18,21 @@ const ZONA_HORARIA = 'America/La_Paz';
 // columna de una hoja que ya tiene datos. alumno_id: ids de la hoja Alumnos
 // separados por coma (una clase puede tener varios alumnos). lugar: dónde
 // es (en la UMSS, el aula).
+// estado … motivo (Checkpoint 8), también al final: estado de la clase
+// (programada | dictada | movida | cancelada; vacío = programada), fecha y
+// horas originales si se movió, y el motivo si se canceló.
 const COLUMNAS_BLOQUES = [
   'id', 'titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin',
-  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id', 'lugar'
+  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id', 'lugar',
+  'estado', 'fecha_original', 'inicio_original', 'fin_original', 'motivo'
 ];
 const ENCABEZADOS_BLOQUES = [
   'id', 'título', 'área', 'tipo', 'fecha', 'inicio', 'fin',
-  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id', 'lugar'
+  'etiqueta', 'notas', 'creado', 'actualizado', 'archivado', 'alumno_id', 'lugar',
+  'estado', 'fecha_original', 'inicio_original', 'fin_original', 'motivo'
 ];
+// Columnas del Checkpoint 8 que se agregan al final de una hoja vieja.
+const COLUMNAS_ESTADO_BLOQUE = ['estado', 'fecha_original', 'inicio_original', 'fin_original', 'motivo'];
 
 // Sugerencias de "etiqueta" (no restringen: se cargan con "permitir
 // inválido" para que se pueda escribir cualquier otra cosa).
@@ -63,6 +70,12 @@ const ACCIONES = {
   },
   archivarBloque: function (peticion) {
     return archivarBloque(peticion.id);
+  },
+  cambiarEstadoBloque: function (peticion) {
+    return cambiarEstadoBloque(peticion.id, peticion.estado, peticion.motivo);
+  },
+  moverBloque: function (peticion) {
+    return moverBloque(peticion.id, peticion.fecha, peticion.inicio, peticion.fin);
   },
   listarHorario: function () {
     return listarHorario();
@@ -102,6 +115,18 @@ const ACCIONES = {
   },
   migrarAlumnosFractal: function (peticion) {
     return migrarAlumnosFractal(peticion.aplicar === true, peticion.ids);
+  },
+  listarPagos: function () {
+    return listarPagos();
+  },
+  crearPago: function (peticion) {
+    return crearPago(peticion.pago);
+  },
+  actualizarPago: function (peticion) {
+    return actualizarPago(peticion.id, peticion.cambios);
+  },
+  archivarPago: function (peticion) {
+    return archivarPago(peticion.id);
   }
 };
 
@@ -139,7 +164,7 @@ function doPost(e) {
  * sin tener que acordarse de nada al desplegar.
  */
 function firmaEstructura() {
-  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO, COLUMNAS_ALUMNOS, HOJAS_CATALOGO]);
+  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO, COLUMNAS_ALUMNOS, HOJAS_CATALOGO, COLUMNAS_PAGOS]);
 }
 
 function asegurarEstructuraSiHaceFalta() {
@@ -307,6 +332,7 @@ function asegurarEstructura() {
   asegurarHojaAlumnos(libro);
   asegurarCatalogo(libro, HOJA_CURSOS, CURSOS_INICIALES);
   asegurarCatalogo(libro, HOJA_COLEGIOS, COLEGIOS_INICIALES);
+  asegurarHojaPagos(libro);
 }
 
 function asegurarHojaAreas(libro) {
@@ -339,6 +365,9 @@ function asegurarHojaBloques(libro) {
     migrarColumnaEtiqueta(hoja);
     migrarColumnaAlFinal(hoja, ENCABEZADOS_BLOQUES, 'alumno_id');
     migrarColumnaAlFinal(hoja, ENCABEZADOS_BLOQUES, 'lugar');
+    COLUMNAS_ESTADO_BLOQUE.forEach(function (nombre) {
+      migrarColumnaAlFinal(hoja, ENCABEZADOS_BLOQUES, nombre);
+    });
   }
   return hoja;
 }

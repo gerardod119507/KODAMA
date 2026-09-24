@@ -8,6 +8,11 @@
 
 const TIPOS_BLOQUE = ['fijo', 'variable', 'reunión'];
 
+// Estado de la clase (Checkpoint 8). "movida" no se elige a mano: la pone
+// moverBloque. Una celda vacía (bloques de antes) cuenta como programada.
+const ESTADOS_BLOQUE = ['programada', 'dictada', 'movida', 'cancelada'];
+const ESTADOS_A_MANO = ['programada', 'dictada', 'cancelada'];
+
 // Campos que la app puede escribir. El resto (id, creado, actualizado,
 // archivado) los maneja el backend.
 const CAMPOS_EDITABLES_BLOQUE = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'alumno_id', 'lugar'];
@@ -28,7 +33,10 @@ function crearBloque(datos) {
     actualizado: ahoraEnTexto(),
     archivado: '',
     alumno_id: normalizarIdsAlumnos(entrada.alumno_id),
-    lugar: String(entrada.lugar || '').trim()
+    lugar: String(entrada.lugar || '').trim(),
+    // Un bloque nuevo (también un duplicado) empieza programado y sin
+    // historia: el estado nunca se copia.
+    estado: 'programada', fecha_original: '', inicio_original: '', fin_original: '', motivo: ''
   };
 
   validarBloque(bloque);
@@ -61,6 +69,81 @@ function actualizarBloque(id, cambios) {
     ordenarHojaBloques(ubicacion.hoja); // se movió: mantener el orden por fecha
   }
   return bloque;
+}
+
+function estadoDeBloque(bloque) {
+  return String(bloque.estado || '').trim() || 'programada';
+}
+
+/**
+ * Marca una clase como dictada, cancelada (con un motivo corto opcional) o
+ * de nuevo programada. Volver a "programada" una clase que se movió la
+ * deja "movida": sigue estando en otro día que el original.
+ */
+function cambiarEstadoBloque(id, estado, motivo) {
+  const pedido = String(estado || '').trim();
+  if (ESTADOS_A_MANO.indexOf(pedido) === -1) {
+    throw new Error('estado_invalido: "' + estado + '" (usá programada, dictada o cancelada; ' +
+      '"movida" se pone sola al mover la clase)');
+  }
+  const ubicacion = buscarFilaDeBloque(id);
+  const bloque = ubicacion.bloque;
+  bloque.estado = pedido === 'programada' && bloque.fecha_original ? 'movida' : pedido;
+  bloque.motivo = pedido === 'cancelada' ? String(motivo || '').trim().slice(0, 200) : '';
+  bloque.actualizado = ahoraEnTexto();
+  escribirBloque(ubicacion, bloque);
+  return bloque;
+}
+
+/**
+ * Mueve una clase a otra fecha u hora y recuerda dónde estaba: la primera
+ * vez guarda fecha, inicio y fin originales (moverla de nuevo no las pisa,
+ * así la ficha sigue diciendo "movida del jue 24 al …" del día real).
+ *
+ * - Una clase programada pasa a "movida". Una dictada o cancelada queda
+ *   como estaba (mover no la reprograma).
+ * - Si vuelve exactamente a su fecha y hora originales, deja de estar
+ *   movida.
+ * - El generador del horario no toca una clase movida (ver generarHorario).
+ */
+function moverBloque(id, fecha, inicio, fin) {
+  const ubicacion = buscarFilaDeBloque(id);
+  const bloque = ubicacion.bloque;
+  const antes = { fecha: bloque.fecha, inicio: bloque.inicio, fin: bloque.fin };
+  bloque.fecha = String(fecha || '').trim();
+  bloque.inicio = String(inicio || '').trim();
+  bloque.fin = String(fin || '').trim();
+  validarBloque(bloque);
+  if (bloque.fecha === antes.fecha && bloque.inicio === antes.inicio && bloque.fin === antes.fin) {
+    return bloque; // no cambió nada
+  }
+
+  if (!bloque.fecha_original) {
+    bloque.fecha_original = antes.fecha;
+    bloque.inicio_original = antes.inicio;
+    bloque.fin_original = antes.fin;
+  }
+  const volvio = bloque.fecha === bloque.fecha_original &&
+    bloque.inicio === bloque.inicio_original && bloque.fin === bloque.fin_original;
+  const estado = estadoDeBloque(bloque);
+  if (volvio) {
+    bloque.fecha_original = '';
+    bloque.inicio_original = '';
+    bloque.fin_original = '';
+    if (estado === 'movida') bloque.estado = 'programada';
+  } else if (estado === 'programada') {
+    bloque.estado = 'movida';
+  }
+  bloque.actualizado = ahoraEnTexto();
+  escribirBloque(ubicacion, bloque);
+  ordenarHojaBloques(ubicacion.hoja);
+  return bloque;
+}
+
+function escribirBloque(ubicacion, bloque) {
+  ubicacion.hoja
+    .getRange(ubicacion.fila, 1, 1, COLUMNAS_BLOQUES.length)
+    .setValues([bloqueAFila(bloque)]);
 }
 
 function archivarBloque(id) {

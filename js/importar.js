@@ -8,7 +8,10 @@
     alumnos: 'Columnas (en este orden si no pegás encabezados): nombre, apellido, curso, colegio, ' +
       'tarifa por hora, forma de pago (hora o mensual), notas. Curso y colegio aceptan el código corto (4to, SA).',
     horario: 'Columnas (en este orden si no pegás encabezados): título, área, días, inicio, fin, desde, hasta, ' +
-      'etiqueta, notas, alumnos (nombres separados por coma; tienen que existir). También sirve copiar la hoja Horario entera.'
+      'etiqueta, notas, alumnos (nombres separados por coma; tienen que existir). También sirve copiar la hoja Horario entera.',
+    historico: 'Clases de Academia Fractal que ya pasaron. Columnas (en este orden si no pegás encabezados): alumno ' +
+      '(varios separados por coma), fecha, inicio, fin, y opcionales tema, lugar, notas. Se cargan como "dictadas". ' +
+      'Un alumno que no existe se crea (nombre y apellido); si hay dos con el mismo nombre, escribí el apellido.'
   };
   const NOMBRE_ESTADO = { crear: 'Crear', actualizar: 'Actualizar', sin_cambios: 'Sin cambios', error: 'Error' };
 
@@ -49,6 +52,9 @@
     const partes = [r.crear + ' para crear', r.actualizar + ' para actualizar', r.sin_cambios + ' sin cambios'];
     if (r.error) partes.push(r.error + ' con errores (no se importan)');
     let resumen = partes.join(' · ') + '.';
+    if (datos.alumnosNuevos && datos.alumnosNuevos.length) {
+      resumen += ' Alumnos nuevos: ' + datos.alumnosNuevos.join(', ') + ' (después completá su tarifa en Alumnos).';
+    }
     const nuevos = datos.catalogosNuevos.cursos.concat(datos.catalogosNuevos.colegios);
     if (nuevos.length) {
       resumen += ' Se agregan al catálogo: ' + nuevos.map(function (c) { return c.nombre; }).join(', ') +

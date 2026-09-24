@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KODAMA — Estadísticas</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="cabecera">
+    <h1>Estadísticas</h1>
+    <nav class="enlaces-cabecera">
+      <a href="index.html">Día</a>
+      <a href="alumnos.html">Alumnos</a>
+      <a href="cobros.html">Cobros</a>
+      <a href="config.html">Configuración</a>
+    </nav>
+  </header>
+
+  <main class="pagina-datos">
+    <div class="filtros">
+      <div>
+        <label for="filtro-desde">Desde</label>
+        <input id="filtro-desde" type="date" />
+      </div>
+      <div>
+        <label for="filtro-hasta">Hasta</label>
+        <input id="filtro-hasta" type="date" />
+      </div>
+      <div>
+        <label for="filtro-area">Área</label>
+        <select id="filtro-area">
+          <option value="">Todas</option>
+          <option>Universidad</option>
+          <option>Academia Fractal</option>
+          <option>Startup</option>
+          <option>Personal</option>
+        </select>
+      </div>
+    </div>
+
+    <p id="estado-estadisticas" class="estado" role="status"></p>
+
+    <section id="zona-estadisticas" hidden>
+      <h2>Totales del periodo</h2>
+      <p id="nota-anterior" class="nota"></p>
+      <div class="tabla-envoltorio">
+        <table class="tabla-datos">
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col" class="numero">Actual</th>
+              <th scope="col" class="numero">Anterior</th>
+              <th scope="col" class="numero"><abbr title="Diferencia">Dif.</abbr></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-totales"></tbody>
+        </table>
+      </div>
+
+      <h2>Por alumno</h2>
+      <div class="tabla-envoltorio">
+        <table class="tabla-datos">
+          <thead>
+            <tr>
+              <th scope="col">Alumno</th>
+              <th scope="col" class="numero"><abbr title="Clases dictadas">Clases</abbr></th>
+              <th scope="col" class="numero">Horas</th>
+              <th scope="col" class="numero">Monto</th>
+              <th scope="col" class="numero"><abbr title="Movidas">Mov.</abbr></th>
+              <th scope="col" class="numero"><abbr title="Canceladas">Canc.</abbr></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-alumnos"></tbody>
+        </table>
+      </div>
+      <p id="nota-alumnos" class="nota"></p>
+
+      <h2>Horas dictadas por alumno</h2>
+      <div id="grafica-alumnos" class="grafica-envoltorio"></div>
+
+      <h2>Horas por área</h2>
+      <p class="nota">Todas las clases que no se cancelaron.</p>
+      <div id="grafica-areas" class="grafica-envoltorio"></div>
+    </section>
+  </main>
+
+  <script src="js/fecha.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/alumnos.js"></script>
+  <script src="js/estadisticas.js"></script>
+  <script src="js/ui/graficas.js"></script>
+  <script src="js/estadisticas-pagina.js"></script>
+</body>
+</html>

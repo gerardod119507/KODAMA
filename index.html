@@ -12,6 +12,8 @@
     <nav class="enlaces-cabecera">
       <a href="alumnos.html">Alumnos</a>
       <a href="horario.html">Horario</a>
+      <a href="cobros.html">Cobros</a>
+      <a href="estadisticas.html">Estadísticas</a>
       <a href="config.html">Configuración</a>
     </nav>
   </header>
@@ -133,6 +135,8 @@
     </p>
     <h2 id="ficha-titulo"></h2>
     <p id="ficha-horario" class="ficha__horario"></p>
+    <p id="ficha-estado" class="ficha__estado"></p>
+    <p id="ficha-movida" class="ficha__movida" hidden></p>
     <dl class="ficha__datos">
       <div id="ficha-fila-lugar">
         <dt>Lugar</dt>
@@ -148,6 +152,19 @@
       </div>
     </dl>
     <p id="error-ficha" class="error" role="alert"></p>
+    <div class="acciones-estado">
+      <button type="button" id="ficha-dictada">✓ Marcar dictada</button>
+      <button type="button" id="ficha-cancelar" class="secundario">Cancelar clase</button>
+      <button type="button" id="ficha-reactivar" class="secundario" hidden></button>
+    </div>
+    <div id="ficha-cancelacion" class="ficha__cancelacion" hidden>
+      <label for="ficha-motivo">Motivo (opcional)</label>
+      <input type="text" id="ficha-motivo" maxlength="200" autocomplete="off" autocapitalize="sentences" />
+      <div class="acciones-dialogo">
+        <button type="button" id="ficha-cancelar-volver" class="secundario">Volver</button>
+        <button type="button" id="ficha-cancelar-confirmar">Confirmar cancelación</button>
+      </div>
+    </div>
     <div class="acciones-ficha">
       <button type="button" id="ficha-editar">Editar</button>
       <button type="button" id="ficha-mover" class="secundario">Mover</button>
@@ -161,6 +178,7 @@
   <script src="js/state.js"></script>
   <script src="js/capas.js"></script>
   <script src="js/alumnos.js"></script>
+  <script src="js/clases.js"></script>
   <script src="js/vista.js"></script>
   <script src="js/ui/iconos.js"></script>
   <script src="js/ui/espiritu.js"></script>

@@ -227,10 +227,16 @@
   }
 
   KodamaFormulario.iniciar({
-    alGuardar: async function (id, datos) {
-      const guardado = id
-        ? await pedir('actualizarBloque', { id: id, cambios: datos })
-        : await pedir('crearBloque', { bloque: datos });
+    alGuardar: async function (id, datos, modo) {
+      let guardado;
+      if (modo === 'mover') {
+        // Mover guarda la fecha y hora originales (la ficha dice "movida del …").
+        guardado = await pedir('moverBloque', { id: id, fecha: datos.fecha, inicio: datos.inicio, fin: datos.fin });
+      } else if (id) {
+        guardado = await pedir('actualizarBloque', { id: id, cambios: datos });
+      } else {
+        guardado = await pedir('crearBloque', { bloque: datos });
+      }
       aplicarLocal(guardado);
     },
     alArchivar: archivar,
@@ -241,7 +247,10 @@
     alEditar: KodamaFormulario.abrirEdicion,
     alMover: KodamaFormulario.abrirMover,
     alDuplicar: KodamaFormulario.abrirDuplicado,
-    alArchivar: archivar
+    alArchivar: archivar,
+    alCambiarEstado: async function (id, estado, motivo) {
+      aplicarLocal(await pedir('cambiarEstadoBloque', { id: id, estado: estado, motivo: motivo }));
+    }
   });
 
   selectorCapa.addEventListener('change', function () {
