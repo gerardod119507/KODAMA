@@ -88,12 +88,43 @@ function alumnoAFila(alumno) {
   return COLUMNAS_ALUMNOS.map(function (clave) { return alumno[clave] != null ? alumno[clave] : ''; });
 }
 
-function leerAlumnos() {
+/**
+ * Alumnos de la hoja. Una fila con nombre pero sin id (cargada a mano en
+ * el Sheet) recibe un id nuevo en ese momento: si no, la app no la vería
+ * nunca. Una fila sin nombre se ignora (no se convierte en alumno).
+ *
+ * soloLectura (vistas previas): el id nuevo se pone solo en memoria, para
+ * que la vista previa muestre lo mismo que va a pasar; no se escribe nada.
+ */
+function leerAlumnos(soloLectura) {
   const hoja = hojaAlumnos();
   if (hoja.getLastRow() < 2) return [];
-  return hoja.getRange(2, 1, hoja.getLastRow() - 1, COLUMNAS_ALUMNOS.length).getDisplayValues()
+  const filas = hoja.getRange(2, 1, hoja.getLastRow() - 1, COLUMNAS_ALUMNOS.length).getDisplayValues();
+  if (asignarIdsFaltantes(filas).length && !soloLectura) {
+    // Solo la columna id.
+    hoja.getRange(2, 1, filas.length, 1).setValues(filas.map(function (fila) { return [fila[0]]; }));
+  }
+  return filas
     .filter(function (fila) { return fila[0]; })
     .map(filaAAlumno);
+}
+
+/**
+ * En memoria: pone un id nuevo a cada fila de Alumnos (sin encabezado,
+ * columnas en el orden de COLUMNAS_ALUMNOS) que tiene nombre y no tiene
+ * id. Devuelve los índices de las filas que cambió.
+ */
+function asignarIdsFaltantes(filas) {
+  const usados = {};
+  filas.forEach(function (fila) { if (fila[0]) usados[fila[0]] = true; });
+  const cambiadas = [];
+  filas.forEach(function (fila, i) {
+    if (!String(fila[0]).trim() && String(fila[1]).trim()) {
+      fila[0] = nuevoIdDeAlumno(usados);
+      cambiadas.push(i);
+    }
+  });
+  return cambiadas;
 }
 
 function leerCatalogo(tipo) {
@@ -391,6 +422,19 @@ function buscarAlumnoPorNombre(lista, nombre, apellido) {
 }
 
 /**
+ * Alumnos que corresponden a un nombre sacado de un título: por nombre y
+ * apellido exactos (sin tildes/mayúsculas); si el título solo trae el
+ * nombre, todos los que se llaman así (más de uno = ambiguo).
+ */
+function candidatosPorNombre(alumnos, nombre, apellido) {
+  if (apellido) {
+    const clave = claveDeAlumno(nombre, apellido);
+    return alumnos.filter(function (a) { return claveDeAlumno(a.nombre, a.apellido) === clave; });
+  }
+  return alumnos.filter(function (a) { return normalizarTexto(a.nombre) === normalizarTexto(nombre); });
+}
+
+/**
  * Encuentra los bloques y reglas de Academia Fractal que todavía tienen el
  * nombre del alumno en el título (alumno_id vacío) y propone: qué alumnos
  * crear, a quién vincular cada fila y cómo queda el título.
@@ -405,16 +449,25 @@ function migrarAlumnosFractal(aplicar, ids) {
   const hojaH = libro.getSheetByName(HOJA_HORARIO);
   const datosB = hojaB.getDataRange().getDisplayValues();
   const datosH = hojaH.getDataRange().getDisplayValues();
-  const existentes = leerAlumnos();
+  const existentes = leerAlumnos(!aplicar);
   const elegidos = Array.isArray(ids) ? ids.reduce(function (m, id) { m[id] = true; return m; }, {}) : null;
 
   const nuevos = []; // alumnos a crear, sin repetir
   const filas = [];
   const sinResolver = [];
 
+  // El alumno para un nombre del título; null si no existe (se crea) o
+  // { ambiguo: [...] } si solo trae el nombre y hay varios que se llaman
+  // así: en ese caso NO se crea otro, la fila queda sin resolver.
   function alumnoPara(n) {
-    return buscarAlumnoPorNombre(existentes, n.nombre, n.apellido) ||
-      buscarAlumnoPorNombre(nuevos, n.nombre, n.apellido);
+    const todos = existentes.concat(nuevos);
+    const clave = claveDeAlumno(n.nombre, n.apellido);
+    const exacto = todos.filter(function (a) { return claveDeAlumno(a.nombre, a.apellido) === clave; });
+    if (exacto.length) return exacto[0];
+    if (n.apellido) return null;
+    const porNombre = candidatosPorNombre(todos, n.nombre, '');
+    if (porNombre.length === 1) return porNombre[0];
+    return porNombre.length ? { ambiguo: porNombre } : null;
   }
 
   function revisar(hoja, datos, columnas, etiquetaHoja) {
@@ -426,11 +479,22 @@ function migrarAlumnosFractal(aplicar, ids) {
       if (!fila[0] || fila[cArea] !== AREA_FRACTAL || fila[cAlumnos] || !fila[cTitulo]) continue;
       const extraido = extraerNombresDeTitulo(fila[cTitulo]);
       if (extraido.nombres.length === 0) {
-        sinResolver.push({ hoja: etiquetaHoja, id: fila[0], titulo: fila[cTitulo] });
+        sinResolver.push({ hoja: etiquetaHoja, id: fila[0], titulo: fila[cTitulo], motivo: 'no se reconoce ningún nombre' });
         continue;
       }
-      const vinculados = extraido.nombres.map(function (n) {
-        let alumno = alumnoPara(n);
+      const encontrados = extraido.nombres.map(alumnoPara);
+      const ambiguos = encontrados.filter(function (a) { return a && a.ambiguo; });
+      if (ambiguos.length) {
+        sinResolver.push({
+          hoja: etiquetaHoja, id: fila[0], titulo: fila[cTitulo],
+          motivo: 'hay varios alumnos con ese nombre (' + ambiguos.map(function (a) {
+            return a.ambiguo.map(nombreCompleto).join(' / ');
+          }).join('; ') + ')'
+        });
+        continue;
+      }
+      const vinculados = extraido.nombres.map(function (n, i) {
+        let alumno = encontrados[i] || alumnoPara(n);
         let esNuevo = false;
         if (!alumno) {
           alumno = { id: '', nombre: n.nombre, apellido: n.apellido };

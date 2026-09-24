@@ -131,7 +131,7 @@ function resumenDe(filas) {
 
 function importarAlumnos(texto, aplicar) {
   const leido = leerFilasPegadas(texto, ALIAS_ALUMNOS, ORDEN_ALUMNOS);
-  const existentes = leerAlumnos();
+  const existentes = leerAlumnos(!aplicar);
   const catalogos = catalogosActuales();
   const catalogosNuevos = { cursos: [], colegios: [] };
   const vistas = {}; // clave nombre+apellido → número de fila, para repetidos en lo pegado
@@ -276,7 +276,7 @@ function importarHorario(texto, aplicar) {
   const leido = leerFilasPegadas(texto, ALIAS_HORARIO, ORDEN_HORARIO);
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_HORARIO);
   const grilla = hoja.getDataRange().getDisplayValues();
-  const alumnos = leerAlumnos();
+  const alumnos = leerAlumnos(!aplicar);
   const areas = nombresDeAreas();
 
   const reglasExistentes = [];

@@ -265,6 +265,14 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   vínculos faltantes o de más, nombre en el título, bloques que no
   heredaron, huérfanos, `(vacío)`, bloques de prueba), cuenta las filas y
   **no escribe nada**.
+- `tests/reparar.test.js` — `repararAlumnosFractal()` sobre una copia
+  armada como los datos reales: la vista previa no escribe nada, id solo
+  a alumnos con nombre, curso al del catálogo, reglas y bloques (pasados
+  y futuros) vinculados, título vaciado solo si es exactamente el nombre,
+  pendientes sin tocar, idempotencia; además los ids automáticos al leer
+  alumnos (y que las vistas previas no los escriban), la migración que
+  no crea un alumno ante un nombre ambiguo, y que el registro llegue a
+  Logger ya armado (enteros, nunca "8.0").
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -419,7 +427,13 @@ cada semana.
 formato texto. `lugar` es el **lugar habitual** de sus clases (al final,
 agregado después).
 
-- **`id`**: `a` + 8 hexadecimales, lo pone el backend.
+- **`id`**: `a` + 8 hexadecimales, lo pone el backend. **Un alumno
+  cargado a mano en el Sheet sin id** (fila con nombre y `id` vacío)
+  recibe uno la primera vez que el backend lee la hoja (`leerAlumnos()` →
+  `asignarIdsFaltantes()`, solo escribe la columna `id`). Una fila sin
+  nombre se ignora. Motivo: antes esas filas quedaban invisibles para la
+  app y para toda vinculación (incidente de la auditoría, 2026-09-24).
+  Las vistas previas (importar, migrar) ponen el id solo en memoria.
 - **`curso` y `colegio` guardan el nombre COMPLETO** del catálogo; la app
   muestra el código corto ("Agustín Aliendre — 4to SA"). Al guardar se
   acepta cualquiera de los dos ("SA" o "Unidad Educativa San Agustín", sin
@@ -524,6 +538,28 @@ los alumnos que lo tenían.
   y pendientes con su motivo) queda en el registro de ejecución. Después
   hay que tocar "Regenerar horario" para que los bloques ya generados
   hereden los alumnos.
+- **Reparación `repararAlumnosFractal()`** (`apps-script/Setup.gs`, desde
+  el editor): **vista previa, no escribe nada**; la que escribe es
+  `repararAlumnosFractalAplicar()` (el editor no deja pasar argumentos,
+  por eso son dos funciones y la sin sufijo es la segura). Arregla lo que
+  encontró la auditoría: id a los alumnos con nombre y sin id; curso
+  escrito distinto al del catálogo ("3ero de secundaria" → "3ro de
+  secundaria", solo si hay exactamente uno parecido); reglas de Fractal
+  sin alumnos, por el título; y bloques de Fractal sin alumnos, **pasados
+  y futuros** (los de una regla copian los alumnos de su regla, los
+  sueltos van por el título). El título se vacía **solo si es exactamente
+  el nombre** de los vinculados ("Katy", "Camila y Adriana"); si tiene
+  algo más ("Clase con Katy", "… - Física") queda tal cual y se anota.
+  Solo escribe `id`/`curso` en Alumnos y `título`/`alumno_id` en Horario y
+  Bloques; no toca archivados ni otras áreas; nombre ambiguo o que no
+  está → pendiente, sin tocar. Es idempotente.
+- **Registro legible:** las funciones del editor escriben con
+  `registrar()` (Setup.gs), que arma el texto antes de `Logger.log`.
+  Motivo: `Logger.log('%s', 8)` imprime "8.0".
+- **Migración y nombres ambiguos:** si el título trae solo un nombre que
+  tienen varios alumnos ("Santiago" con Santiago Aliendre y Santiago
+  Méndez), la migración de Configuración ya no crea un alumno nuevo: la
+  fila queda "sin resolver", con el motivo a la vista y sin casilla.
 
 ## API (acciones del Web App)
 
@@ -924,7 +960,7 @@ KODAMA/
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
 │   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
 │   ├── Bloques.gs             # crear/editar/archivar bloques desde la app
-│   ├── Setup.gs               # funciones manuales: configurarHojas, generarToken, vincularAlumnosEnHorario, moverAulasALugar
+│   ├── Setup.gs               # funciones manuales: configurarHojas, generarToken, vincularAlumnosEnHorario, moverAulasALugar, repararAlumnosFractal
 │   ├── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
 │   ├── Alumnos.gs             # hojas Alumnos/Cursos/Colegios, ABM y migración de Fractal
 │   ├── Importar.gs            # importador de filas pegadas (alumnos y reglas)

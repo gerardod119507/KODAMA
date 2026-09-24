@@ -124,7 +124,7 @@
   function pintarMigracion(datos) {
     const lista = document.getElementById('filas-migrar');
     lista.replaceChildren();
-    if (datos.filas.length === 0) {
+    if (datos.filas.length === 0 && datos.sinResolver.length === 0) {
       document.getElementById('resumen-migrar').textContent =
         'No hay clases de Fractal con el nombre en el título: todo está vinculado.';
       document.getElementById('aplicar-migrar').hidden = true;
@@ -133,7 +133,7 @@
     }
     let resumen = datos.filas.length + ' clases para vincular.';
     if (datos.alumnosNuevos.length) resumen += ' Alumnos nuevos: ' + datos.alumnosNuevos.join(', ') + '.';
-    if (datos.sinResolver.length) resumen += ' ' + datos.sinResolver.length + ' sin nombre reconocible (quedan igual).';
+    if (datos.sinResolver.length) resumen += ' ' + datos.sinResolver.length + ' sin resolver (quedan igual, ver abajo).';
     document.getElementById('resumen-migrar').textContent = resumen;
 
     datos.filas.forEach(function (fila) {
@@ -153,7 +153,14 @@
       li.appendChild(etiqueta);
       lista.appendChild(li);
     });
-    document.getElementById('aplicar-migrar').hidden = false;
+    // Sin casilla: no se pueden aplicar (nombre no reconocible o de varios alumnos).
+    datos.sinResolver.forEach(function (fila) {
+      const li = el('li', 'fila-importar fila-importar--error');
+      li.appendChild(el('span', 'fila-importar__detalle',
+        (fila.hoja === 'Horario' ? 'Regla del horario' : 'Clase') + ': "' + fila.titulo + '" — ' + fila.motivo));
+      lista.appendChild(li);
+    });
+    document.getElementById('aplicar-migrar').hidden = datos.filas.length === 0;
     zonaMigrar.hidden = false;
   }
 
