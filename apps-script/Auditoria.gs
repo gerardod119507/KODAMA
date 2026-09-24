@@ -227,20 +227,20 @@ function auditarDatos() {
 
   // --- Informe -------------------------------------------------------------
   const total = hallazgos.reduce(function (n, h) { return n + h.cantidad; }, 0);
-  Logger.log('AUDITORÍA DE DATOS (solo lectura, no se cambió nada). %s alumnos, %s reglas, %s bloques.',
+  registrar('AUDITORÍA DE DATOS (solo lectura, no se cambió nada). %s alumnos, %s reglas, %s bloques.',
     alumnos.length, tHorario.filas.length, tBloques.filas.length);
   if (!hallazgos.length) {
-    Logger.log('Todo en orden: no se encontró ningún problema.');
+    registrar('Todo en orden: no se encontró ningún problema.');
   }
   hallazgos.forEach(function (h, i) {
-    Logger.log('%s. [%s] %s — %s fila(s).', i + 1, h.seccion, h.titulo, h.cantidad);
-    h.ejemplos.slice(0, MAX_EJEMPLOS_AUDITORIA).forEach(function (e) { Logger.log('     · %s', e); });
+    registrar('%s. [%s] %s — %s fila(s).', i + 1, h.seccion, h.titulo, h.cantidad);
+    h.ejemplos.slice(0, MAX_EJEMPLOS_AUDITORIA).forEach(function (e) { registrar('     · %s', e); });
     if (h.ejemplos.length > MAX_EJEMPLOS_AUDITORIA) {
-      Logger.log('     · … y %s más', h.ejemplos.length - MAX_EJEMPLOS_AUDITORIA);
+      registrar('     · … y %s más', h.ejemplos.length - MAX_EJEMPLOS_AUDITORIA);
     }
-    Logger.log('     Propuesta: %s', h.propuesta);
+    registrar('     Propuesta: %s', h.propuesta);
   });
-  if (hallazgos.length) Logger.log('Total: %s problemas en %s filas.', hallazgos.length, total);
+  if (hallazgos.length) registrar('Total: %s problemas en %s filas.', hallazgos.length, total);
   return { hallazgos: hallazgos, total: total };
 }
 
