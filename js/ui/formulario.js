@@ -21,7 +21,7 @@ const KodamaFormulario = (function () {
   let modoActual = null; // nuevo | edicion | mover
   let selectorAlumnos = null;
   // En un bloque NUEVO, el lugar se completa con el lugar habitual del
-  // alumno elegido mientras no lo hayas escrito vos (si lo tocás, manda lo tuyo).
+  // alumno elegido mientras no lo hayas escrito tú (si lo tocas, manda lo tuyo).
   let lugarAutomatico = false;
 
   function iniciar(opciones) {
@@ -109,7 +109,7 @@ const KodamaFormulario = (function () {
 
   /** Un bloque nuevo con los mismos datos; se suele cambiar la fecha. */
   function abrirDuplicado(bloque) {
-    preparar('Duplicar bloque', 'Copia de "' + (bloque.titulo || '') + '". Cambiá lo que haga falta y guardá.', 'nuevo', null);
+    preparar('Duplicar bloque', 'Copia de "' + (bloque.titulo || '') + '". Cambia lo que haga falta y guarda.', 'nuevo', null);
     escribirCampos(valoresDuplicado(bloque));
     lugarAutomatico = !campos.lugar.value;
     dialogo.showModal();
@@ -158,7 +158,7 @@ const KodamaFormulario = (function () {
     const datos = leerCampos();
     if (!datos.titulo.trim() && !datos.alumno_id) {
       if (esFractal()) {
-        mostrarError('Elegí al menos un alumno (o escribí un tema).');
+        mostrarError('Elige al menos un alumno (o escribe un tema).');
         selectorAlumnos.enfocar();
       } else {
         mostrarError('Falta el título.');

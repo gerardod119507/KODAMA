@@ -90,7 +90,7 @@ function auditarDatos() {
     'Completarlo en la pantalla Alumnos.');
   hallazgo('Alumnos', 'Alumno activo sin tarifa',
     activos.filter(function (f) { return !a.tarifa(f); }).map(function (f) { return 'fila ' + f.numero + ': ' + nombreDe(f); }),
-    'Cargar la tarifa en la pantalla Alumnos (solo vos sabés el monto).');
+    'Cargar la tarifa en la pantalla Alumnos (solo tú sabes el monto).');
   hallazgo('Alumnos', 'Tarifa que no es un número',
     alumnos.filter(function (f) { return a.tarifa(f) && !/^\d+(\.\d+)?$/.test(a.tarifa(f)); })
       .map(function (f) { return 'fila ' + f.numero + ': ' + nombreDe(f) + ' → "' + a.tarifa(f) + '"'; }),

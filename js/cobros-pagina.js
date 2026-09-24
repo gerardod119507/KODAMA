@@ -145,7 +145,7 @@
 
   function llenarAlumnos(elegido) {
     campos.alumno_id.replaceChildren();
-    const vacio = el('option', null, '— Elegí un alumno —');
+    const vacio = el('option', null, '— Elige un alumno —');
     vacio.value = '';
     campos.alumno_id.appendChild(vacio);
     KodamaAlumnos.buscar('', null, { incluirArchivados: false }).forEach(function (a) {
@@ -181,9 +181,9 @@
   async function calcularMonto() {
     const detalle = document.getElementById('detalle-monto');
     const alumno = KodamaAlumnos.porId(campos.alumno_id.value);
-    if (!alumno) { detalle.textContent = 'Elegí un alumno.'; return; }
+    if (!alumno) { detalle.textContent = 'Elige un alumno.'; return; }
     if (!KodamaEstadisticas.rangoValido(campos.desde.value, campos.hasta.value)) {
-      detalle.textContent = 'Revisá el periodo.';
+      detalle.textContent = 'Revisa el periodo.';
       return;
     }
     detalle.textContent = 'Calculando…';
@@ -193,7 +193,7 @@
         { desde: campos.desde.value, hasta: campos.hasta.value });
       const fila = r.porAlumno.find(function (f) { return f.id === alumno.id; });
       if (KodamaEstadisticas.tarifaDe(alumno) === null) {
-        detalle.textContent = 'No tiene tarifa cargada: completala en Alumnos.';
+        detalle.textContent = 'No tiene tarifa cargada: complétala en Alumnos.';
         return;
       }
       campos.monto.value = String(fila ? fila.monto : 0);
@@ -210,7 +210,7 @@
     const datos = {};
     Object.keys(campos).forEach(function (clave) { datos[clave] = campos[clave].value; });
     const error = document.getElementById('error-pago');
-    if (!datos.alumno_id) { error.textContent = 'Elegí un alumno.'; return; }
+    if (!datos.alumno_id) { error.textContent = 'Elige un alumno.'; return; }
     const boton = document.getElementById('guardar-pago');
     boton.disabled = true;
     try {

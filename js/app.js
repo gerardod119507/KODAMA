@@ -14,7 +14,7 @@
 
   const config = KodamaApi.leerConfig();
   if (!config.url || !config.token) {
-    // Sin conexión configurada se avisa acá mismo, con un enlace. Nunca se
+    // Sin conexión configurada se avisa aquí mismo, con un enlace. Nunca se
     // salta solo a Configuración: la app no debe cambiar de página sin que
     // Gerardo lo pida.
     KodamaDia.renderSinConfiguracion(contenedor);

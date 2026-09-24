@@ -4,7 +4,7 @@
  */
 
 /**
- * Logger.log con "%s", pero armando el texto acá. Motivo: Logger.log de
+ * Logger.log con "%s", pero armando el texto aquí. Motivo: Logger.log de
  * Apps Script formatea los números de JavaScript como decimales ("8.0
  * alumnos"); así sale "8 alumnos".
  */
@@ -17,7 +17,7 @@ function registrar(formato) {
 
 function configurarHojas() {
   // Misma lógica que corre sola en cada POST (Code.gs). Esta función queda
-  // como atajo manual, por si querés forzar el chequeo sin esperar a que
+  // como atajo manual, por si quieres forzar el chequeo sin esperar a que
   // la app haga una petición.
   asegurarEstructura();
   registrar('Listo. Hojas "%s", "%s" y "%s" verificadas, zona horaria %s.',
@@ -27,13 +27,13 @@ function configurarHojas() {
 function generarToken() {
   const propiedades = PropertiesService.getScriptProperties();
   if (propiedades.getProperty(PROPIEDAD_TOKEN)) {
-    registrar('Ya existe un token. Para crear uno nuevo, borrá primero la propiedad %s ' +
+    registrar('Ya existe un token. Para crear uno nuevo, borra primero la propiedad %s ' +
       'en Configuración del proyecto.', PROPIEDAD_TOKEN);
     return;
   }
   const token = Utilities.getUuid().replace(/-/g, '');
   propiedades.setProperty(PROPIEDAD_TOKEN, token);
-  registrar('Token creado y guardado en Propiedades del script. Copialo:');
+  registrar('Token creado y guardado en Propiedades del script. Cópialo:');
   Logger.log(token);
 }
 
@@ -62,7 +62,7 @@ function vincularAlumnosEnHorario() {
   const cAlumnos = encabezados.indexOf('alumno_id');
   if (cTitulo === -1 || cArea === -1 || cAlumnos === -1) {
     throw new Error('A la hoja Horario le falta la columna "título", "área" o "alumno_id". ' +
-      'Abrí la app una vez (o corré configurarHojas) y volvé a intentar.');
+      'Abre la app una vez (o ejecuta configurarHojas) y vuelve a intentar.');
   }
 
   const alumnos = leerAlumnos();
@@ -109,7 +109,7 @@ function vincularAlumnosEnHorario() {
     registrar('  ✗ fila %s: "%s" — %s (quedó sin tocar)', p.fila, p.titulo, p.motivo);
   });
   if (vinculadas.length) {
-    registrar('Para que los bloques ya generados hereden los alumnos, tocá "Regenerar horario" en la app.');
+    registrar('Para que los bloques ya generados hereden los alumnos, toca "Regenerar horario" en la app.');
   }
   return { vinculadas: vinculadas, pendientes: pendientes };
 }
@@ -163,7 +163,7 @@ function moverAulasALugar() {
   const cLugar = encabezados.indexOf('lugar');
   if (cArea === -1 || cNotas === -1 || cLugar === -1) {
     throw new Error('A la hoja Horario le falta la columna "área", "notas" o "lugar". ' +
-      'Abrí la app una vez (o corré configurarHojas) y volvé a intentar.');
+      'Abre la app una vez (o ejecuta configurarHojas) y vuelve a intentar.');
   }
 
   const movidas = [];
@@ -198,7 +198,7 @@ function moverAulasALugar() {
     registrar('  ✗ fila %s: "%s" — %s en "%s" (quedó sin tocar)', p.fila, p.titulo, p.motivo, p.notas);
   });
   if (movidas.length) {
-    registrar('Tocá "Regenerar horario" en la app para que las clases ya generadas muestren el aula.');
+    registrar('Toca "Regenerar horario" en la app para que las clases ya generadas muestren el aula.');
   }
   return { movidas: movidas, pendientes: pendientes };
 }
@@ -226,7 +226,7 @@ function separarAula(notas) {
 
 /**
  * VISTA PREVIA: no escribe nada. Anota en el registro todo lo que haría
- * repararAlumnosFractalAplicar(). Corré esta primero.
+ * repararAlumnosFractalAplicar(). Ejecuta esta primero.
  */
 function repararAlumnosFractal() {
   return repararDatosFractal(false);
@@ -376,7 +376,7 @@ function columnasPorEncabezado(encabezados, nombres, hoja) {
     columnas[nombre] = encabezados.indexOf(nombre);
     if (columnas[nombre] === -1) {
       throw new Error('A la hoja ' + hoja + ' le falta la columna "' + nombre + '". ' +
-        'Abrí la app una vez (o corré configurarHojas) y volvé a intentar.');
+        'Abre la app una vez (o ejecuta configurarHojas) y vuelve a intentar.');
     }
   });
   return columnas;
@@ -446,7 +446,7 @@ function escribirColumna(hoja, filas, columna) {
 function registrarReparacion(r, aplicar) {
   registrar(aplicar
     ? 'REPARACIÓN APLICADA en el Sheet.'
-    : 'VISTA PREVIA: no se cambió nada. Para aplicarlo, ejecutá repararAlumnosFractalAplicar().');
+    : 'VISTA PREVIA: no se cambió nada. Para aplicarlo, ejecuta repararAlumnosFractalAplicar().');
 
   registrar('1. Ids de alumnos: %s.', r.ids.length);
   r.ids.forEach(function (x) { registrar('  ✓ fila %s: %s → id %s', x.fila, x.alumno, x.id); });
@@ -477,5 +477,5 @@ function registrarReparacion(r, aplicar) {
   registrar('Pendientes (quedaron sin tocar): %s.', r.pendientes.length);
   r.pendientes.forEach(function (x) { registrar('  ✗ %s fila %s: "%s" — %s', x.hoja, x.fila, x.titulo, x.motivo); });
 
-  if (aplicar) registrar('Listo. Corré auditarDatos() para confirmar.');
+  if (aplicar) registrar('Listo. Ejecuta auditarDatos() para confirmar.');
 }

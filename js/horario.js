@@ -5,7 +5,7 @@
 (async function () {
   const config = KodamaApi.leerConfig();
   if (!config.url || !config.token) {
-    // Igual que en la vista principal: se avisa acá, nunca se salta solo a
+    // Igual que en la vista principal: se avisa aquí, nunca se salta solo a
     // Configuración.
     const lista = document.getElementById('lista-reglas');
     const aviso = document.createElement('p');
@@ -57,7 +57,7 @@
 
   // Alumnos (solo Academia Fractal), igual que en el formulario de bloques.
   // En una regla NUEVA, el lugar se completa con el lugar habitual del
-  // alumno elegido mientras no lo hayas escrito vos.
+  // alumno elegido mientras no lo hayas escrito tú.
   let lugarAutomatico = false;
   const selectorAlumnos = KodamaSelectorAlumnos.crear(document.getElementById('regla-alumnos'), {
     crearAlumno: function (datos) { return pedir('crearAlumno', { alumno: datos }); },
@@ -123,7 +123,7 @@
     if (reglas.length === 0) {
       const vacio = document.createElement('p');
       vacio.className = 'estado';
-      vacio.textContent = 'Todavía no hay reglas. Tocá "+" para agregar la primera.';
+      vacio.textContent = 'Todavía no hay reglas. Toca "+" para agregar la primera.';
       lista.appendChild(vacio);
       return;
     }
@@ -186,7 +186,7 @@
     datos.alumno_id = esFractal() ? selectorAlumnos.valor() : '';
 
     if (!datos.titulo.trim() && !datos.alumno_id) {
-      mostrarError(esFractal() ? 'Elegí al menos un alumno (o escribí un tema).' : 'Falta el título.');
+      mostrarError(esFractal() ? 'Elige al menos un alumno (o escribe un tema).' : 'Falta el título.');
       if (esFractal()) selectorAlumnos.enfocar();
       else campos.titulo.focus();
       return;

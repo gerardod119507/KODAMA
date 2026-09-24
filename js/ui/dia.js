@@ -70,7 +70,7 @@ const KodamaDia = (function () {
 
       const nota = document.createElement('p');
       nota.className = 'nota';
-      nota.textContent = 'Elegí uno (A o B) y contámelo para integrarlo en el próximo checkpoint.';
+      nota.textContent = 'Elige uno (A o B) y cuéntamelo para integrarlo en el próximo checkpoint.';
       vacio.appendChild(nota);
     } else {
       const mascota = document.createElement('div');

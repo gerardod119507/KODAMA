@@ -38,11 +38,11 @@ const COLUMNAS_ESTADO_BLOQUE = ['estado', 'fecha_original', 'inicio_original', '
 // inválido" para que se pueda escribir cualquier otra cosa).
 const SUGERENCIAS_ETIQUETA = ['Nerak', 'Data cocha', 'otro'];
 
-// ÚNICA fuente de verdad de qué acciones existen: el nombre acá tiene que
+// ÚNICA fuente de verdad de qué acciones existen: el nombre aquí tiene que
 // ser IDÉNTICO, carácter por carácter, al que manda el frontend (ver
-// KodamaApi.llamar(...) en js/*.js — grep 'action' o revisá "API (acciones
+// KodamaApi.llamar(...) en js/*.js — grep 'action' o revisa "API (acciones
 // del Web App)" en CLAUDE.md). Agregar una acción nueva es agregar una
-// entrada acá, nunca un "case" suelto en otro lado.
+// entrada aquí, nunca un "case" suelto en otro lado.
 const ACCIONES = {
   ping: function () {
     return {

@@ -111,7 +111,7 @@
     }
     const sinTarifa = actual.porAlumno.filter(function (f) { return f.sinTarifa; }).length;
     document.getElementById('nota-alumnos').textContent = sinTarifa
-      ? 'Los alumnos "sin tarifa" no suman monto: cargá su tarifa en Alumnos.' : '';
+      ? 'Los alumnos "sin tarifa" no suman monto: carga su tarifa en Alumnos.' : '';
 
     // Gráficas.
     KodamaGraficas.barras(document.getElementById('grafica-alumnos'),
@@ -129,7 +129,7 @@
 
   async function cargar() {
     if (!KodamaEstadisticas.rangoValido(desde.value, hasta.value)) {
-      estado.textContent = 'Elegí un rango válido: "desde" no puede ser posterior a "hasta".';
+      estado.textContent = 'Elige un rango válido: "desde" no puede ser posterior a "hasta".';
       zona.hidden = true;
       return;
     }

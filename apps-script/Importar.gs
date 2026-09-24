@@ -129,7 +129,7 @@ function importar(modo, texto, aplicar) {
   if (modo === 'alumnos') return importarAlumnos(texto, aplicar);
   if (modo === 'horario') return importarHorario(texto, aplicar);
   if (modo === 'historico') return importarHistorico(texto, aplicar);
-  throw new Error('modo_desconocido: "' + modo + '" (usá alumnos, horario o historico)');
+  throw new Error('modo_desconocido: "' + modo + '" (usa alumnos, horario o historico)');
 }
 
 function resumenDe(filas) {
@@ -309,10 +309,10 @@ function importarHorario(texto, aplicar) {
         throw new Error('está archivada: no se importa');
       }
       const area = areas.find(function (a) { return normalizarTexto(a) === normalizarTexto(v.area); });
-      if (!area) throw new Error('área desconocida: "' + (v.area || '') + '" (usá ' + areas.join(', ') + ')');
+      if (!area) throw new Error('área desconocida: "' + (v.area || '') + '" (usa ' + areas.join(', ') + ')');
 
       // Alumnos por nombre ("Agustín Aliendre" o "Agustín Aliendre — 4to SA"),
-      // separados por coma. Tienen que existir: importá primero los alumnos.
+      // separados por coma. Tienen que existir: importa primero los alumnos.
       const ids = String(v.alumnos || '').split(/[,;]/).map(function (t) { return t.trim(); }).filter(Boolean)
         .map(function (texto) {
           const nombre = texto.split(/\s+[—–-]\s+/)[0];
@@ -320,7 +320,7 @@ function importarHorario(texto, aplicar) {
           if (porId) return porId.id;
           const palabras = nombre.split(/\s+/);
           const alumno = buscarAlumnoPorNombre(alumnos, palabras[0], palabras.slice(1).join(' '));
-          if (!alumno) throw new Error('alumno no encontrado: "' + texto + '" (importá primero los alumnos)');
+          if (!alumno) throw new Error('alumno no encontrado: "' + texto + '" (importa primero los alumnos)');
           return alumno.id;
         });
 
@@ -449,7 +449,7 @@ function importarHistorico(texto, aplicar) {
       if (exacto.length > 1) {
         throw new Error('"' + nombre + '" es ambiguo (' + exacto.map(function (a) {
           return (a.nombre + ' ' + a.apellido).trim();
-        }).join(' / ') + '): escribí también el apellido');
+        }).join(' / ') + '): escribe también el apellido');
       }
     }
     const nuevo = {

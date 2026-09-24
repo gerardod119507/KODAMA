@@ -169,7 +169,7 @@ function normalizarTarifa(texto) {
   const limpio = String(texto == null ? '' : texto).replace(/bs\.?/i, '').replace(/\s+/g, '').replace(',', '.');
   if (!limpio) return '';
   if (!/^\d+(\.\d+)?$/.test(limpio)) {
-    throw new Error('tarifa_invalida: "' + texto + '" (usá un número, ej. 80)');
+    throw new Error('tarifa_invalida: "' + texto + '" (usa un número, ej. 80)');
   }
   return String(Number(limpio));
 }
@@ -179,7 +179,7 @@ function normalizarFormaPago(texto) {
   const t = normalizarTexto(texto).replace(/^por /, '');
   if (!t || t === 'hora' || t === 'horas' || t === 'h') return 'hora';
   if (t === 'mensual' || t === 'mes' || t === 'mensualmente') return 'mensual';
-  throw new Error('forma_pago_invalida: "' + texto + '" (usá hora o mensual)');
+  throw new Error('forma_pago_invalida: "' + texto + '" (usa hora o mensual)');
 }
 
 /** "a1, a2  a1" → "a1,a2": sin repetidos, en el orden en que llegaron. */
@@ -234,10 +234,10 @@ function prepararAlumno(alumno, catalogos, existentes) {
   }
 
   const curso = resolverCatalogo(catalogos.cursos, alumno.curso);
-  if (curso === null) throw new Error('curso_desconocido: "' + alumno.curso + '" (agregalo en Cursos)');
+  if (curso === null) throw new Error('curso_desconocido: "' + alumno.curso + '" (agrégalo en Cursos)');
   alumno.curso = curso;
   const colegio = resolverCatalogo(catalogos.colegios, alumno.colegio);
-  if (colegio === null) throw new Error('colegio_desconocido: "' + alumno.colegio + '" (agregalo en Colegios)');
+  if (colegio === null) throw new Error('colegio_desconocido: "' + alumno.colegio + '" (agrégalo en Colegios)');
   alumno.colegio = colegio;
 
   alumno.tarifa_hora = normalizarTarifa(alumno.tarifa_hora);
@@ -317,7 +317,7 @@ function archivarAlumno(id) {
  */
 function guardarCatalogo(tipo, anterior, item) {
   const nombreHoja = HOJAS_CATALOGO[tipo];
-  if (!nombreHoja) throw new Error('catalogo_desconocido: "' + tipo + '" (usá cursos o colegios)');
+  if (!nombreHoja) throw new Error('catalogo_desconocido: "' + tipo + '" (usa cursos o colegios)');
   const nombre = String((item && item.nombre) || '').trim();
   const corto = String((item && item.corto) || '').trim();
   if (!nombre || !corto) throw new Error('catalogo_incompleto: hacen falta nombre completo y código corto');

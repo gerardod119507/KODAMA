@@ -6,7 +6,7 @@
  *
  * Imita a propósito las partes estrictas de la API de Sheets (rangos con
  * dimensiones inválidas, setValues con dimensiones que no coinciden), para
- * que un error que rompería en producción también rompa acá.
+ * que un error que rompería en producción también rompa aquí.
  */
 
 const fs = require('fs');
@@ -26,7 +26,7 @@ function texto(valor) {
  * Los objetos creados dentro del sandbox pertenecen a otro "realm" de
  * JavaScript: su prototipo no es el mismo que el del test, así que
  * assert.deepStrictEqual los rechaza aunque el contenido sea idéntico.
- * Clonarlos acá los devuelve al realm del test y evita que cada prueba
+ * Clonarlos aquí los devuelve al realm del test y evita que cada prueba
  * tenga que acordarse de este detalle.
  */
 function clonar(valor) {
