@@ -44,7 +44,7 @@ Además existen las **reuniones imprevistas**, que no son un área: son un
   token, ver logs de ejecución).
 - **Frontend:** HTML + CSS + JavaScript vanilla. Sin frameworks, sin build
   step. Publicado en GitHub Pages.
-- **PWA** instalable en el celular (manifest + service worker) — checkpoint 8.
+- **PWA** instalable en el celular (manifest + service worker) — checkpoint 9.
 - **Mobile-first.** Uso principal: celular. El dictado por voz usa el
   micrófono del teclado del móvil, así que basta con buenos campos de texto;
   no hace falta integrar reconocimiento de voz en la app.
@@ -273,6 +273,24 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   alumnos (y que las vistas previas no los escriban), la migración que
   no crea un alumno ante un nombre ambiguo, y que el registro llegue a
   Logger ya armado (enteros, nunca "8.0").
+- `tests/estados.test.js` — Checkpoint 8: estado de la clase (nuevo =
+  programada, dictada, cancelada con motivo, volver), "movida" solo al
+  mover, fecha/hora originales guardadas una vez, volver al original, una
+  dictada movida sigue dictada, "Editar" no marca movida, el generador no
+  toca una clase movida, y token.
+- `tests/pagos.test.js` — hoja `Pagos`: alta, validaciones (alumno,
+  periodo, monto, estado, fechas), pagado sin fecha = hoy, edición
+  parcial, archivar sin borrar, token.
+- `tests/historico.test.js` — importador de clases pasadas: vista previa
+  sin escribir, bloques de Fractal "dictada", alumno nuevo creado una sola
+  vez, sin duplicar, filas malas (ambiguo, futura, horas al revés, fecha
+  mal escrita, sin alumno, repetida) sin frenar al resto.
+- `tests/estadisticas.test.js` — **cálculo de montos** (tarifa por
+  alumno, clase compartida, solo dictadas, sin tarifa, centavos),
+  **estados** (qué suma y qué no, movida+dictada, textos de la ficha,
+  "movida del jue 24 al sáb 26") y **rango de fechas** (extremos, área,
+  periodo anterior cruzando mes/año, bisiesto), más el resumen mensual de
+  Cobros.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -301,7 +319,8 @@ tipo de bloque):
 ### Hoja `Bloques`
 Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
 `fecha`, `inicio`, `fin`, `etiqueta`, `notas`, `creado`, `actualizado`,
-`archivado`.
+`archivado`, `alumno_id`, `lugar`, `estado`, `fecha_original`,
+`inicio_original`, `fin_original`, `motivo`.
 
 - **Fecha y hora se guardan como TEXTO**, formato `YYYY-MM-DD` y `HH:mm`
   (ej. `2026-09-22`, `14:30`). Motivo: si se guardan como tipo Fecha/Hora,
@@ -346,6 +365,26 @@ Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
 - **`lugar`** (cierre del Checkpoint 7): dónde es la clase (en la UMSS, el
   aula: "Aula E511"). Texto libre, opcional, **al final** (columna 14),
   agregado con `migrarColumnaAlFinal()`.
+- **Estado de la clase** (Checkpoint 8), columnas 15–19 al final:
+  `estado` (`programada` | `dictada` | `movida` | `cancelada`; **vacío =
+  programada**, así los bloques de antes no hubo que tocarlos),
+  `fecha_original`/`inicio_original`/`fin_original` (dónde estaba antes de
+  moverse) y `motivo` (solo si está cancelada, opcional, hasta 200
+  letras). Reglas:
+  - Un bloque nuevo (y un duplicado) empieza programado. Las clases
+    pasadas **siguen programadas hasta que Gerardo las marque**: nada se
+    marca dictado solo.
+  - `movida` no se elige: la pone `moverBloque` (el botón "Mover" de la
+    ficha) y guarda el original **una sola vez** (moverla otra vez no lo
+    pisa). Si vuelve exactamente a su fecha y hora originales, deja de
+    estar movida. Una dictada o cancelada que se mueve conserva su
+    estado. Desmarcar una dictada que se había movido la deja `movida`.
+  - "Editar" puede cambiar la fecha sin marcarla movida: es para
+    corregir un error, no para reprogramar.
+  - **El generador del horario no toca una clase movida** (igual que una
+    archivada): si no, al regenerar la devolvería a su día original.
+  - Cancelada no suma horas ni monto, y su horario queda libre: no lleva
+    borde de superposición ni casilla "ocupado" en otras capas.
 
 ### Hoja `Horario` (Checkpoint 4)
 Columnas: `id`, `título`, `área`, `días`, `inicio`, `fin`, `desde`, `hasta`,
@@ -415,10 +454,12 @@ Devuelve `{ creados, actualizados, archivados }`. El botón "Generar horario
 del semestre" en `config.html` llama a la acción `generarHorario` y muestra
 ese resumen.
 
-**Cancelar una clase puntual** (un feriado, una clase que no fue): se
-archiva esa fila específica directamente en `Bloques`, nunca se edita
-`Horario` para eso — `Horario` son las reglas generales, no el detalle de
-cada semana.
+**Cancelar una clase puntual** (un feriado, una clase que no fue): desde
+el Checkpoint 8, "Cancelar clase" en la ficha (estado `cancelada`, con
+motivo opcional); sigue visible, tachada, y cuenta en las estadísticas
+como cancelada. Archivar queda para lo que no debería existir (un error,
+una prueba). Nunca se edita `Horario` para eso — `Horario` son las reglas
+generales, no el detalle de cada semana.
 
 ### Hoja `Alumnos` y catálogos `Cursos` / `Colegios` (Checkpoint 7)
 
@@ -445,6 +486,18 @@ agregado después).
   una clase, el bloque tiene los dos ids y cada una suma su propia tarifa.
 - **Duplicados:** no puede haber dos alumnos con el mismo nombre y
   apellido (sin tildes/mayúsculas). **Archivar, nunca borrar.**
+
+### Hoja `Pagos` (Checkpoint 8)
+
+`id` (`p` + 8 hexadecimales), `alumno_id` (uno solo), `desde`, `hasta`
+(el periodo que se cobra), `monto`, `fecha_pago`, `estado` (`pendiente` |
+`pagado`), `notas`, `creado`, `archivado`. Todo en texto.
+
+- **El monto se guarda fijo.** La app lo propone (horas dictadas del
+  periodo × tarifa del alumno) y se puede corregir antes de guardar; si
+  después cambia la tarifa, un pago ya registrado no cambia.
+- Marcar `pagado` sin fecha de pago pone la de hoy.
+- Archivar, nunca borrar (un pago archivado deja de contar).
 
 `Cursos` y `Colegios`: columnas `nombre`, `corto`. Se crean con valores
 iniciales (secundaria 1ro–6to y universidad 1er–5to año; San Agustín = SA,
@@ -561,6 +614,56 @@ los alumnos que lo tenían.
   Méndez), la migración de Configuración ya no crea un alumno nuevo: la
   fila queda "sin resolver", con el motivo a la vista y sin casilla.
 
+## Estado de clases, cobros y estadísticas (Checkpoint 8)
+
+- **Ficha** (`js/ui/ficha.js`): muestra el estado ("✓ Dictada", "✕
+  Cancelada · feriado", "↷ Movida") y, si se movió, "Movida del jue 24 al
+  sáb 26" (o "Movida de 15:00 a 17:00 (jue 24)" si solo cambió la hora;
+  `KodamaClases.textoMovida`). **"Marcar dictada" es un solo toque**: guarda
+  y cierra la ficha. "Cancelar clase" abre un campo de motivo opcional y
+  "Confirmar cancelación". Una dictada o cancelada muestra un solo botón
+  para deshacerlo ("Desmarcar dictada" / "Reactivar clase").
+- **Grilla**: una dictada lleva "✓" antes del título; una cancelada se ve
+  tenue y tachada. Programada y movida se ven igual que siempre.
+- **Cálculo** (`js/estadisticas.js`, lógica pura con pruebas): solo las
+  **dictadas** suman clases, horas y monto. **Monto = horas dictadas ×
+  `tarifa_hora` de cada alumno**: una clase compartida es 1 clase en los
+  totales pero suma la tarifa de cada alumno. Sin tarifa → suma horas,
+  no monto, y se avisa. Movidas = se movieron alguna vez y no se
+  cancelaron (una movida que después se dictó cuenta en las dos).
+  **Horas por área** cuenta todas las clases no canceladas (el tiempo que
+  ocupó cada área), porque Universidad o Startup no se marcan dictadas.
+  El monto usa la tarifa **actual** del alumno: para un periodo viejo,
+  lo que manda es lo guardado en `Pagos`.
+- **Estadísticas** (`estadisticas.html`): desde/hasta libres (por
+  defecto, el mes en curso) y área. Totales (clases dictadas, horas,
+  monto, movidas, canceladas) contra el **periodo anterior del mismo
+  largo, justo antes** (1–30 sep → 2–31 ago); tabla por alumno; dos
+  gráficas de barras en SVG propio (`js/ui/graficas.js`): horas dictadas
+  por alumno y horas por área. Una sola llamada (`listarBloquesRango` del
+  periodo anterior al actual); cambiar el área no pide nada. Nada de
+  indicadores que Gerardo no pidió.
+- **Gráficas**: barras finas que crecen desde una línea base, valor en la
+  punta, nombre escrito al lado (el color nunca es lo único que dice qué
+  es), nombre completo y valor al tocar (`<title>`). Colores de área de
+  la paleta; los alumnos, todos del color de Fractal.
+- **Cobros** (`cobros.html`, `js/cobros.js`): elegir el mes; "Pago
+  mensual" lista a los alumnos con `forma_pago` mensual con lo acumulado
+  en el mes y su situación (pagado / pendiente / sin registrar, según los
+  pagos no archivados cuyo periodo se cruza con el mes). "Registrar pago"
+  abre el formulario con el mes y el monto calculado; "Calcular"
+  recalcula para cualquier periodo. "Pagos del mes" lista todos los pagos
+  del mes (de cualquier alumno) para editar o archivar.
+- **Importar histórico** (Configuración → importador, modo "Clases
+  pasadas ya dictadas", `importarHistorico` en Importar.gs): columnas
+  alumno (varios con coma), fecha, inicio, fin y opcionales tema, lugar,
+  notas. Crea bloques de Fractal con estado `dictada` (id `b…`, el
+  generador nunca los toca). Un alumno que no existe se crea (nombre =
+  primera palabra, apellido = el resto) una sola vez; un nombre sin
+  apellido que tienen varios alumnos es un error de la fila, nunca un
+  alumno nuevo. Solo fechas de hoy o anteriores. La misma clase (mismos
+  alumnos, fecha e inicio) no se duplica.
+
 ## API (acciones del Web App)
 
 Todas se piden con `POST` (`action` + `token` + parámetros en el cuerpo).
@@ -606,6 +709,12 @@ con el código, el código manda:
   vienen en `cambios`; el resto queda como estaba. Revalida el bloque
   completo antes de escribir.
 - `archivarBloque` — parámetro `id`. Marca `archivado = TRUE`. Nunca borra.
+- `cambiarEstadoBloque` — `id`, `estado` (`programada` | `dictada` |
+  `cancelada`; `movida` no se elige) y `motivo` opcional (solo cuenta si
+  es `cancelada`). Devuelve el bloque.
+- `moverBloque` — `id`, `fecha`, `inicio`, `fin`. Guarda el original la
+  primera vez y marca `movida` (ver "Estado de la clase"). Devuelve el
+  bloque.
 - `listarHorario` — sin parámetros. Devuelve todas las reglas de la hoja
   `Horario`, incluidas las archivadas (con `archivado: "TRUE"`), para el
   editor de la app.
@@ -639,6 +748,13 @@ con el código, el código manda:
   filas: [{ numero, estado, detalle }], catalogosNuevos }`.
 - `migrarAlumnosFractal` — `aplicar` y opcional `ids` (filas elegidas).
   Devuelve `{ alumnosNuevos, filas, sinResolver }`.
+- `importar` con `modo: 'historico'` — clases pasadas ya dictadas (ver
+  "Importar histórico"). Devuelve además `alumnosNuevos`.
+- `listarPagos` — todos los pagos (archivados incluidos).
+- `crearPago` — `pago: { alumno_id, desde, hasta, monto, fecha_pago,
+  estado, notas }`. Valida todo y falla sin escribir.
+- `actualizarPago` — `id` y `cambios` (solo los campos que vienen).
+- `archivarPago` — `id`. Nunca borra.
 - `crearBloque`/`actualizarBloque` y `crearRegla`/`actualizarRegla`
   aceptan además `alumno_id` (ids separados por coma); con alumnos, el
   título es opcional. Un id que no existe falla con `alumno_no_encontrado`.
@@ -894,7 +1010,7 @@ Universidad, da 2.54:1. `css/styles.css` define variantes más claras (mismo
 matiz, más luminosidad) solo bajo `[data-theme="dark"]`, todas por encima de
 4.5:1. En modo claro se usan los valores de la paleta sin cambios (ya dan
 5.2–6.4:1 sobre `bone`). El modo oscuro todavía no tiene un botón que lo
-active (eso es el Checkpoint 8); los tokens ya están listos para cuando lo
+active (eso es el Checkpoint 9); los tokens ya están listos para cuando lo
 tenga.
 
 ## Alcance del MVP
@@ -912,9 +1028,10 @@ tenga.
 7. Alumnos de Academia Fractal (Checkpoint 7): ficha de cada alumno,
    vínculo con clases e importador.
 
-**Fuera de alcance por ahora:** cobros/pagos (la tarifa ya está, el
-cálculo de lo que se debe todavía no), kanban, buscador global, drag &
-drop, notificaciones, cola offline.
+8. Estado de cada clase, pagos y estadísticas (Checkpoint 8).
+
+**Fuera de alcance por ahora:** kanban, buscador global, drag & drop,
+notificaciones, cola offline.
 
 ## Estructura de carpetas
 
@@ -931,8 +1048,10 @@ KODAMA/
 ├── horario.html            # editor de las reglas del semestre
 ├── config.html             # URL del Web App + token, prueba de conexión, importador
 ├── alumnos.html            # alumnos de Fractal + catálogos de cursos y colegios
-├── manifest.webmanifest    # PWA (checkpoint 8)
-├── sw.js                   # service worker (checkpoint 8)
+├── cobros.html             # pago mensual y pagos registrados (Checkpoint 8)
+├── estadisticas.html       # totales, por alumno y gráficas (Checkpoint 8)
+├── manifest.webmanifest    # PWA (checkpoint 9)
+├── sw.js                   # service worker (checkpoint 9)
 ├── css/
 │   └── styles.css
 ├── js/
@@ -947,24 +1066,31 @@ KODAMA/
 │   ├── alumnos.js               # directorio de alumnos, buscador, nombre visible de un bloque
 │   ├── alumnos-pagina.js        # lógica de alumnos.html
 │   ├── importar.js              # importador y vinculación (en config.html)
+│   ├── clases.js                # estado de una clase y "movida del … al …"
+│   ├── estadisticas.js          # cálculo de horas, montos y periodo anterior (lógica pura)
+│   ├── estadisticas-pagina.js   # lógica de estadisticas.html
+│   ├── cobros.js                # resumen mensual y situación de pago (lógica pura)
+│   ├── cobros-pagina.js         # lógica de cobros.html
 │   └── ui/
 │       ├── dia.js                # vista de día (grilla de una columna) y estados vacío/carga/error
 │       ├── semana.js             # grilla de semana: días × horas
 │       ├── formulario.js          # diálogo de alta/edición/mover/duplicar
 │       ├── ficha.js               # ficha de solo lectura al tocar un bloque
 │       ├── selector-alumnos.js    # campo de alumnos con autocompletado
+│       ├── graficas.js            # barras horizontales en SVG propio
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
 ├── icons/                   # íconos PWA
 ├── apps-script/
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
 │   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
-│   ├── Bloques.gs             # crear/editar/archivar bloques desde la app
+│   ├── Bloques.gs             # crear/editar/archivar/mover bloques y su estado
 │   ├── Setup.gs               # funciones manuales: configurarHojas, generarToken, vincularAlumnosEnHorario, moverAulasALugar, repararAlumnosFractal
 │   ├── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
 │   ├── Alumnos.gs             # hojas Alumnos/Cursos/Colegios, ABM y migración de Fractal
 │   ├── Importar.gs            # importador de filas pegadas (alumnos y reglas)
-│   └── Auditoria.gs           # auditarDatos(): revisión de coherencia, solo lectura
+│   ├── Auditoria.gs           # auditarDatos(): revisión de coherencia, solo lectura
+│   └── Pagos.gs               # hoja Pagos: listar/crear/editar/archivar
 ├── docs/
 │   ├── setup-google.md      # pasos exactos para Sheet + Apps Script
 │   ├── datos-prueba.md       # cómo cargar bloques de prueba a mano
@@ -986,6 +1112,7 @@ antes.
 5. **Captura rápida de reunión + editar/archivar.**
 6. **Vista de semana (escritorio).**
 7. **Alumnos de Academia Fractal (CRM) + importador.**
-8. **Tema claro/oscuro + PWA + contraste WCAG AA** (antes era el 7).
+8. **Estado de clases, pagos y estadísticas.**
+9. **Tema claro/oscuro + PWA + contraste WCAG AA** (antes era el 8).
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.
