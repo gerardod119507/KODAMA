@@ -360,7 +360,7 @@ test('no toca bloques que no vienen del generador', () => {
   const manual = bloquesDe(env, 'manual-1')[0];
   assert.deepStrictEqual(manual, [
     'manual-1', 'Reunión imprevista', 'Startup', 'reunión', '2026-09-24',
-    '11:00', '11:30', '', 'mi nota', '', '', '', '', ''
+    '11:00', '11:30', '', 'mi nota', '', '', '', '', '', '', '', '', '', ''
   ]);
 });
 
