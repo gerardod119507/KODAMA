@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KODAMA — Cobros</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="cabecera">
+    <h1>Cobros</h1>
+    <nav class="enlaces-cabecera">
+      <a href="index.html">Día</a>
+      <a href="alumnos.html">Alumnos</a>
+      <a href="estadisticas.html">Estadísticas</a>
+      <a href="config.html">Configuración</a>
+    </nav>
+  </header>
+
+  <main class="pagina-datos">
+    <div class="filtros">
+      <div>
+        <label for="filtro-mes">Mes</label>
+        <input id="filtro-mes" type="month" />
+      </div>
+    </div>
+
+    <p id="estado-cobros" class="estado" role="status"></p>
+
+    <section id="zona-cobros" hidden>
+      <h2>Pago mensual</h2>
+      <p class="nota">Alumnos que pagan por mes: lo acumulado (horas dictadas × su tarifa) y si ya pagaron.</p>
+      <div id="lista-mensual" class="lista-tarjetas"></div>
+
+      <h2>Pagos del mes</h2>
+      <div id="lista-pagos" class="lista-tarjetas"></div>
+      <button id="nuevo-pago" type="button" class="secundario">+ Registrar pago</button>
+    </section>
+  </main>
+
+  <dialog id="dialogo-pago">
+    <form id="form-pago">
+      <h2 id="titulo-dialogo-pago">Registrar pago</h2>
+
+      <label for="pago-alumno">Alumno</label>
+      <select id="pago-alumno"></select>
+
+      <div class="fila-horas">
+        <div>
+          <label for="pago-desde">Desde</label>
+          <input id="pago-desde" type="date" />
+        </div>
+        <div>
+          <label for="pago-hasta">Hasta</label>
+          <input id="pago-hasta" type="date" />
+        </div>
+      </div>
+
+      <label for="pago-monto">Monto (Bs)</label>
+      <div class="fila-con-boton">
+        <input id="pago-monto" type="text" inputmode="decimal" autocomplete="off" />
+        <button type="button" id="calcular-monto" class="secundario">Calcular</button>
+      </div>
+      <p id="detalle-monto" class="nota"></p>
+
+      <div class="fila-horas">
+        <div>
+          <label for="pago-estado">Estado</label>
+          <select id="pago-estado">
+            <option value="pendiente">Pendiente</option>
+            <option value="pagado">Pagado</option>
+          </select>
+        </div>
+        <div>
+          <label for="pago-fecha">Fecha de pago</label>
+          <input id="pago-fecha" type="date" />
+        </div>
+      </div>
+
+      <label for="pago-notas">Notas</label>
+      <textarea id="pago-notas" rows="2" autocapitalize="sentences"></textarea>
+
+      <p id="error-pago" class="error" role="alert"></p>
+
+      <div class="acciones-dialogo">
+        <button type="button" id="cancelar-pago" class="secundario">Cancelar</button>
+        <button type="button" id="archivar-pago" class="fantasma" hidden>Archivar</button>
+        <button type="submit" id="guardar-pago">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/fecha.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/alumnos.js"></script>
+  <script src="js/estadisticas.js"></script>
+  <script src="js/cobros.js"></script>
+  <script src="js/cobros-pagina.js"></script>
+</body>
+</html>
