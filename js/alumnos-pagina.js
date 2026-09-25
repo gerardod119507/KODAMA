@@ -56,7 +56,7 @@
     const encontrados = KodamaAlumnos.buscar(buscador.value, dir, { incluirArchivados: verArchivados.checked });
     lista.replaceChildren();
     if (dir.alumnos.length === 0) {
-      estado.textContent = 'Todavía no hay alumnos. Tocá "+" para agregar el primero, o importalos desde Configuración.';
+      estado.textContent = 'Todavía no hay alumnos. Toca "+" para agregar el primero, o impórtalos desde Configuración.';
       return;
     }
     estado.textContent = encontrados.length === 1 ? '1 alumno' : encontrados.length + ' alumnos';

@@ -12,7 +12,7 @@ const ENCABEZADOS_BLOQUES = [
 const ENCABEZADOS_HORARIO = [
   'id', 'título', 'área', 'días', 'inicio', 'fin', 'desde', 'hasta', 'etiqueta', 'notas', 'archivado', 'alumno_id', 'lugar'
 ];
-const HOJAS = ['Alumnos', 'Areas', 'Bloques', 'Colegios', 'Cursos', 'Horario', 'Pagos'];
+const HOJAS = ['Alumnos', 'Areas', 'Bloques', 'Colegios', 'Cursos', 'Horario', 'Pagos', 'Plantillas'];
 
 // Esta es la prueba de regresión del fallo del Checkpoint 4: la hoja
 // Horario no se creaba en el Sheet real.

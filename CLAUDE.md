@@ -18,6 +18,9 @@ desarrollo.
 - Commits pequeños con convención `feat:` / `fix:` / `docs:` / `chore:`, en
   una rama por checkpoint, con un PR que yo reviso antes de merge.
 - No agregues librerías ni herramientas nuevas sin justificarlo primero.
+- **La app me habla de tú, nunca de vos** ("Elige", "Toca", "puedes"; no
+  "Elegí", "Tocá", "podés"), en pantallas, errores del backend y
+  registros del editor.
 - Nunca hagas force push ni reescribas historial compartido.
 
 ## Qué es KODAMA
@@ -44,7 +47,7 @@ Además existen las **reuniones imprevistas**, que no son un área: son un
   token, ver logs de ejecución).
 - **Frontend:** HTML + CSS + JavaScript vanilla. Sin frameworks, sin build
   step. Publicado en GitHub Pages.
-- **PWA** instalable en el celular (manifest + service worker) — checkpoint 9.
+- **PWA** instalable en el celular (manifest + service worker, Checkpoint 9).
 - **Mobile-first.** Uso principal: celular. El dictado por voz usa el
   micrófono del teclado del móvil, así que basta con buenos campos de texto;
   no hace falta integrar reconocimiento de voz en la app.
@@ -291,6 +294,18 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   "movida del jue 24 al sáb 26") y **rango de fechas** (extremos, área,
   periodo anterior cruzando mes/año, bisiesto), más el resumen mensual de
   Cobros.
+- `tests/formas.test.js` — Checkpoint 9: duración por área, fin que se
+  corrige solo, días de texto a botones y de vuelta, plantillas (qué se
+  guarda de un bloque y cómo se arma uno nuevo desde una) y la hoja
+  `Plantillas` (crear, listar, archivar, validaciones, token).
+- `tests/pwa.test.js` — que el service worker guarde **cada** script,
+  estilo e ícono que usan las páginas (si falta uno, esa pantalla no abre
+  sin conexión), que todo lo listado exista, el manifest, y que cada
+  página cargue el tema en el `<head>` y registre el service worker.
+- `tests/contraste.test.js` — contraste WCAG AA de la paleta leída de
+  `css/styles.css`, en claro y en oscuro: texto 4,5:1 (también sobre los
+  diálogos y el botón principal), áreas y "ocupado" 3:1, y ninguna
+  opacidad de texto por debajo de 0,75.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -499,6 +514,16 @@ agregado después).
 - Marcar `pagado` sin fecha de pago pone la de hoy.
 - Archivar, nunca borrar (un pago archivado deja de contar).
 
+### Hoja `Plantillas` (Checkpoint 9)
+
+`id` (`t` + 8 hexadecimales), `nombre`, `area`, `tipo`, `titulo`,
+`alumno_id`, `duracion` (minutos, 5–720), `lugar`, `etiqueta`, `creado`,
+`archivado`. Lo que se repite de un bloque, **nunca la fecha ni la hora**.
+Fuera de Academia Fractal no guarda alumnos. Vive en el Sheet (no solo en
+el celular) para no perderla al cambiar de dispositivo; en el dispositivo
+queda una copia de lectura (`kodama.cache.plantillas`). Archivar, nunca
+borrar.
+
 `Cursos` y `Colegios`: columnas `nombre`, `corto`. Se crean con valores
 iniciales (secundaria 1ro–6to y universidad 1er–5to año; San Agustín = SA,
 Colegio Poveda = Poveda, UCB) y se editan desde la pantalla de Alumnos. Si
@@ -664,6 +689,59 @@ los alumnos que lo tenían.
   alumno nuevo. Solo fechas de hoy o anteriores. La misma clase (mismos
   alumnos, fecha e inicio) no se duplica.
 
+## Formularios prácticos, tema y PWA (Checkpoint 9)
+
+- **Duración y fin** (`js/formas.js`, lógica pura; `js/ui/horas.js` la
+  conecta a los campos, en bloques y en reglas): al elegir el inicio, el
+  fin se completa con la duración — 90 min en **clases** (Universidad y
+  Academia Fractal), 60 en el resto. Si cambiaste el fin a mano (o al
+  editar un bloque), se conserva **tu** duración. Un fin antes o igual al
+  inicio se corrige solo y lo avisa ("lo cambié a 16:30"); guardar nunca
+  manda un horario invertido. Nada cruza la medianoche (tope 23:59).
+- **Valores por área** (en un bloque o regla nuevos, mientras no los
+  toques): Universidad y Fractal → tipo `fijo`, 90 min; Startup y
+  Personal → `variable`, 60 min.
+- **Días de la semana** en las reglas: 7 botones Lun–Dom
+  (`js/ui/dias.js`); marcado = relleno + línea gruesa abajo (no solo
+  color). En la hoja sigue siendo el texto "Lun, Mié".
+- **Fecha**: botones "Hoy" y "Mañana" junto al selector (también al mover
+  y al duplicar).
+- **Duplicar** (ficha): solo pide la fecha nueva (vacía a propósito, para
+  no duplicar sin querer el mismo día); todo lo demás, hora incluida, se
+  copia. Modo `duplicar` del formulario: oculta `.oculto-al-mover` y
+  `.oculto-al-duplicar`.
+- **Plantillas** (`js/plantillas.js`): "Guardar como plantilla" en la
+  ficha (pide solo el nombre). Al tocar "+", arriba del formulario
+  aparecen las plantillas; un toque llena área, tipo, tema, alumnos,
+  lugar, etiqueta y el fin según su duración, con la fecha y el inicio
+  que ya estaban. ✕ al lado la archiva (con confirmación).
+- **Tema** (`js/tema.js`, en el `<head>` de cada página para que no haya
+  destello): botón "☾ Oscuro / ☀ Claro" en el encabezado de todas las
+  pantallas. Sin elegir, sigue al sistema; lo elegido se recuerda en el
+  dispositivo (`kodama.tema`). Tokens `--acento-fondo/--acento-texto`
+  (botón principal: forest en claro, **bone en oscuro**, porque forest casi
+  no se ve sobre #0E1713), `--fondo-dialogo` y `color-scheme` para que los
+  controles nativos (fecha, hora, listas) también se vean oscuros. La
+  mascota usa `--fg`/`--bg`, así se invierte con el tema.
+- **Contraste**: verificado de dos formas. `tests/contraste.test.js` sobre
+  los tokens, y una auditoría en Chromium que mide el contraste real de
+  cada texto visible (con sus opacidades y fondos) en las 6 pantallas, la
+  ficha y el formulario, en claro y en oscuro: todo ≥ 4,5:1. Para
+  lograrlo: ninguna opacidad de texto < 0,75 (con 0,7 no llega en claro)
+  y el rojo de reunión en oscuro pasó de `#CB5E4D` a `#D86C5A` (sobre los
+  diálogos daba 4,1:1).
+- **PWA**: `manifest.webmanifest` (standalone, colores de la paleta,
+  íconos 192/512/maskable en `icons/`, dibujados en SVG propio —
+  `icons/icono.svg`— y pasados a PNG una vez con el Chromium de las
+  pruebas; no es una dependencia de la app). `sw.js` guarda todos los
+  archivos de la app y responde **primero con lo guardado y actualiza por
+  detrás**: abre al instante y sin conexión; una versión nueva se ve al
+  abrir la app por segunda vez después del despliegue. Los datos no pasan
+  por el service worker (son POST a otro dominio): offline se ve lo último
+  cargado (caché por semana, alumnos, plantillas) con "Sin conexión".
+  `VERSION` en `sw.js` solo cambia si cambia la lista de archivos;
+  `tests/pwa.test.js` avisa si una página usa un archivo que no está.
+
 ## API (acciones del Web App)
 
 Todas se piden con `POST` (`action` + `token` + parámetros en el cuerpo).
@@ -755,6 +833,10 @@ con el código, el código manda:
   estado, notas }`. Valida todo y falla sin escribir.
 - `actualizarPago` — `id` y `cambios` (solo los campos que vienen).
 - `archivarPago` — `id`. Nunca borra.
+- `listarPlantillas` — las plantillas activas (sin archivadas).
+- `crearPlantilla` — `plantilla: { nombre, area, tipo, titulo, alumno_id,
+  duracion, lugar, etiqueta }`. Valida y falla sin escribir.
+- `archivarPlantilla` — `id`. Nunca borra.
 - `crearBloque`/`actualizarBloque` y `crearRegla`/`actualizarRegla`
   aceptan además `alumno_id` (ids separados por coma); con alumnos, el
   título es opcional. Un id que no existe falla con `alumno_no_encontrado`.
@@ -813,9 +895,10 @@ diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
 - **Ficha de bloque** (`js/ui/ficha.js`, Checkpoint 6.5): solo lectura —
   tipo y área (con el ícono), título, fecha y horario, etiqueta y notas
   (las vacías no se muestran) — con **Editar** (formulario completo),
-  **Mover** (solo fecha y hora), **Duplicar** (formulario nuevo con los
-  mismos datos; el duplicado es un bloque suelto con id `b…`, así que el
-  generador nunca lo toca aunque venga de una clase fija) y **Archivar**.
+  **Mover** (solo fecha y hora), **Duplicar** (desde el Checkpoint 9 solo
+  pide la fecha nueva; el duplicado es un bloque suelto con id `b…`, así
+  que el generador nunca lo toca aunque venga de una clase fija),
+  **Guardar como plantilla** y **Archivar**.
   Tocar fuera de la ficha la cierra.
 - **La app nunca cambia de página sola.** Antes, sin URL/token guardados,
   `index.html` y `horario.html` saltaban a `config.html`; ahora muestran
@@ -827,8 +910,9 @@ diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
 - **Editor de horario** (`horario.html` + `js/horario.js`): lista de reglas,
   crear/editar/archivar, y botón "Regenerar horario".
 - **Valores por defecto**: fecha = el día que se está viendo; inicio = la
-  próxima media hora en `America/La_Paz`; fin = +60 min; área = la capa
-  activa, o Universidad si la capa es General; tipo = `variable`.
+  próxima media hora en `America/La_Paz`; área = la capa activa, o
+  Universidad si la capa es General; tipo y fin según el área (ver
+  "Formularios prácticos").
 - **Celular primero**: `type="date"` y `type="time"` para que salga el
   selector nativo, `type="text"` y `<textarea>` en título y notas para que
   funcione el dictado por voz del teclado, y `font-size: max(1rem, 16px)` en
@@ -942,7 +1026,7 @@ bloques que se pisan se siguen dibujando lado a lado (`distribuir()` en
 | Academia Fractal | `#8A5A00` |
 | Startup | `#6650A4` |
 | Personal | `#476A54` |
-| Reunión (tipo, no área) | `#9D3D2E` |
+| Reunión (tipo, no área) | `#9D3D2E` (oscuro: `#D86C5A`) |
 
 Todo color de área/tipo debe combinarse con un **ícono o borde**, nunca ser
 el único indicador (accesibilidad para daltonismo). Verificar contraste
@@ -1009,9 +1093,9 @@ elementos gráficos) sobre el fondo oscuro `#0E1713` — el peor caso,
 Universidad, da 2.54:1. `css/styles.css` define variantes más claras (mismo
 matiz, más luminosidad) solo bajo `[data-theme="dark"]`, todas por encima de
 4.5:1. En modo claro se usan los valores de la paleta sin cambios (ya dan
-5.2–6.4:1 sobre `bone`). El modo oscuro todavía no tiene un botón que lo
-active (eso es el Checkpoint 9); los tokens ya están listos para cuando lo
-tenga.
+5.2–6.4:1 sobre `bone`). Desde el Checkpoint 9 el modo oscuro se activa
+con el botón de tema de cada pantalla (ver "Formularios prácticos, tema y
+PWA").
 
 ## Alcance del MVP
 
@@ -1023,7 +1107,8 @@ tenga.
 4. Horario fijo del semestre generado desde la hoja `Horario` (filas
    individuales, sin recurrencia).
 5. Editar y archivar bloques (nunca borrar).
-6. Tema claro/oscuro con la paleta de arriba, contraste WCAG AA.
+6. Tema claro/oscuro con la paleta de arriba, contraste WCAG AA
+   (Checkpoint 9, con PWA instalable).
 
 7. Alumnos de Academia Fractal (Checkpoint 7): ficha de cada alumno,
    vínculo con clases e importador.
@@ -1050,8 +1135,8 @@ KODAMA/
 ├── alumnos.html            # alumnos de Fractal + catálogos de cursos y colegios
 ├── cobros.html             # pago mensual y pagos registrados (Checkpoint 8)
 ├── estadisticas.html       # totales, por alumno y gráficas (Checkpoint 8)
-├── manifest.webmanifest    # PWA (checkpoint 9)
-├── sw.js                   # service worker (checkpoint 9)
+├── manifest.webmanifest    # PWA: nombre, colores, íconos
+├── sw.js                   # service worker: la app abre sin conexión
 ├── css/
 │   └── styles.css
 ├── js/
@@ -1071,6 +1156,10 @@ KODAMA/
 │   ├── estadisticas-pagina.js   # lógica de estadisticas.html
 │   ├── cobros.js                # resumen mensual y situación de pago (lógica pura)
 │   ├── cobros-pagina.js         # lógica de cobros.html
+│   ├── formas.js                # duración por área, fin corregido, días (lógica pura)
+│   ├── plantillas.js            # plantillas de bloques (+ copia en el dispositivo)
+│   ├── tema.js                  # tema claro/oscuro, en el <head> de cada página
+│   ├── pwa.js                   # registra el service worker
 │   └── ui/
 │       ├── dia.js                # vista de día (grilla de una columna) y estados vacío/carga/error
 │       ├── semana.js             # grilla de semana: días × horas
@@ -1078,9 +1167,11 @@ KODAMA/
 │       ├── ficha.js               # ficha de solo lectura al tocar un bloque
 │       ├── selector-alumnos.js    # campo de alumnos con autocompletado
 │       ├── graficas.js            # barras horizontales en SVG propio
+│       ├── horas.js               # conecta inicio/fin/área/tipo de un formulario
+│       ├── dias.js                # botones Lun–Dom
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
-├── icons/                   # íconos PWA
+├── icons/                   # íconos PWA (icono.svg es la fuente; los PNG salen de ahí)
 ├── apps-script/
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
 │   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
@@ -1090,7 +1181,8 @@ KODAMA/
 │   ├── Alumnos.gs             # hojas Alumnos/Cursos/Colegios, ABM y migración de Fractal
 │   ├── Importar.gs            # importador de filas pegadas (alumnos y reglas)
 │   ├── Auditoria.gs           # auditarDatos(): revisión de coherencia, solo lectura
-│   └── Pagos.gs               # hoja Pagos: listar/crear/editar/archivar
+│   ├── Pagos.gs               # hoja Pagos: listar/crear/editar/archivar
+│   └── Plantillas.gs          # hoja Plantillas: listar/crear/archivar
 ├── docs/
 │   ├── setup-google.md      # pasos exactos para Sheet + Apps Script
 │   ├── datos-prueba.md       # cómo cargar bloques de prueba a mano
@@ -1113,6 +1205,8 @@ antes.
 6. **Vista de semana (escritorio).**
 7. **Alumnos de Academia Fractal (CRM) + importador.**
 8. **Estado de clases, pagos y estadísticas.**
-9. **Tema claro/oscuro + PWA + contraste WCAG AA** (antes era el 8).
+9. **Tema claro/oscuro + PWA + contraste WCAG AA + formularios prácticos**
+   (duración automática, días con botones, Hoy/Mañana, duplicar con solo
+   la fecha, plantillas) y la app de tú.
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.

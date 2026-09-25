@@ -5,12 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>KODAMA — Conexión</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <meta name="theme-color" content="#F5F1E8" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icono.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="KODAMA" />
+  <script src="js/tema.js"></script>
 </head>
 <body>
+  <header class="cabecera">
+    <h1>Configuración</h1>
+    <nav class="enlaces-cabecera">
+      <a href="index.html">Día</a>
+      <a href="alumnos.html">Alumnos</a>
+      <a href="cobros.html">Cobros</a>
+      <a href="estadisticas.html">Estadísticas</a>
+      <button type="button" class="boton-tema fantasma">☾ Oscuro</button>
+    </nav>
+  </header>
+
   <main>
-    <h1>Conexión</h1>
+    <h2>Conexión</h2>
     <p id="bienvenida" class="nota" hidden>
-      Primera vez: pegá acá la URL del Web App y el token del Checkpoint 2.
+      Primera vez: pega aquí la URL del Web App y el token del Checkpoint 2.
     </p>
     <p class="nota">Estos datos se guardan solo en este dispositivo. Nunca se suben al repositorio.</p>
 
@@ -60,7 +78,7 @@
     <hr class="separador" />
     <h2>Importar datos</h2>
     <p class="nota">
-      Copiá filas de una tabla o de un Sheet y pegalas acá (las columnas van
+      Copia filas de una tabla o de un Sheet y pégalas aquí (las columnas van
       separadas por tabulación, como salen al copiar). Si la primera fila
       tiene los nombres de las columnas, se usan para saber qué es cada una.
       Nada de esto se guarda en el repositorio: va solo a tu hoja.
@@ -106,5 +124,6 @@
   <script src="js/api.js"></script>
   <script src="js/config.js"></script>
   <script src="js/importar.js"></script>
+  <script src="js/pwa.js"></script>
 </body>
 </html>

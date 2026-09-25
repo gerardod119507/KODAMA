@@ -26,7 +26,7 @@ function filaDeHorarioConContenido(fila) {
 }
 
 // Primeras 3 letras, sin tilde, en minúscula. parseDias() normaliza así
-// cualquier variante ("Mié", "mie", "MIE...") antes de buscar acá.
+// cualquier variante ("Mié", "mie", "MIE...") antes de buscar aquí.
 const DIAS_SEMANA = { dom: 0, lun: 1, mar: 2, mie: 3, jue: 4, vie: 5, sab: 6 };
 
 function asegurarHojaHorario(libro) {
@@ -413,13 +413,13 @@ function filaARegla(fila, id) {
 
 function validarHora(texto, titulo, campo) {
   if (!/^\d{2}:\d{2}$/.test(texto || '')) {
-    throw new Error('horario_hora_invalida: "' + titulo + '", campo "' + campo + '" (usá HH:mm, ej. 09:00)');
+    throw new Error('horario_hora_invalida: "' + titulo + '", campo "' + campo + '" (usa HH:mm, ej. 09:00)');
   }
 }
 
 function validarFecha(texto, titulo, campo) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(texto || '')) {
-    throw new Error('horario_fecha_invalida: "' + titulo + '", campo "' + campo + '" (usá YYYY-MM-DD, ej. 2026-09-22)');
+    throw new Error('horario_fecha_invalida: "' + titulo + '", campo "' + campo + '" (usa YYYY-MM-DD, ej. 2026-09-22)');
   }
 }
 
@@ -433,7 +433,7 @@ function parseDias(texto, tituloParaError) {
     if (!(clave in DIAS_SEMANA)) {
       throw new Error(
         'dia_invalido: "' + token + '" en "' + tituloParaError + '" ' +
-        '(usá Lun, Mar, Mié, Jue, Vie, Sáb o Dom)'
+        '(usa Lun, Mar, Mié, Jue, Vie, Sáb o Dom)'
       );
     }
     return DIAS_SEMANA[clave];
@@ -454,7 +454,7 @@ function calcularOcurrencias(regla, hoy) {
   let cursor = Date.UTC(desde[0], desde[1] - 1, desde[2]);
   const limite = Date.UTC(hasta[0], hasta[1] - 1, hasta[2]);
 
-  // Fechas en UTC puro (Date.UTC), sin conversión de zona horaria: acá solo
+  // Fechas en UTC puro (Date.UTC), sin conversión de zona horaria: aquí solo
   // se hace aritmética de calendario ("qué día de la semana cae tal
   // fecha"), no se trabaja con instantes reales, así que mezclar con
   // America/La_Paz solo agregaría una fuente de error de más.

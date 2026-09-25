@@ -60,7 +60,7 @@ document.getElementById('probar-malo').addEventListener('click', async function 
   try {
     const respuesta = await KodamaApi.llamar(campoUrl.value, 'token-incorrecto', 'listarAreas');
     mostrar(respuesta.ok
-      ? 'ATENCIÓN: el servidor aceptó un token incorrecto. Revisá el código de Apps Script.'
+      ? 'ATENCIÓN: el servidor aceptó un token incorrecto. Revisa el código de Apps Script.'
       : 'Correcto: el servidor rechazó el token incorrecto (' + respuesta.error + ').');
   } catch (error) {
     mostrar('Error: ' + error.message);

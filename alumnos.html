@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>KODAMA — Alumnos</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <meta name="theme-color" content="#F5F1E8" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icono.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="KODAMA" />
+  <script src="js/tema.js"></script>
 </head>
 <body>
   <header class="cabecera">
@@ -15,6 +22,7 @@
       <a href="cobros.html">Cobros</a>
       <a href="estadisticas.html">Estadísticas</a>
       <a href="config.html">Configuración</a>
+      <button type="button" class="boton-tema fantasma">☾ Oscuro</button>
     </nav>
   </header>
 
@@ -34,7 +42,7 @@
     <h2>Cursos y colegios</h2>
     <p class="nota">
       En la app se ve el código corto ("4to SA"); en la hoja se guarda el
-      nombre completo. Si cambiás un nombre completo, se actualiza en todos
+      nombre completo. Si cambias un nombre completo, se actualiza en todos
       los alumnos que lo tenían.
     </p>
     <h3>Cursos</h3>
@@ -121,5 +129,6 @@
   <script src="js/api.js"></script>
   <script src="js/alumnos.js"></script>
   <script src="js/alumnos-pagina.js"></script>
+  <script src="js/pwa.js"></script>
 </body>
 </html>

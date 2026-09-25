@@ -83,7 +83,7 @@ function estadoDeBloque(bloque) {
 function cambiarEstadoBloque(id, estado, motivo) {
   const pedido = String(estado || '').trim();
   if (ESTADOS_A_MANO.indexOf(pedido) === -1) {
-    throw new Error('estado_invalido: "' + estado + '" (usá programada, dictada o cancelada; ' +
+    throw new Error('estado_invalido: "' + estado + '" (usa programada, dictada o cancelada; ' +
       '"movida" se pone sola al mover la clase)');
   }
   const ubicacion = buscarFilaDeBloque(id);
@@ -182,7 +182,7 @@ function validarBloque(bloque) {
   validarArea(bloque.area);
   validarIdsAlumnos(bloque.alumno_id);
   if (TIPOS_BLOQUE.indexOf(bloque.tipo) === -1) {
-    throw new Error('tipo_invalido: "' + bloque.tipo + '" (usá ' + TIPOS_BLOQUE.join(', ') + ')');
+    throw new Error('tipo_invalido: "' + bloque.tipo + '" (usa ' + TIPOS_BLOQUE.join(', ') + ')');
   }
   validarFecha(bloque.fecha, bloque.titulo, 'fecha');
   validarHora(bloque.inicio, bloque.titulo, 'inicio');
@@ -195,7 +195,7 @@ function validarBloque(bloque) {
 function validarArea(area) {
   const validas = nombresDeAreas();
   if (validas.indexOf(String(area || '').trim()) === -1) {
-    throw new Error('area_invalida: "' + area + '" (usá ' + validas.join(', ') + ')');
+    throw new Error('area_invalida: "' + area + '" (usa ' + validas.join(', ') + ')');
   }
 }
 

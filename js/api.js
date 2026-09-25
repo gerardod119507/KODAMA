@@ -26,7 +26,7 @@ const KodamaApi = (function () {
     try {
       return JSON.parse(texto);
     } catch (err) {
-      throw new Error('La respuesta no es JSON. Revisá que la URL termine en /exec y que ' +
+      throw new Error('La respuesta no es JSON. Revisa que la URL termine en /exec y que ' +
         'el despliegue tenga acceso "Cualquier usuario".');
     }
   }

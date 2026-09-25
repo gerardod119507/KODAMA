@@ -14,7 +14,7 @@
 
   const config = KodamaApi.leerConfig();
   if (!config.url || !config.token) {
-    // Sin conexión configurada se avisa acá mismo, con un enlace. Nunca se
+    // Sin conexión configurada se avisa aquí mismo, con un enlace. Nunca se
     // salta solo a Configuración: la app no debe cambiar de página sin que
     // Gerardo lo pida.
     KodamaDia.renderSinConfiguracion(contenedor);
@@ -240,6 +240,7 @@
       aplicarLocal(guardado);
     },
     alArchivar: archivar,
+    alArchivarPlantilla: function (id) { return KodamaPlantillas.archivar(pedir, id); },
     crearAlumno: function (datos) { return pedir('crearAlumno', { alumno: datos }); }
   });
 
@@ -248,6 +249,9 @@
     alMover: KodamaFormulario.abrirMover,
     alDuplicar: KodamaFormulario.abrirDuplicado,
     alArchivar: archivar,
+    alGuardarPlantilla: function (bloque, nombre) {
+      return KodamaPlantillas.crear(pedir, KodamaPlantillas.desdeBloque(bloque, nombre));
+    },
     alCambiarEstado: async function (id, estado, motivo) {
       aplicarLocal(await pedir('cambiarEstadoBloque', { id: id, estado: estado, motivo: motivo }));
     }
@@ -303,13 +307,15 @@
 
   document.getElementById('nuevo-bloque').addEventListener('click', function () {
     const inicio = KodamaFecha.proximaMediaHora();
+    const area = areaPorDefecto();
+    const valores = KodamaFormas.porArea(area); // tipo y duración según el área
     KodamaFormulario.abrirNuevo({
       titulo: '',
-      area: areaPorDefecto(),
-      tipo: 'variable',
+      area: area,
+      tipo: valores.tipo,
       fecha: fechaPorDefecto(),
       inicio: inicio,
-      fin: KodamaFecha.sumarMinutos(inicio, 60),
+      fin: KodamaFormas.finPara(inicio, valores.duracion),
       etiqueta: '',
       notas: ''
     });
@@ -324,5 +330,8 @@
   await cargar();
   KodamaAlumnos.cargar().catch(function () {
     // Sin conexión: quedan los alumnos guardados en el dispositivo.
+  });
+  KodamaPlantillas.cargar(pedir).catch(function () {
+    // Sin conexión: quedan las plantillas guardadas en el dispositivo.
   });
 })();

@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>KODAMA — Horario</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <meta name="theme-color" content="#F5F1E8" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icono.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="KODAMA" />
+  <script src="js/tema.js"></script>
 </head>
 <body>
   <header class="cabecera">
@@ -15,6 +22,7 @@
       <a href="cobros.html">Cobros</a>
       <a href="estadisticas.html">Estadísticas</a>
       <a href="config.html">Configuración</a>
+      <button type="button" class="boton-tema fantasma">☾ Oscuro</button>
     </nav>
   </header>
 
@@ -48,9 +56,8 @@
       <input id="regla-titulo" type="text" autocapitalize="sentences"
              autocomplete="off" enterkeyhint="done" />
 
-      <label for="regla-dias">Días</label>
-      <input id="regla-dias" type="text" autocomplete="off"
-             placeholder="Lun, Mié, Vie" autocapitalize="words" />
+      <p id="etiqueta-dias" class="etiqueta-campo">Días</p>
+      <div id="regla-dias" aria-labelledby="etiqueta-dias"></div>
 
       <div class="fila-horas">
         <div>
@@ -62,6 +69,8 @@
           <input id="regla-fin" type="time" />
         </div>
       </div>
+
+      <p id="aviso-horas-regla" class="aviso" role="status"></p>
 
       <div class="fila-horas">
         <div>
@@ -102,7 +111,11 @@
   <script src="js/fecha.js"></script>
   <script src="js/api.js"></script>
   <script src="js/alumnos.js"></script>
+  <script src="js/formas.js"></script>
+  <script src="js/ui/horas.js"></script>
+  <script src="js/ui/dias.js"></script>
   <script src="js/ui/selector-alumnos.js"></script>
   <script src="js/horario.js"></script>
+  <script src="js/pwa.js"></script>
 </body>
 </html>

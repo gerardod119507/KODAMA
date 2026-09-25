@@ -34,6 +34,23 @@ const KodamaFicha = (function () {
     });
     document.getElementById('ficha-archivar').addEventListener('click', archivar);
 
+    // Guardar como plantilla: pide solo un nombre (propone el que se ve).
+    document.getElementById('ficha-plantilla-abrir').addEventListener('click', function () {
+      document.getElementById('ficha-cancelacion').hidden = true;
+      document.getElementById('ficha-plantilla').hidden = false;
+      const nombre = document.getElementById('ficha-nombre-plantilla');
+      nombre.value = (bloqueActual.tituloMostrado || bloqueActual.titulo || '').slice(0, 60);
+      nombre.focus();
+      nombre.select();
+    });
+    document.getElementById('ficha-plantilla-volver').addEventListener('click', function () {
+      document.getElementById('ficha-plantilla').hidden = true;
+    });
+    document.getElementById('ficha-plantilla-guardar').addEventListener('click', guardarPlantilla);
+    document.getElementById('ficha-nombre-plantilla').addEventListener('keydown', function (evento) {
+      if (evento.key === 'Enter') { evento.preventDefault(); guardarPlantilla(); }
+    });
+
     document.getElementById('ficha-dictada').addEventListener('click', function () {
       cambiarEstado('dictada', '', this);
     });
@@ -41,6 +58,7 @@ const KodamaFicha = (function () {
       cambiarEstado('programada', '', this);
     });
     document.getElementById('ficha-cancelar').addEventListener('click', function () {
+      document.getElementById('ficha-plantilla').hidden = true;
       document.getElementById('ficha-cancelacion').hidden = false;
       const motivo = document.getElementById('ficha-motivo');
       motivo.value = '';
@@ -92,6 +110,7 @@ const KodamaFicha = (function () {
     mostrarFila('ficha-fila-etiqueta', bloque.etiqueta);
     mostrarFila('ficha-fila-notas', bloque.notas);
     escribir('error-ficha', '');
+    escribir('ficha-aviso', '');
 
     dialogo.showModal();
   }
@@ -116,6 +135,27 @@ const KodamaFicha = (function () {
     reactivar.hidden = pendiente;
     reactivar.textContent = estado === 'dictada' ? 'Desmarcar dictada' : 'Reactivar clase';
     document.getElementById('ficha-cancelacion').hidden = true;
+    document.getElementById('ficha-plantilla').hidden = true;
+  }
+
+  async function guardarPlantilla() {
+    const nombre = document.getElementById('ficha-nombre-plantilla').value.trim();
+    if (!nombre) {
+      escribir('error-ficha', 'Ponle un nombre a la plantilla.');
+      return;
+    }
+    const boton = document.getElementById('ficha-plantilla-guardar');
+    boton.disabled = true;
+    try {
+      await acciones.alGuardarPlantilla(bloqueActual, nombre);
+      document.getElementById('ficha-plantilla').hidden = true;
+      escribir('error-ficha', '');
+      escribir('ficha-aviso', 'Plantilla "' + nombre + '" guardada: la vas a ver al tocar "+".');
+    } catch (error) {
+      escribir('error-ficha', 'No se pudo guardar la plantilla: ' + error.message);
+    } finally {
+      boton.disabled = false;
+    }
   }
 
   async function cambiarEstado(estado, motivo, boton) {

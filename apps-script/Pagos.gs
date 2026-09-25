@@ -52,7 +52,7 @@ function listarPagos() {
 function normalizarMonto(texto) {
   const limpio = String(texto == null ? '' : texto).replace(/bs\.?/i, '').replace(/\s+/g, '').replace(',', '.');
   if (!/^\d+(\.\d+)?$/.test(limpio)) {
-    throw new Error('monto_invalido: "' + texto + '" (usá un número, ej. 350)');
+    throw new Error('monto_invalido: "' + texto + '" (usa un número, ej. 350)');
   }
   return String(Math.round(Number(limpio) * 100) / 100);
 }
@@ -75,7 +75,7 @@ function prepararPago(pago) {
   pago.monto = normalizarMonto(pago.monto);
   pago.estado = String(pago.estado || '').trim() || 'pendiente';
   if (ESTADOS_PAGO.indexOf(pago.estado) === -1) {
-    throw new Error('estado_pago_invalido: "' + pago.estado + '" (usá pendiente o pagado)');
+    throw new Error('estado_pago_invalido: "' + pago.estado + '" (usa pendiente o pagado)');
   }
   if (pago.estado === 'pagado' && !pago.fecha_pago) {
     pago.fecha_pago = hoyEnTexto();
@@ -87,7 +87,7 @@ function prepararPago(pago) {
 
 function validarFechaPago(texto, campo) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(texto || '')) {
-    throw new Error('pago_fecha_invalida: campo "' + campo + '" (usá YYYY-MM-DD, ej. 2026-09-30)');
+    throw new Error('pago_fecha_invalida: campo "' + campo + '" (usa YYYY-MM-DD, ej. 2026-09-30)');
   }
 }
 
