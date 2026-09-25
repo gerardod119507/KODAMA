@@ -4,6 +4,9 @@
  * Checkpoint 8: estado de cada clase (programada | dictada | movida |
  * cancelada), mover guardando la fecha y hora originales, y que el
  * generador del horario respete una clase movida.
+ *
+ * "Dictada" solo existe en Academia Fractal (sirve para cobrar); cancelar
+ * y mover valen en todas las áreas.
  */
 
 const { test } = require('node:test');
@@ -30,7 +33,7 @@ function error(env, cuerpo) {
 
 function crear(env, extra) {
   return ok(env, { action: 'crearBloque', bloque: Object.assign({
-    titulo: 'Física', area: 'Universidad', tipo: 'variable', fecha: '2026-09-24', inicio: '15:00', fin: '16:00'
+    titulo: 'Física', area: 'Academia Fractal', tipo: 'variable', fecha: '2026-09-24', inicio: '15:00', fin: '16:00'
   }, extra || {}) });
 }
 
@@ -164,6 +167,101 @@ test('el generador no toca una clase movida al regenerar', () => {
   assert.deepStrictEqual([movida.fecha, movida.inicio, movida.titulo, movida.estado], ['2026-09-26', '11:00', 'Cálculo', 'movida']);
   assert.strictEqual(leer(env, regla.id + '-2026-10-01').titulo, 'Cálculo II', 'las otras sí se refrescan');
   assert.strictEqual(r.creados, 0, 'no crea otra clase en el día original');
+});
+
+// ---------------------------------------------------------------
+// "Dictada" solo en Academia Fractal
+// ---------------------------------------------------------------
+
+test('fuera de Academia Fractal no se puede marcar dictada, y la hoja no cambia', () => {
+  const env = preparar();
+  ['Universidad', 'Startup', 'Personal'].forEach((area) => {
+    const b = crear(env, { area });
+    const e = error(env, { action: 'cambiarEstadoBloque', id: b.id, estado: 'dictada' });
+    assert.match(e, /^dictada_solo_fractal: .*este bloque es de /);
+    assert.match(e, /Puedes cancelarlo o moverlo/, 'de tú, nunca de vos');
+    assert.strictEqual(leer(env, b.id).estado, 'programada');
+  });
+});
+
+test('cancelar, reactivar y mover siguen valiendo en todas las áreas', () => {
+  const env = preparar();
+  const b = crear(env, { area: 'Universidad' });
+  let r = ok(env, { action: 'cambiarEstadoBloque', id: b.id, estado: 'cancelada', motivo: 'paro docente' });
+  assert.deepStrictEqual([r.estado, r.motivo], ['cancelada', 'paro docente']);
+  r = ok(env, { action: 'cambiarEstadoBloque', id: b.id, estado: 'programada' });
+  assert.strictEqual(r.estado, 'programada');
+  r = ok(env, { action: 'moverBloque', id: b.id, fecha: '2026-09-26', inicio: '15:00', fin: '16:00' });
+  assert.deepStrictEqual([r.estado, r.fecha_original], ['movida', '2026-09-24']);
+});
+
+test('una dictada que pasa a otra área con "Editar" vuelve a programada (o movida)', () => {
+  const env = preparar();
+  const quieta = crear(env);
+  ok(env, { action: 'cambiarEstadoBloque', id: quieta.id, estado: 'dictada' });
+  assert.strictEqual(ok(env, { action: 'actualizarBloque', id: quieta.id, cambios: { area: 'Startup' } }).estado, 'programada');
+
+  const movida = crear(env);
+  ok(env, { action: 'moverBloque', id: movida.id, fecha: '2026-09-25', inicio: '15:00', fin: '16:00' });
+  ok(env, { action: 'cambiarEstadoBloque', id: movida.id, estado: 'dictada' });
+  const r = ok(env, { action: 'actualizarBloque', id: movida.id, cambios: { area: 'Personal' } });
+  assert.deepStrictEqual([r.estado, r.fecha_original], ['movida', '2026-09-24']);
+});
+
+test('el generador: si la regla deja de ser de Fractal, sus clases dictadas vuelven a programada', () => {
+  const env = preparar();
+  const regla = ok(env, { action: 'crearRegla', regla: {
+    titulo: 'Repaso', area: 'Academia Fractal', dias: 'Jue', inicio: '09:00', fin: '10:00',
+    desde: '2026-09-24', hasta: '2026-09-24', etiqueta: '', notas: ''
+  } });
+  ok(env, { action: 'generarHorario' });
+  const id = regla.id + '-2026-09-24';
+  ok(env, { action: 'cambiarEstadoBloque', id, estado: 'dictada' });
+  ok(env, { action: 'actualizarRegla', id: regla.id, cambios: { area: 'Universidad' } });
+  ok(env, { action: 'generarHorario' });
+  assert.deepStrictEqual([leer(env, id).area, leer(env, id).estado], ['Universidad', 'programada']);
+});
+
+/** Escribe filas en Bloques como si vinieran de antes de esta regla. */
+function sembrarDictadas(env) {
+  const hoja = env.libro.getSheetByName('Bloques');
+  const fila = (id, area, estado, fechaOriginal) => [id, 'X', area, 'fijo', '2026-09-10', '09:00', '10:00',
+    '', '', '', '', '', '', '', estado, fechaOriginal, fechaOriginal ? '08:00' : '', fechaOriginal ? '09:00' : '', ''];
+  const filas = [
+    fila('b00000001', 'Universidad', 'dictada', ''),
+    fila('b00000002', 'Startup', 'dictada', '2026-09-09'), // se había movido
+    fila('b00000003', 'Academia Fractal', 'dictada', ''), // esta sí se queda
+    fila('b00000004', 'Personal', 'cancelada', ''),
+    fila('b00000005', 'Personal', '', '')
+  ];
+  hoja.getRange(2, 1, filas.length, filas[0].length).setValues(filas);
+  return () => hoja.leerTodo().slice(1).map((f) => [f[0], f[14]]);
+}
+
+test('corrección: las dictadas de otras áreas vuelven a programada (o movida); Fractal y el resto no se tocan', () => {
+  const env = preparar();
+  const estados = sembrarDictadas(env);
+  assert.strictEqual(env.llamar('corregirDictadasFueraDeFractal(SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Bloques"))'), 2);
+  assert.deepStrictEqual(estados(), [
+    ['b00000001', 'programada'],
+    ['b00000002', 'movida'],
+    ['b00000003', 'dictada'],
+    ['b00000004', 'cancelada'],
+    ['b00000005', '']
+  ]);
+  assert.strictEqual(env.llamar('corregirDictadasFueraDeFractal(SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Bloques"))'), 0,
+    'idempotente');
+});
+
+test('corrección: corre sola una vez después del despliegue (la firma vieja no la tenía)', () => {
+  const env = preparar();
+  const estados = sembrarDictadas(env);
+  // La firma que quedó guardada con la versión anterior del código.
+  env.llamar('PropertiesService.getScriptProperties().setProperty(PROPIEDAD_ESTRUCTURA, JSON.stringify([ZONA_HORARIA, ' +
+    'ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO, COLUMNAS_ALUMNOS, HOJAS_CATALOGO, COLUMNAS_PAGOS, COLUMNAS_PLANTILLAS])); 0');
+  ok(env, { action: 'ping' });
+  assert.deepStrictEqual(estados().map((f) => f[1]), ['programada', 'movida', 'dictada', 'cancelada', '']);
+  assert.strictEqual(env.llamar('asegurarEstructuraSiHaceFalta()'), false, 'la segunda petición ya no verifica nada');
 });
 
 test('las acciones de estado exigen token', () => {

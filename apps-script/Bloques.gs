@@ -12,6 +12,9 @@ const TIPOS_BLOQUE = ['fijo', 'variable', 'reunión'];
 // moverBloque. Una celda vacía (bloques de antes) cuenta como programada.
 const ESTADOS_BLOQUE = ['programada', 'dictada', 'movida', 'cancelada'];
 const ESTADOS_A_MANO = ['programada', 'dictada', 'cancelada'];
+// "Dictada" sirve para cobrar: solo existe en Academia Fractal. Cancelar y
+// mover sí valen en todas las áreas (una clase de la U también se suspende).
+const AREA_QUE_SE_DICTA = 'Academia Fractal';
 
 // Campos que la app puede escribir. El resto (id, creado, actualizado,
 // archivado) los maneja el backend.
@@ -58,6 +61,7 @@ function actualizarBloque(id, cambios) {
     }
   });
   bloque.alumno_id = normalizarIdsAlumnos(bloque.alumno_id);
+  quitarDictadaFueraDeFractal(bloque); // si cambió de área
   bloque.actualizado = ahoraEnTexto();
 
   validarBloque(bloque);
@@ -76,6 +80,19 @@ function estadoDeBloque(bloque) {
 }
 
 /**
+ * Un bloque que no es de Academia Fractal nunca queda "dictado": vuelve a
+ * programada (o a movida, si está en otro día u hora que el original).
+ * Devuelve true si cambió algo.
+ */
+function quitarDictadaFueraDeFractal(bloque) {
+  if (String(bloque.area || '').trim() === AREA_QUE_SE_DICTA || estadoDeBloque(bloque) !== 'dictada') {
+    return false;
+  }
+  bloque.estado = bloque.fecha_original ? 'movida' : 'programada';
+  return true;
+}
+
+/**
  * Marca una clase como dictada, cancelada (con un motivo corto opcional) o
  * de nuevo programada. Volver a "programada" una clase que se movió la
  * deja "movida": sigue estando en otro día que el original.
@@ -88,6 +105,10 @@ function cambiarEstadoBloque(id, estado, motivo) {
   }
   const ubicacion = buscarFilaDeBloque(id);
   const bloque = ubicacion.bloque;
+  if (pedido === 'dictada' && bloque.area !== AREA_QUE_SE_DICTA) {
+    throw new Error('dictada_solo_fractal: solo las clases de ' + AREA_QUE_SE_DICTA +
+      ' se marcan dictadas; este bloque es de ' + bloque.area + '. Puedes cancelarlo o moverlo.');
+  }
   bloque.estado = pedido === 'programada' && bloque.fecha_original ? 'movida' : pedido;
   bloque.motivo = pedido === 'cancelada' ? String(motivo || '').trim().slice(0, 200) : '';
   bloque.actualizado = ahoraEnTexto();
@@ -138,6 +159,37 @@ function moverBloque(id, fecha, inicio, fin) {
   escribirBloque(ubicacion, bloque);
   ordenarHojaBloques(ubicacion.hoja);
   return bloque;
+}
+
+/**
+ * Corrección de datos (una sola vez, desde asegurarEstructura): los bloques
+ * de Universidad, Startup o Personal que ya habían quedado "dictada" vuelven
+ * a programada (o a movida si se habían movido). Lee solo las columnas
+ * área, estado y fecha_original, y escribe la columna estado una sola vez,
+ * únicamente si hay algo que corregir. Idempotente. Devuelve cuántos cambió.
+ */
+function corregirDictadasFueraDeFractal(hoja) {
+  const filas = hoja.getLastRow() - 1;
+  if (filas < 1) return 0;
+  // Por el encabezado real de la hoja, no por la posición esperada.
+  const encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getDisplayValues()[0];
+  const columna = function (nombre) { return encabezados.indexOf(nombre) + 1; };
+  if (!columna('área') || !columna('estado') || !columna('fecha_original')) return 0;
+  const leer = function (nombre) { return hoja.getRange(2, columna(nombre), filas, 1).getDisplayValues(); };
+  const areas = leer('área');
+  const estados = leer('estado');
+  const originales = leer('fecha_original');
+  let cambiados = 0;
+  const nuevos = estados.map(function (fila, i) {
+    const bloque = { area: areas[i][0], estado: fila[0], fecha_original: originales[i][0] };
+    if (quitarDictadaFueraDeFractal(bloque)) cambiados++;
+    return [bloque.estado];
+  });
+  if (cambiados) {
+    hoja.getRange(2, columna('estado'), filas, 1).setValues(nuevos);
+    Logger.log('Bloques fuera de Academia Fractal que estaban "dictada" y volvieron a programada: ' + cambiados);
+  }
+  return cambiados;
 }
 
 function escribirBloque(ubicacion, bloque) {

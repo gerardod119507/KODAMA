@@ -3,12 +3,27 @@
  * cancelada. Un bloque de antes, sin estado, cuenta como programado.
  * "Movida" la pone el backend al mover el bloque (moverBloque), que además
  * recuerda la fecha y hora originales.
+ *
+ * "Dictada" sirve para cobrar, así que solo existe en Academia Fractal. En
+ * las otras áreas un bloque "dictada" (de antes de esta regla, o de una
+ * copia vieja guardada en el dispositivo) se lee como programada — o
+ * movida, si está en otro día u hora que el original. Cancelar y mover sí
+ * valen en todas las áreas.
  */
 const KodamaClases = (function () {
   const NOMBRES = { programada: 'Programada', dictada: 'Dictada', movida: 'Movida', cancelada: 'Cancelada' };
+  const AREA_QUE_SE_DICTA = 'Academia Fractal';
+
+  function puedeDictarse(bloque) {
+    return Boolean(bloque) && String(bloque.area || '').trim() === AREA_QUE_SE_DICTA;
+  }
 
   function estado(bloque) {
-    return String((bloque && bloque.estado) || '').trim() || 'programada';
+    const e = String((bloque && bloque.estado) || '').trim() || 'programada';
+    if (e === 'dictada' && !puedeDictarse(bloque)) {
+      return bloque.fecha_original ? 'movida' : 'programada';
+    }
+    return e;
   }
 
   function esCancelada(bloque) {
@@ -33,5 +48,8 @@ const KodamaClases = (function () {
     return NOMBRES[e] + (e === 'cancelada' && bloque.motivo ? ' · ' + bloque.motivo : '');
   }
 
-  return { estado: estado, esCancelada: esCancelada, textoMovida: textoMovida, textoEstado: textoEstado, NOMBRES: NOMBRES };
+  return {
+    estado: estado, puedeDictarse: puedeDictarse, esCancelada: esCancelada,
+    textoMovida: textoMovida, textoEstado: textoEstado, NOMBRES: NOMBRES
+  };
 })();

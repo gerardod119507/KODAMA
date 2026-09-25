@@ -8,6 +8,10 @@
 const PROPIEDAD_TOKEN = 'KODAMA_TOKEN';
 // Firma de la estructura ya verificada (ver asegurarEstructuraSiHaceFalta).
 const PROPIEDAD_ESTRUCTURA = 'KODAMA_ESTRUCTURA';
+// Sube en 1 cuando asegurarEstructura suma una corrección de datos: cambia
+// la firma, así la corrección corre sola una vez después del despliegue.
+// 1 = bloques "dictada" fuera de Academia Fractal vuelven a programada.
+const VERSION_DATOS = 1;
 const HOJA_AREAS = 'Areas';
 const HOJA_BLOQUES = 'Bloques';
 const ZONA_HORARIA = 'America/La_Paz';
@@ -173,7 +177,7 @@ function doPost(e) {
  * sin tener que acordarse de nada al desplegar.
  */
 function firmaEstructura() {
-  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO, COLUMNAS_ALUMNOS, HOJAS_CATALOGO, COLUMNAS_PAGOS, COLUMNAS_PLANTILLAS]);
+  return JSON.stringify([ZONA_HORARIA, ENCABEZADOS_BLOQUES, ENCABEZADOS_HORARIO, COLUMNAS_ALUMNOS, HOJAS_CATALOGO, COLUMNAS_PAGOS, COLUMNAS_PLANTILLAS, VERSION_DATOS]);
 }
 
 function asegurarEstructuraSiHaceFalta() {
@@ -336,7 +340,8 @@ function asegurarEstructura() {
     libro.setSpreadsheetTimeZone(ZONA_HORARIA);
   }
   asegurarHojaAreas(libro);
-  asegurarHojaBloques(libro);
+  const bloques = asegurarHojaBloques(libro);
+  corregirDictadasFueraDeFractal(bloques);
   asegurarHojaHorario(libro);
   asegurarHojaAlumnos(libro);
   asegurarCatalogo(libro, HOJA_CURSOS, CURSOS_INICIALES);

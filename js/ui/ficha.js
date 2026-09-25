@@ -1,8 +1,9 @@
 /**
  * Ficha de un bloque: solo lectura (título, área, horario, estado, lugar,
  * etiqueta, notas) con las acciones Editar, Mover, Duplicar y Archivar, y
- * el estado de la clase (Checkpoint 8): "Marcar dictada" es un solo toque;
- * "Cancelar clase" pide un motivo opcional antes de confirmar.
+ * el estado de la clase (Checkpoint 8): "Marcar dictada" es un solo toque
+ * y solo aparece en Academia Fractal; "Cancelar clase" (en todas las
+ * áreas) pide un motivo opcional antes de confirmar.
  *
  * Todo lo que viene del Sheet se escribe con textContent. Ninguna acción
  * navega a otra página: todo pasa en diálogos sobre la misma vista.
@@ -129,7 +130,8 @@ const KodamaFicha = (function () {
     // Programada o movida: se puede dictar o cancelar. Dictada o
     // cancelada: un solo botón para deshacerlo.
     const pendiente = estado === 'programada' || estado === 'movida';
-    document.getElementById('ficha-dictada').hidden = !pendiente;
+    // "Dictada" es para cobrar: solo en Academia Fractal. Cancelar, en todas.
+    document.getElementById('ficha-dictada').hidden = !pendiente || !KodamaClases.puedeDictarse(bloque);
     document.getElementById('ficha-cancelar').hidden = !pendiente;
     const reactivar = document.getElementById('ficha-reactivar');
     reactivar.hidden = pendiente;

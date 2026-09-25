@@ -3,14 +3,16 @@
  * bloques y alumnos, devuelve números; no toca el DOM ni pide nada.
  *
  * Reglas:
- * - Solo las clases DICTADAS suman clases, horas y monto.
+ * - Solo las clases DICTADAS suman clases, horas y monto, y solo se dictan
+ *   clases de Academia Fractal: un bloque de otra área nunca cuenta como
+ *   dictado (ver js/clases.js).
  * - Monto = horas dictadas × tarifa_hora de CADA alumno: una clase
  *   compartida suma la tarifa de cada uno.
  * - Canceladas: se cuentan, no suman horas ni monto.
  * - Movidas: las que tienen fecha original (se movieron alguna vez) y no
  *   se cancelaron; una movida que después se dictó cuenta en las dos.
  * - Horas por área: todas las clases no canceladas (el tiempo que ocupó
- *   cada área), porque Universidad o Startup no se marcan como dictadas.
+ *   cada área), porque en las otras áreas no se marca nada dictado.
  */
 const KodamaEstadisticas = (function () {
   function minutos(hora) {
@@ -23,8 +25,10 @@ const KodamaEstadisticas = (function () {
     return d > 0 ? d : 0;
   }
 
+  // Misma regla que la ficha: fuera de Academia Fractal nada cuenta como
+  // dictado (ver js/clases.js).
   function estado(bloque) {
-    return String(bloque.estado || '').trim() || 'programada';
+    return KodamaClases.estado(bloque);
   }
 
   function fueMovida(bloque) {

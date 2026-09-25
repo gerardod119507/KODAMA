@@ -37,7 +37,7 @@ function cargarModulos(archivos) {
   };
 }
 
-const MODULOS_SEMANA = ['js/fecha.js', 'js/ui/iconos.js', 'js/ui/espiritu.js', 'js/ui/dia.js', 'js/ui/semana.js'];
+const MODULOS_SEMANA = ['js/fecha.js', 'js/clases.js', 'js/ui/iconos.js', 'js/ui/espiritu.js', 'js/ui/dia.js', 'js/ui/semana.js'];
 const SEMANA = ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27'];
 const FRANJA = { desde: 6 * 60 + 30, hasta: 21 * 60 };
 const min = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3));
