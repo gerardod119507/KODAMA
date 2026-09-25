@@ -1108,11 +1108,15 @@ llegan al punto central afinándose, como en el logo.
 - `icons/simbolo-chico.svg` — **simplificado para 48 px o menos**: un lazo
   por ala y trazos 4–6 veces más gruesos (las curvas finas desaparecen).
   Es la marca del encabezado y el favicon.
-- `icons/icono.svg` (favicon), `icono-grande.svg` (192/512) e
-  `icono-maskable.svg` (con margen para la zona segura de Android): símbolo
-  hueso sobre marino. Los PNG (`favicon-16/32`, `icono-48/192/512`,
-  `icono-maskable-512`, `apple-touch-icon`) salen de esos SVG con el
-  Chromium de las pruebas.
+- `icons/icono.svg` (favicon), `icono-grande.svg` (192/512 e iPhone) e
+  `icono-maskable.svg` (con margen para la zona segura de Android): **en
+  todos los tamaños, el símbolo simplificado** (el mismo de la marca del
+  encabezado), trazo hueso sobre **marino sólido**, sin esquinas
+  redondeadas (las pone el sistema). Motivo: con el símbolo completo, las
+  curvas finas se veían borrosas en la pantalla de inicio. Los PNG
+  (`favicon-16/32`, `icono-48/192/512`, `icono-maskable-512`,
+  `apple-touch-icon`) salen de esos SVG con el Chromium de las pruebas. El
+  símbolo completo queda solo para el sello de agua.
 - **Marca del encabezado** (`.marca`) y **sello de agua** (`.sello`): el SVG
   como **máscara CSS** pintada con `--fg`, así cambian solos con el tema.
   El sello es fijo, grande (92 % del lado corto, hasta 44rem), `z-index:
