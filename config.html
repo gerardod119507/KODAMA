@@ -55,7 +55,25 @@
 
     <p id="continuar-envoltorio" hidden><a id="continuar" href="index.html">Continuar a KODAMA →</a></p>
 
-    <p><a href="index.html">Volver sin probar</a> · <a href="alumnos.html">Alumnos</a> · <a href="cobros.html">Cobros</a> · <a href="estadisticas.html">Estadísticas</a></p>
+    <p><a href="index.html">Volver sin probar</a></p>
+
+    <hr class="separador" />
+    <h2>Rendimiento</h2>
+    <p class="nota">
+      Tiempos reales medidos en este dispositivo (se guardan solo aquí).
+      <strong>Red</strong>: ida y vuelta al Web App; dentro de ella, el
+      <strong>servidor</strong> es lo que tarda el código de Apps Script y lo
+      demás es internet y el arranque de Google. <strong>Render</strong>: armar
+      y pintar la pantalla. <strong>Resto</strong>: cargar la página y sus
+      archivos. En negrita, la parte que más pesa.
+    </p>
+    <div id="rendimiento-resumen" class="rendimiento"></div>
+    <h3>Últimas 20 mediciones</h3>
+    <ol id="rendimiento-ultimas" class="rendimiento-ultimas"></ol>
+    <div class="fila-con-boton">
+      <button id="rendimiento-actualizar" type="button" class="secundario">Actualizar</button>
+      <button id="rendimiento-borrar" type="button" class="secundario">Borrar mediciones</button>
+    </div>
 
     <hr class="separador" />
     <h2>Horario del semestre</h2>
@@ -126,7 +144,9 @@
     <button id="olvidar" type="button" class="fantasma">Olvidar conexión guardada</button>
   </main>
 
+  <script src="js/medicion.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/ui/rendimiento.js"></script>
   <script src="js/config.js"></script>
   <script src="js/importar.js"></script>
   <script src="js/pwa.js"></script>

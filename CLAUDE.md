@@ -317,6 +317,12 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   distinto y que la figura entre en pantalla. `tests/contraste.test.js`
   suma el sello de agua (el texto encima sigue en 4,5:1) y
   `tests/pwa.test.js` los archivos que usa el CSS (el símbolo).
+- `tests/medicion.test.js` — medición de rendimiento con reloj falso:
+  red y servidor de una llamada, red/render/total/resto de una operación,
+  dos llamadas en paralelo cuentan una vez, `cerrarRed`, "vista" de la
+  apertura, resumen (promedio, peor, sin las fallidas), tope de 300,
+  últimas 20, textos, sin almacenamiento, llamadas cortadas al irse,
+  `KodamaApi.llamar` y el `ms` del backend.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -787,6 +793,9 @@ entrada a `ACCIONES`, en un solo lugar.
 Esta tabla es una copia legible de `ACCIONES` — si alguna vez no coincide
 con el código, el código manda:
 
+Con token válido, la respuesta trae además `ms`: lo que tardó el código
+del backend (para la medición de rendimiento).
+
 - `ping` — sin parámetros. Devuelve `{ mensaje, zonaHoraria }`; confirma que
   el Web App responde.
 - `listarAreas` — sin parámetros. Devuelve un array de `{ nombre, color }`.
@@ -907,6 +916,36 @@ Crear o editar un bloque **requiere conexión** — si falla el
 POST, se muestra error y no se guarda nada localmente. No hay cola offline
 ni sincronización diferida en el MVP: se agrega complejidad (conflictos,
 reintentos) que no se justifica para un uso personal.
+
+## Medición de rendimiento
+
+Sin mediciones, optimizar es adivinar. `js/medicion.js` (`KodamaMedicion`)
+registra tiempos **reales del dispositivo** en `localStorage`
+(`kodama.medicion`, como mucho 300; los más viejos se borran) y
+Configuración → **Rendimiento** (`js/ui/rendimiento.js`) los muestra: por
+operación, promedio, peor caso y en qué se fue el tiempo (la parte más
+pesada en negrita), y las últimas 20 mediciones.
+
+- **Cada llamada al backend** la mide `KodamaApi.llamar`: **red** = desde
+  que sale el POST hasta tener la respuesta leída; **servidor** = el campo
+  `ms` que manda `doPost` (lo que tardó el código de Apps Script, solo con
+  token válido). red − servidor = internet + el arranque de Google (Apps
+  Script además responde con una redirección, otro viaje). Un error del
+  backend (`ok: false`) igual cuenta como viaje completo; "falló" es solo
+  sin red o sin respuesta legible. Una llamada que el navegador corta al
+  irse de la página (`pagehide`) no se anota.
+- **Operaciones** (`empezar` … `terminar`): `apertura` (index.html, desde
+  que el navegador empieza a abrir la página hasta pintar la semana recién
+  llegada; además **vista** = cuándo se vio algo, con la semana guardada
+  antes de la red), `guardar` (crear/editar/mover, desde "Guardar" hasta
+  ver el bloque), `generar` (horario, en Horario y en Configuración) y
+  `estadisticas` (abrir la pantalla hasta ver las gráficas). Cada una
+  separa **red** (tramo con alguna llamada en curso: dos en paralelo
+  cuentan una vez; `cerrarRed()` deja afuera la recarga que sale después
+  de guardar), **render** (armar la pantalla + hasta que el navegador la
+  pintó: `requestAnimationFrame` + `setTimeout`) y **resto** (cargar la
+  página y sus scripts, o esperar).
+- Los promedios y el peor caso no cuentan las que fallaron.
 
 ## Escritura desde la app (Checkpoint 5)
 
@@ -1221,7 +1260,8 @@ KODAMA/
 │   └── styles.css
 ├── js/
 │   ├── app.js               # bootstrap de index.html (vista de día)
-│   ├── api.js                # fetch al Web App (POST text/plain)
+│   ├── api.js                # fetch al Web App (POST text/plain), mide cada llamada
+│   ├── medicion.js            # tiempos reales: llamadas y operaciones (red/servidor/render)
 │   ├── config.js              # lógica de config.html
 │   ├── horario.js              # lógica de horario.html (editor de reglas)
 │   ├── state.js               # semana por llamada + caché local (lectura)
@@ -1248,6 +1288,7 @@ KODAMA/
 │       ├── ficha.js               # ficha de solo lectura al tocar un bloque
 │       ├── selector-alumnos.js    # campo de alumnos con autocompletado
 │       ├── graficas.js            # barras horizontales en SVG propio
+│       ├── rendimiento.js         # panel "Rendimiento" de Configuración
 │       ├── horas.js               # conecta inicio/fin/área/tipo de un formulario
 │       ├── dias.js                # botones Lun–Dom
 │       ├── carga.js               # pantalla de carga: el atractor dibujándose

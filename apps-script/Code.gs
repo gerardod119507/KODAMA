@@ -144,6 +144,11 @@ const ACCIONES = {
 };
 
 function doPost(e) {
+  // Medición de rendimiento: "ms" es lo que tardó ESTE código (leer la
+  // hoja, calcular, escribir). La app lo compara con el tiempo total de la
+  // llamada: la diferencia es internet + el arranque de Google, que no se
+  // controla desde acá. Solo va en respuestas con token válido.
+  const inicio = Date.now();
   let peticion;
   try {
     peticion = JSON.parse(e.postData.contents);
@@ -159,12 +164,13 @@ function doPost(e) {
     // Un Sheet nuevo, o uno al que le falte una hoja, queda utilizable sin
     // que Gerardo tenga que abrir el editor de Apps Script.
     asegurarEstructuraSiHaceFalta();
-    return responderJson({ ok: true, data: ejecutarAccion(peticion) });
+    const data = ejecutarAccion(peticion);
+    return responderJson({ ok: true, data: data, ms: Date.now() - inicio });
   } catch (err) {
     // Ante cualquier error, la próxima petición vuelve a verificar todo:
     // si el error vino de una hoja borrada o cambiada a mano, se repara ahí.
     PropertiesService.getScriptProperties().deleteProperty(PROPIEDAD_ESTRUCTURA);
-    return responderJson({ ok: false, error: String(err && err.message ? err.message : err) });
+    return responderJson({ ok: false, error: String(err && err.message ? err.message : err), ms: Date.now() - inicio });
   }
 }
 

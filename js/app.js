@@ -22,6 +22,10 @@
     return;
   }
 
+  // Medición: desde que el navegador empezó a abrir la página hasta que se
+  // pintó la semana recién llegada (ver js/medicion.js).
+  let apertura = KodamaMedicion.empezar('apertura', { desdeNavegacion: true });
+
   KodamaCapas.CAPAS.forEach(function (capa) {
     const opcion = document.createElement('option');
     opcion.value = capa;
@@ -147,6 +151,11 @@
   async function cargar() {
     const numero = ++cargaActual;
     const s = semana(fecha);
+    // Solo la primera carga es "apertura"; las siguientes se miden como llamadas.
+    const op = apertura;
+    apertura = null;
+    // Si otra carga la reemplaza antes de terminar, la apertura se cierra ahí.
+    const dibujar = op ? function () { op.render(renderizar); } : renderizar;
     pintarEncabezado();
 
     if (semanaEnPantalla !== s.lunes) {
@@ -160,7 +169,8 @@
       }
     }
     if (semanaEnPantalla === s.lunes) {
-      renderizar();
+      dibujar();
+      if (op) op.marcarVista(); // lo guardado ya se ve, antes de la red
     } else {
       KodamaDia.renderCargando(contenedor);
     }
@@ -168,12 +178,20 @@
 
     try {
       const datos = await KodamaState.pedirSemana(s.lunes, s.domingo);
-      if (numero !== cargaActual) return;
+      if (numero !== cargaActual) {
+        if (op) op.terminar(true);
+        return;
+      }
       bloquesSemana = datos;
       semanaEnPantalla = s.lunes;
       avisoOffline.hidden = true;
-      renderizar();
+      dibujar();
+      if (op) {
+        await op.pintado();
+        op.terminar(true);
+      }
     } catch (err) {
+      if (op) op.terminar(false);
       if (numero !== cargaActual) return;
       if (semanaEnPantalla === s.lunes) {
         avisoOffline.hidden = false; // se ve lo guardado; no se pudo actualizar
@@ -233,16 +251,26 @@
 
   KodamaFormulario.iniciar({
     alGuardar: async function (id, datos, modo) {
+      // Medición: desde "Guardar" hasta ver el bloque en la grilla. La
+      // recarga de la semana que viene después no cuenta (cerrarRed).
+      const op = KodamaMedicion.empezar('guardar');
       let guardado;
-      if (modo === 'mover') {
-        // Mover guarda la fecha y hora originales (la ficha dice "movida del …").
-        guardado = await pedir('moverBloque', { id: id, fecha: datos.fecha, inicio: datos.inicio, fin: datos.fin });
-      } else if (id) {
-        guardado = await pedir('actualizarBloque', { id: id, cambios: datos });
-      } else {
-        guardado = await pedir('crearBloque', { bloque: datos });
+      try {
+        if (modo === 'mover') {
+          // Mover guarda la fecha y hora originales (la ficha dice "movida del …").
+          guardado = await pedir('moverBloque', { id: id, fecha: datos.fecha, inicio: datos.inicio, fin: datos.fin });
+        } else if (id) {
+          guardado = await pedir('actualizarBloque', { id: id, cambios: datos });
+        } else {
+          guardado = await pedir('crearBloque', { bloque: datos });
+        }
+      } catch (err) {
+        op.terminar(false);
+        throw err;
       }
-      aplicarLocal(guardado);
+      op.cerrarRed();
+      op.render(function () { aplicarLocal(guardado); });
+      op.pintado().then(function () { op.terminar(true); });
     },
     alArchivar: archivar,
     alArchivarPlantilla: function (id) { return KodamaPlantillas.archivar(pedir, id); },
