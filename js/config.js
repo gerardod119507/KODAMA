@@ -170,3 +170,7 @@ document.getElementById('borrar-serie').addEventListener('click', async function
     resultadoSeries.textContent = 'Error: ' + error.message;
   }
 });
+
+// Configuración no espera datos: la pantalla de arranque (si la app se abrió
+// aquí) se va enseguida.
+KodamaCarga.listo();

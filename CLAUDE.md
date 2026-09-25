@@ -317,6 +317,12 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   distinto y que la figura entre en pantalla. `tests/contraste.test.js`
   suma el sello de agua (el texto encima sigue en 4,5:1) y
   `tests/pwa.test.js` los archivos que usa el CSS (el símbolo).
+- `tests/arranque.test.js` — pantalla de arranque: solo la primera
+  pantalla de la sesión (y sin `sessionStorage` igual), barra del sistema
+  en marino, fases y su duración, `suavizar`, `ajuste` (el trazo centrado
+  y entero sobre el atractor del logo), el marino igual al del manifest,
+  las partes marcadas del símbolo (3 puntos = 3 esferas) y que todas las
+  pantallas la tengan antes del encabezado.
 - `tests/navegacion.test.js` — navegación: destinos de abajo y de
   "Más" (con ícono y página existente), qué queda activo en cada pantalla,
   `#dia`/`#semana`, que cada página tenga arriba solo logo, fecha y tema
@@ -1223,16 +1229,38 @@ llegan al punto central afinándose, como en el logo.
   -1` (detrás de todo; los bloques tienen fondo opaco y lo tapan) y muy
   tenue (`--sello-opacidad`: 4,5 % claro, 6 % oscuro).
 
-**Pantalla de carga (Checkpoint 10):** `js/lorenz.js` (las ecuaciones,
-Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js` (canvas). El
-atractor se dibuja en tiempo real desde un **punto inicial al azar** (cada
-carga es distinta); tres esferas recorren la trayectoria ya dibujada a
-distinta velocidad, con estela. Con `prefers-reduced-motion` se dibuja la
-figura completa, quieta. **No demora la app**: cada pantalla llama a
-`KodamaCarga.listo()` apenas tiene algo que mostrar (con la semana ya
-guardada, enseguida: ~0,4 s con la red tardando 2,5 s en la prueba) y se
-desvanece en 250 ms; si algo falla, se va sola a los 8 s. Está en todas
-las pantallas con datos (no en Configuración).
+**Pantalla de arranque** (desde el Checkpoint 10 era una pantalla de
+carga en cada pantalla; ahora es solo el arranque): `js/lorenz.js` (las
+ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
+(`KodamaCarga`).
+
+- **Solo al abrir la app:** `js/tema.js` decide en el `<head>`, antes de
+  pintar, si es la primera pantalla de la sesión (`sessionStorage`
+  `kodama.arranque`) y pone `html[data-arranque="si"]`: fondo marino desde
+  el primer cuadro y la barra del sistema en marino. Moverse entre
+  pantallas no la repite (con la barra de navegación sería un destello
+  en cada toque).
+- **Marino, en los dos temas:** el mismo `#071743` que el
+  `background_color` del manifest (la bienvenida de Android), así el paso
+  se siente continuo. Trazo y texto en hueso.
+- **Secuencia** (`TIEMPOS`, como mucho 2,9 s): el atractor se dibuja en
+  tiempo real desde un punto al azar con tres esferas y su estela; a los
+  1,3 s **se asienta en el logo**: el trazo se encoge sobre el atractor
+  del símbolo (escala y traslado calculados con `ajuste()`) y se apaga
+  mientras el del símbolo aparece, la línea se dibuja y las tres esferas
+  vuelan a los tres puntos del símbolo (la más grande al centro); después
+  se dibuja la circunferencia y aparece **KODAMA**. Quieto al final (no
+  anima más: ahorra batería).
+- El símbolo es `icons/simbolo.svg` (el mismo del sello), traído con
+  `fetch` y `DOMParser` (sin `innerHTML`); sus partes están marcadas con
+  `data-parte` (`circulo`, `linea`, `atractor`, `punto`). Si no llega a
+  tiempo, sigue el atractor hasta que llegue o hasta `listo()`.
+- **Nunca demora la app:** cada pantalla llama a `KodamaCarga.listo()`
+  apenas tiene algo que mostrar y se desvanece en 250 ms, esté en la fase
+  que esté (con la semana guardada, ~0,4 s: casi nunca se llega a ver el
+  logo completo, y está bien). Si algo falla, se va sola a los 8 s.
+  Configuración no espera datos: la suelta enseguida.
+- **`prefers-reduced-motion`:** el logo completo, quieto.
 
 **Bocetos de la mascota:** propuestos en `js/ui/espiritu.js` (`dormidoA` /
 `dormidoB`), visibles en el estado vacío de la vista de día mientras no haya
@@ -1330,7 +1358,7 @@ KODAMA/
 │       ├── rendimiento.js         # panel "Rendimiento" de Configuración
 │       ├── horas.js               # conecta inicio/fin/área/tipo de un formulario
 │       ├── dias.js                # botones Lun–Dom
-│       ├── carga.js               # pantalla de carga: el atractor dibujándose
+│       ├── carga.js               # pantalla de arranque: el atractor se asienta en el logo
 │       ├── navegacion.js          # barra de abajo, hoja "Más" y navegación de arriba
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
@@ -1375,5 +1403,8 @@ antes.
 10. **Identidad visual**: marino del logo, símbolo de Academia Fractal
     (íconos, favicon, encabezado, sello de agua) y pantalla de carga con el
     atractor de Lorenz.
+11. **Medición, navegación y arranque**: tiempos reales en el dispositivo
+    (Configuración → Rendimiento), barra de navegación abajo con hoja
+    "Más", y pantalla de arranque que se asienta en el logo.
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.

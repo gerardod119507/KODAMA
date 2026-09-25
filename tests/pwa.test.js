@@ -53,7 +53,8 @@ test('el manifest: nombre, pantalla completa, colores de la paleta e íconos 192
   assert.strictEqual(m.name, 'KODAMA');
   assert.strictEqual(m.display, 'standalone');
   assert.strictEqual(m.start_url, './index.html');
-  assert.strictEqual(m.background_color, '#F5F1E8');
+  // Marino: la bienvenida de Android pasa a la pantalla de arranque sin cambiar de color.
+  assert.strictEqual(m.background_color, '#071743');
   assert.strictEqual(m.theme_color, '#071743');
   const tamanios = m.icons.map((i) => i.sizes + (i.purpose ? ' ' + i.purpose : ''));
   ['48x48', '192x192', '512x512', '512x512 maskable'].forEach((t) => assert.ok(tamanios.includes(t), 'falta ícono ' + t));

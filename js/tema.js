@@ -5,10 +5,28 @@
  * - Si nunca elegiste, sigue al del sistema (y cambia si el sistema cambia).
  * - Si elegiste con el botón, queda recordado en este dispositivo
  *   (localStorage "kodama.tema": "claro" | "oscuro").
+ *
+ * También decide, antes de pintar, si esta es la PRIMERA pantalla de la
+ * sesión (abrir la app): ahí va la pantalla de arranque (js/ui/carga.js),
+ * sobre marino desde el primer cuadro, igual que la bienvenida de Android,
+ * y la barra del sistema también en marino. Al moverse entre pantallas no
+ * se repite (sessionStorage "kodama.arranque").
  */
 const KodamaTema = (function () {
   const CLAVE = 'kodama.tema';
   const COLOR_BARRA = { claro: '#F5F1E8', oscuro: '#070F28' };
+  const MARINO = '#071743';
+  const CLAVE_ARRANQUE = 'kodama.arranque';
+
+  function primeraDeLaSesion() {
+    try {
+      if (sessionStorage.getItem(CLAVE_ARRANQUE)) return false;
+      sessionStorage.setItem(CLAVE_ARRANQUE, '1');
+      return true;
+    } catch (err) {
+      return true; // sin sessionStorage: se muestra (igual nunca demora nada)
+    }
+  }
   const sistema = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
   function guardado() {
@@ -28,7 +46,8 @@ const KodamaTema = (function () {
     const tema = actual();
     document.documentElement.dataset.theme = tema === 'oscuro' ? 'dark' : 'light';
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', COLOR_BARRA[tema]);
+    const arrancando = document.documentElement.dataset.arranque === 'si';
+    if (meta) meta.setAttribute('content', arrancando ? MARINO : COLOR_BARRA[tema]);
     document.querySelectorAll('.boton-tema').forEach(pintarBoton);
   }
 
@@ -50,6 +69,7 @@ const KodamaTema = (function () {
     aplicar();
   }
 
+  if (primeraDeLaSesion()) document.documentElement.dataset.arranque = 'si';
   aplicar();
   if (sistema && sistema.addEventListener) {
     sistema.addEventListener('change', function () { if (!guardado()) aplicar(); });
@@ -61,5 +81,5 @@ const KodamaTema = (function () {
     });
   });
 
-  return { actual: actual, alternar: alternar };
+  return { actual: actual, alternar: alternar, aplicar: aplicar };
 })();

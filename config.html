@@ -19,6 +19,13 @@
 <body data-pagina="config">
   <!-- Sello de agua: el símbolo de Academia Fractal, grande y muy tenue, detrás de todo. -->
   <div class="sello" aria-hidden="true"></div>
+  <!-- Pantalla de arranque (js/ui/carga.js): solo si la app se abrió aquí.
+       Configuración no espera datos, así que se va enseguida. -->
+  <div id="carga" class="carga" role="status" aria-label="Cargando">
+    <canvas class="carga__lienzo"></canvas>
+  </div>
+  <script src="js/lorenz.js"></script>
+  <script src="js/ui/carga.js"></script>
   <!-- Arriba solo el logo, la fecha y el tema. La navegación la arma
        js/ui/navegacion.js: barra abajo en el celular, arriba en pantallas anchas. -->
   <header class="cabecera">

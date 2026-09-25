@@ -1647,14 +1647,32 @@ button.cobro {
   mask: url("../icons/simbolo.svg") center / contain no-repeat;
 }
 
-/* Pantalla de carga: el atractor de Lorenz sobre el fondo, arriba de todo;
-   se desvanece en 250 ms cuando la página tiene algo que mostrar. */
+/* Pantalla de arranque (js/ui/carga.js): solo al abrir la app. Marino en
+   los dos temas, igual que la bienvenida de Android (background_color del
+   manifest), desde el primer cuadro: por eso también el fondo de la
+   página mientras dura. Oculta en las demás pantallas de la sesión. */
+html[data-arranque="si"],
+html[data-arranque="si"] body {
+  background: var(--marino);
+}
+
 .carga {
+  display: none;
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: var(--bg);
+  background: var(--marino);
+  color: var(--bone);
   transition: opacity 250ms var(--curva);
+}
+
+html[data-arranque="si"] .carga,
+.carga--saliendo {
+  display: block;
+}
+
+.carga[hidden] {
+  display: none;
 }
 
 .carga--fuera {
@@ -1663,9 +1681,107 @@ button.cobro {
 }
 
 .carga__lienzo {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* El trazo en vivo se encoge sobre el atractor del logo y se apaga. */
+.carga__trazo {
+  transform-origin: 0 0;
+  transition: transform 700ms ease-in-out, opacity 700ms ease-in-out;
+}
+
+.carga--asentar .carga__trazo {
+  opacity: 0;
+}
+
+.carga__logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(64vmin, 20rem);
+  transform: translate(-50%, -50%);
+}
+
+.carga__simbolo {
+  display: block;
+  width: 100%;
+  height: auto;
+  visibility: hidden;
+}
+
+.carga--logo .carga__simbolo {
+  visibility: visible;
+}
+
+/* Hueso en los dos temas (el archivo trae el marino). */
+.carga__simbolo g[stroke] {
+  fill: none;
+  stroke: var(--bone);
+}
+
+.carga__simbolo [data-parte="punto"] {
+  fill: var(--bone);
+}
+
+.carga__simbolo [data-parte="atractor"],
+.carga__simbolo [data-parte="punto"] {
+  opacity: 0;
+  transition: opacity 700ms ease-in-out;
+}
+
+.carga--asentar .carga__simbolo [data-parte="atractor"] {
+  opacity: 1;
+}
+
+/* Los puntos aparecen cuando llegan las esferas. */
+.carga--circulo .carga__simbolo [data-parte="punto"] {
+  opacity: 1;
+  transition: none;
+}
+
+/* La línea y la circunferencia se dibujan (pathLength = 1). */
+.carga__simbolo [data-parte="linea"],
+.carga__simbolo [data-parte="circulo"] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.carga--asentar .carga__simbolo [data-parte="linea"] {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 700ms ease-in-out;
+}
+
+.carga--circulo .carga__simbolo [data-parte="circulo"] {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 500ms ease-in-out;
+}
+
+/* Justo debajo del símbolo (fuera del centro, para que el logo quede al medio). */
+.carga__palabra {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: var(--espacio-4) 0 0;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  /* El espaciado deja un hueco a la derecha: se compensa para centrarla. */
+  text-indent: 0.18em;
+  color: var(--bone);
+  opacity: 0;
+  transform: translateY(var(--espacio-2));
+  transition: opacity 350ms var(--curva), transform 350ms var(--curva);
+}
+
+.carga--palabra .carga__palabra {
+  opacity: 1;
+  transform: none;
 }
 
 /* --- Rendimiento (Configuración): tiempos medidos en el dispositivo ------ */
