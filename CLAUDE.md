@@ -317,6 +317,23 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   distinto y que la figura entre en pantalla. `tests/contraste.test.js`
   suma el sello de agua (el texto encima sigue en 4,5:1) y
   `tests/pwa.test.js` los archivos que usa el CSS (el símbolo).
+- `tests/arranque.test.js` — pantalla de arranque: solo la primera
+  pantalla de la sesión (y sin `sessionStorage` igual), barra del sistema
+  en marino, fases y su duración, `suavizar`, `ajuste` (el trazo centrado
+  y entero sobre el atractor del logo), el marino igual al del manifest,
+  las partes marcadas del símbolo (3 puntos = 3 esferas) y que todas las
+  pantallas la tengan antes del encabezado.
+- `tests/navegacion.test.js` — navegación: destinos de abajo y de
+  "Más" (con ícono y página existente), qué queda activo en cada pantalla,
+  `#dia`/`#semana`, que cada página tenga arriba solo logo, fecha y tema
+  y cargue la navegación justo después, título y fecha de hoy en las
+  demás, y el área segura.
+- `tests/medicion.test.js` — medición de rendimiento con reloj falso:
+  red y servidor de una llamada, red/render/total/resto de una operación,
+  dos llamadas en paralelo cuentan una vez, `cerrarRed`, "vista" de la
+  apertura, resumen (promedio, peor, sin las fallidas), tope de 300,
+  últimas 20, textos, sin almacenamiento, llamadas cortadas al irse,
+  `KodamaApi.llamar` y el `ms` del backend.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -787,6 +804,9 @@ entrada a `ACCIONES`, en un solo lugar.
 Esta tabla es una copia legible de `ACCIONES` — si alguna vez no coincide
 con el código, el código manda:
 
+Con token válido, la respuesta trae además `ms`: lo que tardó el código
+del backend (para la medición de rendimiento).
+
 - `ping` — sin parámetros. Devuelve `{ mensaje, zonaHoraria }`; confirma que
   el Web App responde.
 - `listarAreas` — sin parámetros. Devuelve un array de `{ nombre, color }`.
@@ -908,6 +928,70 @@ POST, se muestra error y no se guarda nada localmente. No hay cola offline
 ni sincronización diferida en el MVP: se agrega complejidad (conflictos,
 reintentos) que no se justifica para un uso personal.
 
+## Navegación
+
+Arriba (`<header class="cabecera">`, igual en las 6 páginas) queda **solo
+el logo, la fecha y el botón de tema**. En la principal la fecha es el
+día o la semana que se ve (con "actualizando"); en las demás, la de hoy
+(`data-fecha-hoy`). Cada pantalla que no es la principal lleva su título
+(`h1.titulo-pagina`) al comienzo de `<main>`.
+
+`js/ui/navegacion.js` (`KodamaNavegacion`) se carga **justo después del
+encabezado** (sin esperar al resto de la página, para que no haya salto)
+y arma la navegación con una sola lista de destinos:
+
+- **Celular (menos de 700px):** barra fija abajo con **Día, Semana,
+  Alumnos y Más**. "Más" abre una **hoja que sube desde abajo** con
+  Horario, Cobros, Estadísticas y Configuración; se cierra tocando
+  afuera, con ✕, con Escape o deslizándola hacia abajo (un toque de
+  menos de 8px sigue siendo un toque). El botón `+` queda arriba de la
+  barra.
+- **Pantallas anchas (700px o más):** la misma lista arriba, en dos grupos
+  (Día, Semana, Alumnos | Horario, Cobros, Estadísticas, Configuración);
+  entre 700 y 1099px va en su propia fila, debajo del logo.
+- **Activo:** `aria-current="page"` y, a la vista, píldora rellena (abajo)
+  o subrayado grueso (arriba) + letra gruesa; nunca solo el color. En las
+  pantallas de "Más", "Más" queda encendido.
+- **Día y Semana:** en la principal cambian el modo sin recargar
+  (`app.js` registra `alElegirModo`); desde otra pantalla van a
+  `index.html#dia` / `#semana` (`KodamaVista.desdeHash`), que se guarda y
+  se limpia de la dirección. Por eso ya no hay botones Día/Semana en la
+  barra de la vista.
+- **Área segura:** `viewport-fit=cover` en todas las páginas y
+  `env(safe-area-inset-*)` en el encabezado (arriba), la barra y la hoja
+  (abajo), el `+` y los costados (celular acostado).
+- Íconos en SVG propio, trazos simples con el color del texto.
+
+## Medición de rendimiento
+
+Sin mediciones, optimizar es adivinar. `js/medicion.js` (`KodamaMedicion`)
+registra tiempos **reales del dispositivo** en `localStorage`
+(`kodama.medicion`, como mucho 300; los más viejos se borran) y
+Configuración → **Rendimiento** (`js/ui/rendimiento.js`) los muestra: por
+operación, promedio, peor caso y en qué se fue el tiempo (la parte más
+pesada en negrita), y las últimas 20 mediciones.
+
+- **Cada llamada al backend** la mide `KodamaApi.llamar`: **red** = desde
+  que sale el POST hasta tener la respuesta leída; **servidor** = el campo
+  `ms` que manda `doPost` (lo que tardó el código de Apps Script, solo con
+  token válido). red − servidor = internet + el arranque de Google (Apps
+  Script además responde con una redirección, otro viaje). Un error del
+  backend (`ok: false`) igual cuenta como viaje completo; "falló" es solo
+  sin red o sin respuesta legible. Una llamada que el navegador corta al
+  irse de la página (`pagehide`) no se anota.
+- **Operaciones** (`empezar` … `terminar`): `apertura` (index.html, desde
+  que el navegador empieza a abrir la página hasta pintar la semana recién
+  llegada; además **vista** = cuándo se vio algo, con la semana guardada
+  antes de la red), `guardar` (crear/editar/mover, desde "Guardar" hasta
+  ver el bloque), `generar` (horario, en Horario y en Configuración) y
+  `estadisticas` (abrir la pantalla hasta ver las gráficas). Cada una
+  separa **red** (tramo con alguna llamada en curso: dos en paralelo
+  cuentan una vez; `cerrarRed()` deja afuera la recarga que sale después
+  de guardar), **render** (armar la pantalla + hasta que el navegador la
+  pintó: `requestAnimationFrame` + `setTimeout`) y **resto** (cargar la
+  página y sus scripts, o esperar).
+- Los promedios y el peor caso no cuentan las que fallaron.
+
 ## Escritura desde la app (Checkpoint 5)
 
 Desde el Checkpoint 5 **no hace falta abrir el Sheet para nada de uso
@@ -962,8 +1046,8 @@ etiqueta. Si el día no tiene ningún bloque, se ve el estado vacío con la
 mascota. Antes (hasta el Checkpoint 6.5) el día era una lista de tarjetas
 apiladas, sin eje de horas.
 
-`index.html` tiene dos modos, **Día** y **Semana** (`js/vista.js`). La
-elección se guarda en `localStorage` (`kodama.vista`); si nunca se eligió,
+`index.html` tiene dos modos, **Día** y **Semana** (`js/vista.js`), que se
+eligen en la navegación (ver "Navegación"). La elección se guarda en `localStorage` (`kodama.vista`); si nunca se eligió,
 una pantalla de 900px o más arranca en semana y el celular en día.
 
 - **Navegación:** `‹` / `›` mueven 1 día en modo día y 7 días en modo
@@ -1145,16 +1229,38 @@ llegan al punto central afinándose, como en el logo.
   -1` (detrás de todo; los bloques tienen fondo opaco y lo tapan) y muy
   tenue (`--sello-opacidad`: 4,5 % claro, 6 % oscuro).
 
-**Pantalla de carga (Checkpoint 10):** `js/lorenz.js` (las ecuaciones,
-Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js` (canvas). El
-atractor se dibuja en tiempo real desde un **punto inicial al azar** (cada
-carga es distinta); tres esferas recorren la trayectoria ya dibujada a
-distinta velocidad, con estela. Con `prefers-reduced-motion` se dibuja la
-figura completa, quieta. **No demora la app**: cada pantalla llama a
-`KodamaCarga.listo()` apenas tiene algo que mostrar (con la semana ya
-guardada, enseguida: ~0,4 s con la red tardando 2,5 s en la prueba) y se
-desvanece en 250 ms; si algo falla, se va sola a los 8 s. Está en todas
-las pantallas con datos (no en Configuración).
+**Pantalla de arranque** (desde el Checkpoint 10 era una pantalla de
+carga en cada pantalla; ahora es solo el arranque): `js/lorenz.js` (las
+ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
+(`KodamaCarga`).
+
+- **Solo al abrir la app:** `js/tema.js` decide en el `<head>`, antes de
+  pintar, si es la primera pantalla de la sesión (`sessionStorage`
+  `kodama.arranque`) y pone `html[data-arranque="si"]`: fondo marino desde
+  el primer cuadro y la barra del sistema en marino. Moverse entre
+  pantallas no la repite (con la barra de navegación sería un destello
+  en cada toque).
+- **Marino, en los dos temas:** el mismo `#071743` que el
+  `background_color` del manifest (la bienvenida de Android), así el paso
+  se siente continuo. Trazo y texto en hueso.
+- **Secuencia** (`TIEMPOS`, como mucho 2,9 s): el atractor se dibuja en
+  tiempo real desde un punto al azar con tres esferas y su estela; a los
+  1,3 s **se asienta en el logo**: el trazo se encoge sobre el atractor
+  del símbolo (escala y traslado calculados con `ajuste()`) y se apaga
+  mientras el del símbolo aparece, la línea se dibuja y las tres esferas
+  vuelan a los tres puntos del símbolo (la más grande al centro); después
+  se dibuja la circunferencia y aparece **KODAMA**. Quieto al final (no
+  anima más: ahorra batería).
+- El símbolo es `icons/simbolo.svg` (el mismo del sello), traído con
+  `fetch` y `DOMParser` (sin `innerHTML`); sus partes están marcadas con
+  `data-parte` (`circulo`, `linea`, `atractor`, `punto`). Si no llega a
+  tiempo, sigue el atractor hasta que llegue o hasta `listo()`.
+- **Nunca demora la app:** cada pantalla llama a `KodamaCarga.listo()`
+  apenas tiene algo que mostrar y se desvanece en 250 ms, esté en la fase
+  que esté (con la semana guardada, ~0,4 s: casi nunca se llega a ver el
+  logo completo, y está bien). Si algo falla, se va sola a los 8 s.
+  Configuración no espera datos: la suelta enseguida.
+- **`prefers-reduced-motion`:** el logo completo, quieto.
 
 **Bocetos de la mascota:** propuestos en `js/ui/espiritu.js` (`dormidoA` /
 `dormidoB`), visibles en el estado vacío de la vista de día mientras no haya
@@ -1221,7 +1327,8 @@ KODAMA/
 │   └── styles.css
 ├── js/
 │   ├── app.js               # bootstrap de index.html (vista de día)
-│   ├── api.js                # fetch al Web App (POST text/plain)
+│   ├── api.js                # fetch al Web App (POST text/plain), mide cada llamada
+│   ├── medicion.js            # tiempos reales: llamadas y operaciones (red/servidor/render)
 │   ├── config.js              # lógica de config.html
 │   ├── horario.js              # lógica de horario.html (editor de reglas)
 │   ├── state.js               # semana por llamada + caché local (lectura)
@@ -1248,9 +1355,11 @@ KODAMA/
 │       ├── ficha.js               # ficha de solo lectura al tocar un bloque
 │       ├── selector-alumnos.js    # campo de alumnos con autocompletado
 │       ├── graficas.js            # barras horizontales en SVG propio
+│       ├── rendimiento.js         # panel "Rendimiento" de Configuración
 │       ├── horas.js               # conecta inicio/fin/área/tipo de un formulario
 │       ├── dias.js                # botones Lun–Dom
-│       ├── carga.js               # pantalla de carga: el atractor dibujándose
+│       ├── carga.js               # pantalla de arranque: el atractor se asienta en el logo
+│       ├── navegacion.js          # barra de abajo, hoja "Más" y navegación de arriba
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
 ├── academia-fractal-logo.png  # el logo original (fuente del símbolo)
@@ -1294,5 +1403,8 @@ antes.
 10. **Identidad visual**: marino del logo, símbolo de Academia Fractal
     (íconos, favicon, encabezado, sello de agua) y pantalla de carga con el
     atractor de Lorenz.
+11. **Medición, navegación y arranque**: tiempos reales en el dispositivo
+    (Configuración → Rendimiento), barra de navegación abajo con hoja
+    "Más", y pantalla de arranque que se asienta en el logo.
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.

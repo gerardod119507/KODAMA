@@ -258,11 +258,17 @@
 
   document.getElementById('regenerar').addEventListener('click', async function () {
     resultadoRegenerar.textContent = 'Regenerando...';
+    const op = KodamaMedicion.empezar('generar');
     try {
       const datos = await pedir('generarHorario');
-      resultadoRegenerar.textContent = 'Listo: ' + datos.creados + ' creados, ' +
-        datos.actualizados + ' actualizados, ' + datos.archivados + ' archivados.';
+      op.cerrarRed();
+      op.render(function () {
+        resultadoRegenerar.textContent = 'Listo: ' + datos.creados + ' creados, ' +
+          datos.actualizados + ' actualizados, ' + datos.archivados + ' archivados.';
+      });
+      op.pintado().then(function () { op.terminar(true); });
     } catch (error) {
+      op.terminar(false);
       resultadoRegenerar.textContent = 'Error: ' + error.message;
     }
   });

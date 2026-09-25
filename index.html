@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>KODAMA</title>
   <link rel="stylesheet" href="css/styles.css" />
   <meta name="theme-color" content="#F5F1E8" />
@@ -16,45 +16,37 @@
   <meta name="apple-mobile-web-app-title" content="KODAMA" />
   <script src="js/tema.js"></script>
 </head>
-<body>
+<body data-pagina="inicio">
   <!-- Sello de agua: el símbolo de Academia Fractal, grande y muy tenue, detrás de todo. -->
   <div class="sello" aria-hidden="true"></div>
-  <!-- Pantalla de carga: atractor de Lorenz dibujándose (js/ui/carga.js). Se va sola
-       apenas hay algo que mostrar. -->
+  <!-- Pantalla de arranque (js/ui/carga.js): solo al abrir la app. El atractor se
+       asienta en el logo; se va apenas hay algo que mostrar. -->
   <div id="carga" class="carga" role="status" aria-label="Cargando">
     <canvas class="carga__lienzo"></canvas>
   </div>
   <script src="js/lorenz.js"></script>
   <script src="js/ui/carga.js"></script>
+  <!-- Arriba solo el logo, la fecha y el tema. La navegación la arma
+       js/ui/navegacion.js: barra abajo en el celular, arriba en pantallas anchas. -->
   <header class="cabecera">
-    <h1><span class="marca" aria-hidden="true"></span>KODAMA</h1>
-    <nav class="enlaces-cabecera">
-      <a href="alumnos.html">Alumnos</a>
-      <a href="horario.html">Horario</a>
-      <a href="cobros.html">Cobros</a>
-      <a href="estadisticas.html">Estadísticas</a>
-      <a href="config.html">Configuración</a>
-      <button type="button" class="boton-tema fantasma">☾ Oscuro</button>
-    </nav>
+    <a class="logo" href="index.html"><span class="marca" aria-hidden="true"></span>KODAMA</a>
+    <p class="cabecera__fecha">
+      <span id="fecha" class="fecha" aria-live="polite"></span>
+      <span id="actualizando" class="actualizando" role="status" hidden>actualizando</span>
+    </p>
+    <button type="button" class="boton-tema fantasma">☾ Oscuro</button>
   </header>
+  <script src="js/ui/navegacion.js"></script>
 
   <main>
+    <h1 class="solo-lectores">KODAMA</h1>
+    <!-- Día y Semana se eligen en la navegación (abajo o arriba). -->
     <div class="barra-navegacion">
       <div class="navegacion">
         <button id="anterior" type="button" class="boton-barra" aria-label="Anterior">‹</button>
         <button id="ir-hoy" type="button" class="boton-barra">Hoy</button>
         <button id="siguiente" type="button" class="boton-barra" aria-label="Siguiente">›</button>
       </div>
-      <div class="selector-vista" role="group" aria-label="Vista">
-        <button id="modo-dia" type="button" class="boton-barra" aria-pressed="true">Día</button>
-        <button id="modo-semana" type="button" class="boton-barra" aria-pressed="false">Semana</button>
-      </div>
-    </div>
-    <div class="barra-dia">
-      <p class="fecha-y-estado">
-        <span id="fecha" class="fecha" aria-live="polite"></span>
-        <span id="actualizando" class="actualizando" role="status" hidden>actualizando</span>
-      </p>
       <label class="capas">
         <span class="capas__etiqueta">Capa</span>
         <select id="capa"></select>
@@ -216,6 +208,7 @@
   </dialog>
 
   <script src="js/fecha.js"></script>
+  <script src="js/medicion.js"></script>
   <script src="js/api.js"></script>
   <script src="js/state.js"></script>
   <script src="js/capas.js"></script>

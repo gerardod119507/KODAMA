@@ -70,16 +70,26 @@ document.getElementById('probar-malo').addEventListener('click', async function 
 document.getElementById('generar-horario').addEventListener('click', async function () {
   const resultadoHorario = document.getElementById('resultado-horario');
   resultadoHorario.textContent = 'Generando...';
+  const op = KodamaMedicion.empezar('generar');
   try {
     const respuesta = await KodamaApi.llamar(campoUrl.value, campoToken.value, 'generarHorario');
+    op.cerrarRed();
     if (!respuesta.ok) {
+      op.terminar(false);
       resultadoHorario.textContent = 'Error: ' + respuesta.error;
       return;
     }
     const datos = respuesta.data;
-    resultadoHorario.textContent = 'Listo: ' + datos.creados + ' creados, ' +
-      datos.actualizados + ' actualizados, ' + datos.archivados + ' archivados.';
+    op.render(function () {
+      resultadoHorario.textContent = 'Listo: ' + datos.creados + ' creados, ' +
+        datos.actualizados + ' actualizados, ' + datos.archivados + ' archivados.';
+    });
+    op.pintado().then(function () {
+      op.terminar(true);
+      KodamaRendimiento.pintar(); // la medición nueva ya se ve aquí mismo
+    });
   } catch (error) {
+    op.terminar(false);
     resultadoHorario.textContent = 'Error: ' + error.message;
   }
 });
@@ -160,3 +170,7 @@ document.getElementById('borrar-serie').addEventListener('click', async function
     resultadoSeries.textContent = 'Error: ' + error.message;
   }
 });
+
+// Configuración no espera datos: la pantalla de arranque (si la app se abrió
+// aquí) se va enseguida.
+KodamaCarga.listo();

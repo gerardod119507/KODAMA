@@ -128,8 +128,15 @@
     zona.hidden = false;
   }
 
+  // Medición: desde que se empezó a abrir la página hasta ver las gráficas
+  // (solo la primera carga; cambiar el rango después no es "abrir").
+  let apertura = KodamaMedicion.empezar('estadisticas', { desdeNavegacion: true });
+
   async function cargar() {
+    const op = apertura;
+    apertura = null;
     if (!KodamaEstadisticas.rangoValido(desde.value, hasta.value)) {
+      if (op) op.terminar(false);
       estado.textContent = 'Elige un rango válido: "desde" no puede ser posterior a "hasta".';
       zona.hidden = true;
       return;
@@ -142,12 +149,22 @@
         pedir('listarBloquesRango', { desde: anterior.desde, hasta: hasta.value }),
         KodamaAlumnos.cargar()
       ]);
-      if (numero !== carga) return; // llegó tarde: ya se pidió otro rango
+      if (op) op.cerrarRed();
+      if (numero !== carga) {
+        if (op) op.terminar(true);
+        return; // llegó tarde: ya se pidió otro rango
+      }
       bloques = datos[0];
       cargado = { desde: anterior.desde, hasta: hasta.value };
       estado.textContent = '';
-      pintar();
+      if (op) {
+        op.render(pintar);
+        op.pintado().then(function () { op.terminar(true); });
+      } else {
+        pintar();
+      }
     } catch (error) {
+      if (op) op.terminar(false);
       if (numero !== carga) return;
       estado.textContent = 'No se pudo cargar: ' + error.message;
     } finally {
