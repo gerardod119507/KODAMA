@@ -31,6 +31,17 @@ test('cada script, estilo e ícono que usa una página está guardado para usar 
   });
 });
 
+test('lo que usa el CSS (el símbolo de la marca y del sello de agua) también está guardado', () => {
+  const guardados = listaDelServiceWorker();
+  const css = fs.readFileSync(path.join(RAIZ, 'css', 'styles.css'), 'utf8');
+  const urls = [...css.matchAll(/url\("\.\.\/([^"]+)"\)/g)].map((m) => m[1]);
+  assert.ok(urls.length >= 2, 'el CSS usa el símbolo');
+  urls.forEach((u) => {
+    assert.ok(fs.existsSync(path.join(RAIZ, u)), 'no existe ' + u);
+    assert.ok(guardados.includes(u), 'el CSS usa ' + u + ', que falta en sw.js');
+  });
+});
+
 test('todo lo que lista el service worker existe', () => {
   listaDelServiceWorker().filter(Boolean).forEach((archivo) => {
     assert.ok(fs.existsSync(path.join(RAIZ, archivo)), 'no existe ' + archivo);
@@ -43,9 +54,9 @@ test('el manifest: nombre, pantalla completa, colores de la paleta e íconos 192
   assert.strictEqual(m.display, 'standalone');
   assert.strictEqual(m.start_url, './index.html');
   assert.strictEqual(m.background_color, '#F5F1E8');
-  assert.strictEqual(m.theme_color, '#16372B');
+  assert.strictEqual(m.theme_color, '#071743');
   const tamanios = m.icons.map((i) => i.sizes + (i.purpose ? ' ' + i.purpose : ''));
-  ['192x192', '512x512', '512x512 maskable'].forEach((t) => assert.ok(tamanios.includes(t), 'falta ícono ' + t));
+  ['48x48', '192x192', '512x512', '512x512 maskable'].forEach((t) => assert.ok(tamanios.includes(t), 'falta ícono ' + t));
   m.icons.forEach((i) => assert.ok(fs.existsSync(path.join(RAIZ, i.src)), 'no existe ' + i.src));
 });
 

@@ -8,7 +8,7 @@
  */
 const KodamaTema = (function () {
   const CLAVE = 'kodama.tema';
-  const COLOR_BARRA = { claro: '#F5F1E8', oscuro: '#0E1713' };
+  const COLOR_BARRA = { claro: '#F5F1E8', oscuro: '#070F28' };
   const sistema = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
   function guardado() {
