@@ -119,6 +119,7 @@ function generarHorario() {
         // regla, y no deben perderse al regenerar).
         bloque.titulo = regla.titulo;
         bloque.area = regla.area;
+        quitarDictadaFueraDeFractal(bloque); // la regla cambió de área
         bloque.tipo = 'fijo';
         bloque.inicio = regla.inicio;
         bloque.fin = regla.fin;

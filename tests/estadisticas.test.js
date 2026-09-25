@@ -179,9 +179,33 @@ test('comparar con el periodo anterior: actual, anterior y diferencia de cada to
 test('estado: vacío = programada; textos de la ficha', () => {
   const ej = cargar();
   assert.strictEqual(ej('KodamaClases.estado({})'), 'programada');
-  assert.strictEqual(ej('KodamaClases.textoEstado({ estado: "dictada" })'), 'Dictada');
+  assert.strictEqual(ej('KodamaClases.textoEstado({ estado: "dictada", area: "Academia Fractal" })'), 'Dictada');
   assert.strictEqual(ej('KodamaClases.textoEstado({ estado: "cancelada", motivo: "feriado" })'), 'Cancelada · feriado');
   assert.strictEqual(ej('KodamaClases.textoEstado({ estado: "cancelada", motivo: "" })'), 'Cancelada');
+});
+
+test('"dictada" solo en Academia Fractal: en otra área se lee programada (o movida)', () => {
+  const ej = cargar();
+  assert.strictEqual(ej('KodamaClases.puedeDictarse({ area: "Academia Fractal" })'), true);
+  ['Universidad', 'Startup', 'Personal'].forEach((area) => {
+    assert.strictEqual(ej('KodamaClases.puedeDictarse(__arg)', { area }), false);
+    assert.strictEqual(ej('KodamaClases.estado(__arg)', { area, estado: 'dictada' }), 'programada');
+    assert.strictEqual(ej('KodamaClases.estado(__arg)', { area, estado: 'dictada', fecha_original: '2026-09-24' }), 'movida');
+    assert.strictEqual(ej('KodamaClases.estado(__arg)', { area, estado: 'cancelada' }), 'cancelada', 'cancelar vale en todas');
+  });
+});
+
+test('una "dictada" de otra área no suma en ningún resumen de dictadas, pero sí en horas por área', () => {
+  const ej = cargar();
+  const r = calcular(ej, [
+    clase('2026-09-02', '15:00', '16:30', 'a1', 'dictada'),
+    clase('2026-09-03', '08:00', '10:00', '', 'dictada', { area: 'Universidad' }),
+    clase('2026-09-04', '08:00', '09:00', 'a2', 'dictada', { area: 'Startup' }) // alumno por error
+  ]);
+  assert.deepStrictEqual([r.totales.dictadas, r.totales.horas, r.totales.monto], [1, 1.5, 120]);
+  assert.deepStrictEqual(r.porAlumno.filter((f) => f.dictadas).map((f) => f.id), ['a1']);
+  assert.deepStrictEqual(r.porArea.filter((a) => a.horas).map((a) => [a.area, a.horas]),
+    [['Universidad', 2], ['Academia Fractal', 1.5], ['Startup', 1]]);
 });
 
 test('"movida del jue 24 al sáb 26", o solo la hora si fue el mismo día', () => {

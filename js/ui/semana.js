@@ -198,7 +198,7 @@ const KodamaSemana = (function () {
     }
     // Estado de la clase (Checkpoint 8): dictada lleva ✓; cancelada se ve
     // tenue y tachada. Nunca solo por color.
-    const estado = String(bloque.estado || '').trim() || 'programada';
+    const estado = KodamaClases.estado(bloque); // fuera de Fractal nunca "dictada"
     if (estado === 'dictada' || estado === 'cancelada') {
       boton.classList.add('bloque--' + estado);
     }

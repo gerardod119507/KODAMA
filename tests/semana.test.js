@@ -142,7 +142,7 @@ function cargarModulos(archivos) {
   };
 }
 
-const MODULOS_SEMANA = ['js/fecha.js', 'js/ui/iconos.js', 'js/ui/espiritu.js', 'js/ui/dia.js', 'js/ui/semana.js'];
+const MODULOS_SEMANA = ['js/fecha.js', 'js/clases.js', 'js/ui/iconos.js', 'js/ui/espiritu.js', 'js/ui/dia.js', 'js/ui/semana.js'];
 
 test('la semana va de lunes a domingo, desde cualquier día de ella', () => {
   const env = cargarModulos(['js/fecha.js']);

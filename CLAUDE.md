@@ -280,7 +280,11 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   programada, dictada, cancelada con motivo, volver), "movida" solo al
   mover, fecha/hora originales guardadas una vez, volver al original, una
   dictada movida sigue dictada, "Editar" no marca movida, el generador no
-  toca una clase movida, y token.
+  toca una clase movida, y token. **Dictada solo en Fractal:** rechazada
+  en las otras áreas (cancelar y mover siguen), una dictada que cambia de
+  área (Editar o su regla) vuelve a programada/movida, y la corrección de
+  datos (qué cambia, qué no, idempotente, y que corre sola una vez tras
+  el despliegue por la firma vieja).
 - `tests/pagos.test.js` — hoja `Pagos`: alta, validaciones (alumno,
   periodo, monto, estado, fechas), pagado sin fecha = hoy, edición
   parcial, archivar sin borrar, token.
@@ -289,7 +293,8 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   vez, sin duplicar, filas malas (ambiguo, futura, horas al revés, fecha
   mal escrita, sin alumno, repetida) sin frenar al resto.
 - `tests/estadisticas.test.js` — **cálculo de montos** (tarifa por
-  alumno, clase compartida, solo dictadas, sin tarifa, centavos),
+  alumno, clase compartida, solo dictadas, sin tarifa, centavos; una
+  "dictada" de otra área no suma, pero sí en horas por área),
   **estados** (qué suma y qué no, movida+dictada, textos de la ficha,
   "movida del jue 24 al sáb 26") y **rango de fechas** (extremos, área,
   periodo anterior cruzando mes/año, bisiesto), más el resumen mensual de
@@ -406,6 +411,21 @@ Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
     archivada): si no, al regenerar la devolvería a su día original.
   - Cancelada no suma horas ni monto, y su horario queda libre: no lleva
     borde de superposición ni casilla "ocupado" en otras capas.
+  - **`dictada` solo existe en Academia Fractal** (sirve para cobrar; en
+    Universidad, Startup y Personal no se dicta nada). `cambiarEstadoBloque`
+    rechaza `dictada` en otra área (`dictada_solo_fractal`); **cancelar y
+    mover valen en todas las áreas**. Si una dictada pasa a otra área
+    (con "Editar" o porque su regla cambió de área), vuelve a programada
+    (o a movida si se había movido) — `quitarDictadaFueraDeFractal()` en
+    Bloques.gs. En el navegador, `KodamaClases.estado()` aplica la misma
+    regla, así un dato viejo o una semana guardada en el dispositivo nunca
+    muestra ✓ ni suma fuera de Fractal.
+  - **Corrección de datos (una vez):** las dictadas de otras áreas que
+    había en la hoja vuelven a programada (o movida) con
+    `corregirDictadasFueraDeFractal()`, que corre dentro de
+    `asegurarEstructura()`. `VERSION_DATOS` (Code.gs) es parte de la
+    firma de la estructura: subirla en 1 hace que una corrección nueva
+    corra sola en la primera petición después del despliegue.
 
 ### Hoja `Horario` (Checkpoint 4)
 Columnas: `id`, `título`, `área`, `días`, `inicio`, `fin`, `desde`, `hasta`,
@@ -648,7 +668,8 @@ los alumnos que lo tenían.
 ## Estado de clases, cobros y estadísticas (Checkpoint 8)
 
 - **Ficha** (`js/ui/ficha.js`): muestra el estado ("✓ Dictada", "✕
-  Cancelada · feriado", "↷ Movida") y, si se movió, "Movida del jue 24 al
+  Cancelada · feriado", "↷ Movida"; "Marcar dictada" solo en Academia
+  Fractal, "Cancelar clase" en todas las áreas) y, si se movió, "Movida del jue 24 al
   sáb 26" (o "Movida de 15:00 a 17:00 (jue 24)" si solo cambió la hora;
   `KodamaClases.textoMovida`). **"Marcar dictada" es un solo toque**: guarda
   y cierra la ficha. "Cancelar clase" abre un campo de motivo opcional y
@@ -795,7 +816,8 @@ con el código, el código manda:
 - `archivarBloque` — parámetro `id`. Marca `archivado = TRUE`. Nunca borra.
 - `cambiarEstadoBloque` — `id`, `estado` (`programada` | `dictada` |
   `cancelada`; `movida` no se elige) y `motivo` opcional (solo cuenta si
-  es `cancelada`). Devuelve el bloque.
+  es `cancelada`). `dictada` solo en Academia Fractal (si no,
+  `dictada_solo_fractal`). Devuelve el bloque.
 - `moverBloque` — `id`, `fecha`, `inicio`, `fin`. Guarda el original la
   primera vez y marca `movida` (ver "Estado de la clase"). Devuelve el
   bloque.
