@@ -16,6 +16,7 @@
     enlace.textContent = 'Configurar';
     aviso.appendChild(enlace);
     lista.appendChild(aviso);
+    KodamaCarga.listo();
     return;
   }
 
@@ -268,4 +269,5 @@
 
   KodamaAlumnos.cargar().catch(function () { /* sin conexión: quedan los guardados */ });
   await cargar();
+  KodamaCarga.listo();
 })();

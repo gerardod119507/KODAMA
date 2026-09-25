@@ -11,6 +11,7 @@
     enlace.href = 'config.html';
     enlace.textContent = 'Configurar';
     estado.appendChild(enlace);
+    KodamaCarga.listo();
     return;
   }
 
@@ -210,10 +211,13 @@
   // Lo guardado en el dispositivo se ve al instante; después se actualiza.
   KodamaAlumnos.alCambiar(pintarTodo);
   pintarTodo();
-  if (KodamaAlumnos.actual().alumnos.length === 0) estado.textContent = 'Cargando...';
+  const habiaGuardados = KodamaAlumnos.actual().alumnos.length > 0;
+  if (habiaGuardados) KodamaCarga.listo(); // lo guardado ya se ve
+  else estado.textContent = 'Cargando...';
   try {
     await KodamaAlumnos.cargar();
   } catch (error) {
     estado.textContent = 'No se pudo actualizar (' + error.message + '). Se muestra lo guardado en este dispositivo.';
   }
+  KodamaCarga.listo();
 })();

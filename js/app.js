@@ -18,6 +18,7 @@
     // salta solo a Configuración: la app no debe cambiar de página sin que
     // Gerardo lo pida.
     KodamaDia.renderSinConfiguracion(contenedor);
+    KodamaCarga.listo();
     return;
   }
 
@@ -98,6 +99,9 @@
   }
 
   function renderizar() {
+    // Apenas hay algo que mostrar (lo guardado o lo que llegó), la pantalla
+    // de carga se va: nunca demora la app.
+    KodamaCarga.listo();
     const capa = selectorCapa.value;
     // En una capa filtrada, los bloques de otras áreas se dibujan como
     // "ocupado" en su misma posición (por eso se pasan todos).
@@ -175,6 +179,7 @@
         avisoOffline.hidden = false; // se ve lo guardado; no se pudo actualizar
       } else {
         avisoOffline.hidden = true;
+        KodamaCarga.listo();
         KodamaDia.renderError(contenedor,
           'No se pudo cargar (' + err.message + ') y no hay nada guardado de estas fechas sin conexión.');
       }
