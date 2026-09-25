@@ -64,6 +64,8 @@
 
   /* Movimiento */
   --duracion-rapida: 150ms;
+  /* Barra de navegación de abajo (celular), sin contar el área segura. */
+  --alto-barra: 3.75rem;
   --duracion-base: 220ms;
   --curva: ease-out;
 }
@@ -110,6 +112,9 @@
 body {
   margin: 0;
   min-height: 100vh;
+  /* Celular acostado: que nada quede bajo el notch. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   background: var(--bg);
   color: var(--fg);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -133,42 +138,58 @@ h2 {
   margin: 0 0 var(--espacio-2);
 }
 
+/* Encabezado: solo el logo, la fecha y el tema (la navegación va abajo
+   en el celular; en pantallas anchas se suma arriba, ver más abajo).
+   env(safe-area-inset-*): el notch y los bordes redondeados del celular
+   (con viewport-fit=cover; en el resto de los casos valen 0). */
 .cabecera {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "logo tema" "fecha fecha";
   align-items: center;
-  justify-content: space-between;
-  gap: var(--espacio-3);
+  gap: 0 var(--espacio-3);
   max-width: 34rem;
   margin: 0 auto;
-  padding: var(--espacio-5) var(--espacio-5) 0;
+  padding: calc(var(--espacio-4) + env(safe-area-inset-top)) var(--espacio-5) 0;
 }
 
-.enlace-config {
-  color: var(--fg);
-  font-size: var(--texto-sm);
-  opacity: 0.75;
-  text-decoration: none;
-}
-
-.enlace-config:hover,
-.enlace-config:focus-visible {
-  opacity: 1;
-}
-
-.barra-dia {
+.logo {
+  grid-area: logo;
+  justify-self: start;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--espacio-2) var(--espacio-3);
-  margin-bottom: var(--espacio-4);
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  color: var(--fg);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.fecha-y-estado {
+.cabecera .boton-tema {
+  grid-area: tema;
+}
+
+.cabecera__fecha {
+  grid-area: fecha;
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--espacio-2);
   margin: 0;
+}
+
+.titulo-pagina {
+  margin: 0 0 var(--espacio-3);
+}
+
+/* Solo para lectores de pantalla (el título de la vista principal). */
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .fecha {
@@ -386,8 +407,8 @@ ul {
 
 .acciones-flotantes {
   position: fixed;
-  right: var(--espacio-4);
-  bottom: var(--espacio-4);
+  right: calc(var(--espacio-4) + env(safe-area-inset-right));
+  bottom: calc(var(--espacio-4) + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: var(--espacio-2);
@@ -494,25 +515,6 @@ dialog textarea {
 
 /* Editor de reglas del horario */
 
-.enlaces-cabecera {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--espacio-1) var(--espacio-3);
-}
-
-.enlaces-cabecera a {
-  color: var(--fg);
-  font-size: var(--texto-sm);
-  opacity: 0.75;
-  text-decoration: none;
-}
-
-.enlaces-cabecera a:hover,
-.enlaces-cabecera a:focus-visible {
-  opacity: 1;
-}
-
 #lista-reglas {
   display: flex;
   flex-direction: column;
@@ -553,7 +555,7 @@ main {
   padding-bottom: 6rem;
 }
 
-/* Barra de navegación (anterior / Hoy / siguiente + Día / Semana) */
+/* Barra de la vista principal (anterior / Hoy / siguiente + capa) */
 
 .barra-navegacion {
   display: flex;
@@ -564,8 +566,7 @@ main {
   margin-bottom: var(--espacio-3);
 }
 
-.navegacion,
-.selector-vista {
+.navegacion {
   display: flex;
   gap: var(--espacio-1);
 }
@@ -583,14 +584,6 @@ main {
 .boton-barra:focus-visible {
   outline: 2px solid var(--fg);
   outline-offset: 2px;
-}
-
-/* El modo activo se marca con relleno Y con peso de letra, no solo color. */
-.selector-vista .boton-barra[aria-pressed="true"] {
-  color: var(--acento-texto);
-  background: var(--acento-fondo);
-  border-color: var(--acento-fondo);
-  font-weight: 600;
 }
 
 /* En modo semana la página usa todo el ancho del escritorio. */
@@ -1626,13 +1619,6 @@ button.cobro {
 /* El símbolo junto al título: la versión simplificada (a este tamaño las
    curvas finas desaparecen), pintada con el color del texto vía máscara,
    así se invierte sola con el tema. */
-/* El título con su marca en una sola línea (en el celular el menú ocupa lugar). */
-.cabecera h1 {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
 .marca {
   display: inline-block;
   flex: none;
@@ -1730,4 +1716,270 @@ button.cobro {
   padding-left: var(--espacio-5);
   font-size: var(--texto-sm);
   font-variant-numeric: tabular-nums;
+}
+
+/* --- Navegación: barra de abajo (celular), hoja "Más" y arriba (ancho) --- */
+
+.nav__icono {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.barra-inferior {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--bg);
+  border-top: 1px solid var(--borde);
+}
+
+.barra-inferior__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-0);
+  min-height: var(--alto-barra);
+  margin: 0;
+  padding: var(--espacio-1) 0;
+  font: inherit;
+  font-size: var(--texto-xs);
+  line-height: 1.2;
+  color: var(--fg);
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+/* El ícono va dentro de una "píldora": rellena en el activo. */
+.barra-inferior__item .nav__icono {
+  box-sizing: content-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: var(--espacio-0) var(--espacio-4);
+  border-radius: 999px;
+  transition: background var(--duracion-rapida) var(--curva);
+}
+
+.barra-inferior__item:active {
+  transform: none;
+}
+
+.barra-inferior__item:active .nav__icono {
+  background: var(--superficie);
+}
+
+/* Activo: píldora rellena + letra gruesa (nunca solo el color). */
+.barra-inferior__item[aria-current="page"] {
+  opacity: 1;
+  font-weight: 700;
+}
+
+.barra-inferior__item[aria-current="page"] .nav__icono {
+  color: var(--acento-texto);
+  background: var(--acento-fondo);
+}
+
+.barra-inferior__item:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: -4px;
+}
+
+/* Con la barra, el contenido y el botón + quedan por encima de ella. */
+body.con-barra-inferior {
+  padding-bottom: calc(var(--alto-barra) + env(safe-area-inset-bottom));
+}
+
+body.con-barra-inferior .acciones-flotantes {
+  bottom: calc(var(--alto-barra) + env(safe-area-inset-bottom) + var(--espacio-3));
+}
+
+/* Hoja "Más": sube desde abajo; se cierra tocando afuera, con ✕, con
+   Escape o deslizándola hacia abajo (js/ui/navegacion.js). */
+dialog.hoja {
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: 34rem;
+  max-height: none;
+  margin: 0 auto;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-bottom: 0;
+  border-radius: var(--radio-lg) var(--radio-lg) 0 0;
+  background: var(--fondo-dialogo);
+  color: var(--fg);
+  touch-action: none;
+  animation: hoja-sube var(--duracion-base) var(--curva);
+  transition: transform var(--duracion-base) var(--curva);
+}
+
+dialog.hoja::backdrop {
+  background: rgba(7, 15, 40, 0.45);
+}
+
+.hoja--arrastrando {
+  transition: none !important;
+}
+
+.hoja--cerrando {
+  transform: translateY(100%) !important;
+}
+
+@keyframes hoja-sube {
+  from { transform: translateY(100%); }
+}
+
+.hoja__contenido {
+  position: relative;
+  padding: var(--espacio-2) var(--espacio-4) calc(var(--espacio-4) + env(safe-area-inset-bottom));
+}
+
+.hoja__agarradera {
+  width: 2.5rem;
+  height: var(--espacio-1);
+  margin: 0 auto var(--espacio-4);
+  border-radius: 999px;
+  background: var(--borde);
+}
+
+.hoja__cerrar {
+  position: absolute;
+  top: var(--espacio-1);
+  right: var(--espacio-2);
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: 0;
+}
+
+.hoja__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  padding-top: var(--espacio-3);
+}
+
+.hoja__item {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  min-height: 3.25rem;
+  padding: 0 var(--espacio-3);
+  border-radius: var(--radio-md);
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.hoja__item .nav__icono {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.hoja__item:active {
+  background: var(--superficie);
+}
+
+.hoja__item[aria-current="page"] {
+  color: var(--acento-texto);
+  background: var(--acento-fondo);
+  font-weight: 700;
+}
+
+/* Arriba: solo en pantallas anchas. */
+.nav-arriba {
+  display: none;
+}
+
+@media (min-width: 700px) {
+  .barra-inferior,
+  dialog.hoja {
+    display: none;
+  }
+
+  body.con-barra-inferior {
+    padding-bottom: 0;
+  }
+
+  body.con-barra-inferior .acciones-flotantes {
+    bottom: calc(var(--espacio-4) + env(safe-area-inset-bottom));
+  }
+
+  .cabecera {
+    max-width: 64rem;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "logo nav tema" "fecha fecha fecha";
+  }
+
+  .nav-arriba {
+    grid-area: nav;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--espacio-1) var(--espacio-3);
+  }
+
+  .nav-arriba__grupo {
+    display: flex;
+    gap: var(--espacio-1);
+  }
+
+  /* Dos grupos: lo de todos los días | lo demás. */
+  .nav-arriba__grupo + .nav-arriba__grupo {
+    padding-left: var(--espacio-3);
+    border-left: 1px solid var(--borde);
+  }
+
+  .nav-arriba__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-1);
+    min-height: 2.5rem;
+    padding: 0 var(--espacio-2);
+    color: var(--fg);
+    font-size: var(--texto-sm);
+    text-decoration: none;
+    opacity: 0.8;
+    border-bottom: 2px solid transparent;
+  }
+
+  .nav-arriba__item .nav__icono {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .nav-arriba__item:hover,
+  .nav-arriba__item:focus-visible {
+    opacity: 1;
+  }
+
+  /* Activo: subrayado grueso + letra gruesa (nunca solo el color). */
+  .nav-arriba__item[aria-current="page"] {
+    opacity: 1;
+    font-weight: 700;
+    border-bottom-color: currentColor;
+  }
+}
+
+/* Entre 700 y 1099px la lista no entra al lado del logo: va en su fila. */
+@media (min-width: 700px) and (max-width: 1099px) {
+  .cabecera {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "logo tema" "nav nav" "fecha fecha";
+  }
+
+  .nav-arriba {
+    justify-content: flex-start;
+    margin: var(--espacio-2) 0;
+  }
 }

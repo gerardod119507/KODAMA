@@ -20,6 +20,12 @@ const KodamaVista = (function () {
     return anchoPantalla >= ANCHO_ESCRITORIO ? 'semana' : 'dia';
   }
 
+  /** "#semana" → 'semana'; "#dia" → 'dia'; cualquier otra cosa → null. */
+  function desdeHash(hash) {
+    const modo = String(hash || '').replace(/^#/, '');
+    return MODOS.indexOf(modo) !== -1 ? modo : null;
+  }
+
   function guardar(modo) {
     try {
       localStorage.setItem(CLAVE, modo);
@@ -59,6 +65,7 @@ const KodamaVista = (function () {
   return {
     MODOS: MODOS,
     leer: leer,
+    desdeHash: desdeHash,
     guardar: guardar,
     rangoCompleto: rangoCompleto,
     ajustarRango: ajustarRango,

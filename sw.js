@@ -27,6 +27,7 @@ const ARCHIVOS = [
   './js/tema.js',
   './js/lorenz.js',
   './js/ui/carga.js',
+  './js/ui/navegacion.js',
   './js/pwa.js',
   './js/fecha.js',
   './js/medicion.js',

@@ -4,8 +4,6 @@
   const avisoOffline = document.getElementById('aviso-offline');
   const indicadorActualizando = document.getElementById('actualizando');
   const selectorCapa = document.getElementById('capa');
-  const botonDia = document.getElementById('modo-dia');
-  const botonSemana = document.getElementById('modo-semana');
   const barraRango = document.getElementById('barra-rango');
   const rangoDesde = document.getElementById('rango-desde');
   const rangoHasta = document.getElementById('rango-hasta');
@@ -35,7 +33,14 @@
   selectorCapa.value = KodamaCapas.leer();
   KodamaState.limpiarCachesViejas();
 
-  let modo = KodamaVista.leer(window.innerWidth);
+  // index.html#dia / #semana (desde la navegación de otra pantalla) manda;
+  // si no, lo último elegido en este dispositivo.
+  const pedido = KodamaVista.desdeHash(window.location.hash);
+  let modo = pedido || KodamaVista.leer(window.innerWidth);
+  if (pedido) {
+    KodamaVista.guardar(modo);
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
   // Días visibles en la semana (0 = lunes … 6 = domingo).
   let rango = KodamaVista.rangoCompleto();
   // Día que se ve (modo día) o cualquier día de la semana que se ve.
@@ -88,8 +93,7 @@
 
   function pintarEncabezado() {
     document.body.classList.toggle('modo-semana', modo === 'semana');
-    botonDia.setAttribute('aria-pressed', String(modo === 'dia'));
-    botonSemana.setAttribute('aria-pressed', String(modo === 'semana'));
+    KodamaNavegacion.marcar(modo);
     barraRango.hidden = modo !== 'semana';
     if (modo === 'dia') {
       encabezadoFecha.textContent = KodamaFecha.legible(fecha);
@@ -307,8 +311,8 @@
     mostrarFecha();
   }
 
-  botonDia.addEventListener('click', function () { cambiarModo('dia'); });
-  botonSemana.addEventListener('click', function () { cambiarModo('semana'); });
+  // Día y Semana de la navegación cambian el modo aquí mismo, sin recargar.
+  KodamaNavegacion.alElegirModo(cambiarModo);
   document.getElementById('anterior').addEventListener('click', function () { mover(-1); });
   document.getElementById('siguiente').addEventListener('click', function () { mover(1); });
   document.getElementById('ir-hoy').addEventListener('click', function () {

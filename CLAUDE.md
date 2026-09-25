@@ -317,6 +317,11 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   distinto y que la figura entre en pantalla. `tests/contraste.test.js`
   suma el sello de agua (el texto encima sigue en 4,5:1) y
   `tests/pwa.test.js` los archivos que usa el CSS (el símbolo).
+- `tests/navegacion.test.js` — navegación: destinos de abajo y de
+  "Más" (con ícono y página existente), qué queda activo en cada pantalla,
+  `#dia`/`#semana`, que cada página tenga arriba solo logo, fecha y tema
+  y cargue la navegación justo después, título y fecha de hoy en las
+  demás, y el área segura.
 - `tests/medicion.test.js` — medición de rendimiento con reloj falso:
   red y servidor de una llamada, red/render/total/resto de una operación,
   dos llamadas en paralelo cuentan una vez, `cerrarRed`, "vista" de la
@@ -917,6 +922,40 @@ POST, se muestra error y no se guarda nada localmente. No hay cola offline
 ni sincronización diferida en el MVP: se agrega complejidad (conflictos,
 reintentos) que no se justifica para un uso personal.
 
+## Navegación
+
+Arriba (`<header class="cabecera">`, igual en las 6 páginas) queda **solo
+el logo, la fecha y el botón de tema**. En la principal la fecha es el
+día o la semana que se ve (con "actualizando"); en las demás, la de hoy
+(`data-fecha-hoy`). Cada pantalla que no es la principal lleva su título
+(`h1.titulo-pagina`) al comienzo de `<main>`.
+
+`js/ui/navegacion.js` (`KodamaNavegacion`) se carga **justo después del
+encabezado** (sin esperar al resto de la página, para que no haya salto)
+y arma la navegación con una sola lista de destinos:
+
+- **Celular (menos de 700px):** barra fija abajo con **Día, Semana,
+  Alumnos y Más**. "Más" abre una **hoja que sube desde abajo** con
+  Horario, Cobros, Estadísticas y Configuración; se cierra tocando
+  afuera, con ✕, con Escape o deslizándola hacia abajo (un toque de
+  menos de 8px sigue siendo un toque). El botón `+` queda arriba de la
+  barra.
+- **Pantallas anchas (700px o más):** la misma lista arriba, en dos grupos
+  (Día, Semana, Alumnos | Horario, Cobros, Estadísticas, Configuración);
+  entre 700 y 1099px va en su propia fila, debajo del logo.
+- **Activo:** `aria-current="page"` y, a la vista, píldora rellena (abajo)
+  o subrayado grueso (arriba) + letra gruesa; nunca solo el color. En las
+  pantallas de "Más", "Más" queda encendido.
+- **Día y Semana:** en la principal cambian el modo sin recargar
+  (`app.js` registra `alElegirModo`); desde otra pantalla van a
+  `index.html#dia` / `#semana` (`KodamaVista.desdeHash`), que se guarda y
+  se limpia de la dirección. Por eso ya no hay botones Día/Semana en la
+  barra de la vista.
+- **Área segura:** `viewport-fit=cover` en todas las páginas y
+  `env(safe-area-inset-*)` en el encabezado (arriba), la barra y la hoja
+  (abajo), el `+` y los costados (celular acostado).
+- Íconos en SVG propio, trazos simples con el color del texto.
+
 ## Medición de rendimiento
 
 Sin mediciones, optimizar es adivinar. `js/medicion.js` (`KodamaMedicion`)
@@ -1001,8 +1040,8 @@ etiqueta. Si el día no tiene ningún bloque, se ve el estado vacío con la
 mascota. Antes (hasta el Checkpoint 6.5) el día era una lista de tarjetas
 apiladas, sin eje de horas.
 
-`index.html` tiene dos modos, **Día** y **Semana** (`js/vista.js`). La
-elección se guarda en `localStorage` (`kodama.vista`); si nunca se eligió,
+`index.html` tiene dos modos, **Día** y **Semana** (`js/vista.js`), que se
+eligen en la navegación (ver "Navegación"). La elección se guarda en `localStorage` (`kodama.vista`); si nunca se eligió,
 una pantalla de 900px o más arranca en semana y el celular en día.
 
 - **Navegación:** `‹` / `›` mueven 1 día en modo día y 7 días en modo
@@ -1292,6 +1331,7 @@ KODAMA/
 │       ├── horas.js               # conecta inicio/fin/área/tipo de un formulario
 │       ├── dias.js                # botones Lun–Dom
 │       ├── carga.js               # pantalla de carga: el atractor dibujándose
+│       ├── navegacion.js          # barra de abajo, hoja "Más" y navegación de arriba
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
 ├── academia-fractal-logo.png  # el logo original (fuente del símbolo)

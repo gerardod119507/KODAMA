@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>KODAMA — Conexión</title>
   <link rel="stylesheet" href="css/styles.css" />
   <meta name="theme-color" content="#F5F1E8" />
@@ -16,21 +16,20 @@
   <meta name="apple-mobile-web-app-title" content="KODAMA" />
   <script src="js/tema.js"></script>
 </head>
-<body>
+<body data-pagina="config">
   <!-- Sello de agua: el símbolo de Academia Fractal, grande y muy tenue, detrás de todo. -->
   <div class="sello" aria-hidden="true"></div>
+  <!-- Arriba solo el logo, la fecha y el tema. La navegación la arma
+       js/ui/navegacion.js: barra abajo en el celular, arriba en pantallas anchas. -->
   <header class="cabecera">
-    <h1><span class="marca" aria-hidden="true"></span>Configuración</h1>
-    <nav class="enlaces-cabecera">
-      <a href="index.html">Día</a>
-      <a href="alumnos.html">Alumnos</a>
-      <a href="cobros.html">Cobros</a>
-      <a href="estadisticas.html">Estadísticas</a>
-      <button type="button" class="boton-tema fantasma">☾ Oscuro</button>
-    </nav>
+    <a class="logo" href="index.html"><span class="marca" aria-hidden="true"></span>KODAMA</a>
+    <p class="cabecera__fecha"><span class="fecha" data-fecha-hoy></span></p>
+    <button type="button" class="boton-tema fantasma">☾ Oscuro</button>
   </header>
+  <script src="js/ui/navegacion.js"></script>
 
   <main>
+    <h1 class="titulo-pagina">Configuración</h1>
     <h2>Conexión</h2>
     <p id="bienvenida" class="nota" hidden>
       Primera vez: pega aquí la URL del Web App y el token del Checkpoint 2.
