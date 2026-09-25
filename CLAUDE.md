@@ -306,6 +306,12 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   `css/styles.css`, en claro y en oscuro: texto 4,5:1 (también sobre los
   diálogos y el botón principal), áreas y "ocupado" 3:1, y ninguna
   opacidad de texto por debajo de 0,75.
+- `tests/lorenz.test.js` — Checkpoint 10: las ecuaciones de Lorenz,
+  Runge-Kutta (paso grueso = pasos finos), que la trayectoria se quede en
+  el atractor y recorra las dos alas, que cada carga arranque de un punto
+  distinto y que la figura entre en pantalla. `tests/contraste.test.js`
+  suma el sello de agua (el texto encima sigue en 4,5:1) y
+  `tests/pwa.test.js` los archivos que usa el CSS (el símbolo).
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -719,8 +725,8 @@ los alumnos que lo tenían.
   destello): botón "☾ Oscuro / ☀ Claro" en el encabezado de todas las
   pantallas. Sin elegir, sigue al sistema; lo elegido se recuerda en el
   dispositivo (`kodama.tema`). Tokens `--acento-fondo/--acento-texto`
-  (botón principal: forest en claro, **bone en oscuro**, porque forest casi
-  no se ve sobre #0E1713), `--fondo-dialogo` y `color-scheme` para que los
+  (botón principal: marino en claro, **hueso en oscuro**, porque un botón
+  marino casi no se ve sobre el fondo marino oscuro), `--fondo-dialogo` y `color-scheme` para que los
   controles nativos (fecha, hora, listas) también se vean oscuros. La
   mascota usa `--fg`/`--bg`, así se invierte con el tema.
 - **Contraste**: verificado de dos formas. `tests/contraste.test.js` sobre
@@ -1017,16 +1023,26 @@ bloques que se pisan se siguen dibujando lado a lado (`distribuir()` en
 
 ## Paleta y tema
 
-| Uso | Color |
-|---|---|
-| Forest (marca) | `#16372B` |
-| Bone (marca) | `#F5F1E8` |
-| Fondo oscuro | `#0E1713` |
-| Universidad | `#245A8D` |
-| Academia Fractal | `#8A5A00` |
-| Startup | `#6650A4` |
-| Personal | `#476A54` |
-| Reunión (tipo, no área) | `#9D3D2E` (oscuro: `#D86C5A`) |
+Desde el Checkpoint 10 **predomina el azul marino del logo de Academia
+Fractal** (antes era verde bosque `#16372B`).
+
+| Uso | Claro | Oscuro |
+|---|---|---|
+| Marino (marca, `--marino`) — texto y acentos en claro | `#071743` | — |
+| Hueso (marca, `--bone`) — fondo en claro, texto en oscuro | `#F5F1E8` | `#F5F1E8` |
+| Fondo | `#F5F1E8` | `#070F28` (marino muy oscuro) |
+| Fondo de diálogos | `#F5F1E8` | `#101A3A` |
+| Universidad | `#245A8D` | `#5A9BE0` |
+| Academia Fractal | `#8A5A00` | `#C98A1E` |
+| Startup | `#6650A4` | `#9A88D0` |
+| Personal | `#476A54` | `#6FA383` |
+| Reunión (tipo, no área) | `#9D3D2E` | `#E07A68` |
+
+El marino `#071743` se **midió** en el núcleo de los trazos del logo (los
+bordes de las líneas son más claros por el suavizado). En oscuro, cada área
+es el mismo tono más luminoso: todas pasan 5,5:1 sobre el fondo y sobre los
+diálogos. Texto marino sobre hueso da 15,4:1; hueso sobre el fondo oscuro,
+16,8:1.
 
 Todo color de área/tipo debe combinarse con un **ícono o borde**, nunca ser
 el único indicador (accesibilidad para daltonismo). Verificar contraste
@@ -1038,10 +1054,11 @@ claro y oscuro.
 Se aplica **desde el Checkpoint 3 en adelante** (el esqueleto del
 Checkpoint 1 es intencionalmente básico).
 
-- **Identidad:** de bosque, orgánica, sobria, cálida. Nada infantil ni de
-  plantilla genérica. La paleta de arriba ya apunta ahí; el resto del diseño
-  (tipografía, espaciado, formas) debe sostener esa sensación, no
-  contradecirla con componentes genéricos de "dashboard".
+- **Identidad (Checkpoint 10):** azul marino y el **atractor de Lorenz**
+  del logo de Academia Fractal. Sobria, precisa, con el orden dentro del
+  caos como idea. Esquinas redondeadas y tipografía, como estaban. Nada de
+  componentes genéricos de "dashboard". (Hasta el Checkpoint 9 era de
+  bosque, verde; el espíritu del bosque sigue solo en el estado vacío.)
 - **Mascota:** un espíritu del bosque **original** de KODAMA — inspirado en
   el imaginario de espíritus del bosque, pero con diseño propio, sin copiar
   el estilo de Ghibli. Ilustración en **SVG propio** (nunca una imagen
@@ -1076,6 +1093,43 @@ Checkpoint 1 es intencionalmente básico).
   definido arriba, se repite aquí porque aplica también a la mascota y sus
   estados).
 
+**Símbolo e íconos (Checkpoint 10):** el logo que subió Gerardo está en
+`academia-fractal-logo.png` (raíz). Se usa **solo el símbolo** (la
+circunferencia abierta, el atractor, la línea y los puntos), sin las
+palabras. Se vectorizó **midiendo** el PNG en Chromium, no a ojo: círculo
+ajustado por mínimos cuadrados (centro, radio, dónde se abre), puntos y
+línea por sus centroides, y los 4 lazos del ala izquierda siguiendo la
+"cresta" oscura de cada trazo píxel a píxel. El ala derecha corre pegada a
+la línea diagonal y no se puede seguir así: se armó con una transformación
+(afín, por lazo, con el punto central fijo) del ala izquierda, ajustada a
+los tramos que sí se leen (error mediano 1–2 px sobre 1254 px). Los trazos
+llegan al punto central afinándose, como en el logo.
+- `icons/simbolo.svg` — completo (sello de agua).
+- `icons/simbolo-chico.svg` — **simplificado para 48 px o menos**: un lazo
+  por ala y trazos 4–6 veces más gruesos (las curvas finas desaparecen).
+  Es la marca del encabezado y el favicon.
+- `icons/icono.svg` (favicon), `icono-grande.svg` (192/512) e
+  `icono-maskable.svg` (con margen para la zona segura de Android): símbolo
+  hueso sobre marino. Los PNG (`favicon-16/32`, `icono-48/192/512`,
+  `icono-maskable-512`, `apple-touch-icon`) salen de esos SVG con el
+  Chromium de las pruebas.
+- **Marca del encabezado** (`.marca`) y **sello de agua** (`.sello`): el SVG
+  como **máscara CSS** pintada con `--fg`, así cambian solos con el tema.
+  El sello es fijo, grande (92 % del lado corto, hasta 44rem), `z-index:
+  -1` (detrás de todo; los bloques tienen fondo opaco y lo tapan) y muy
+  tenue (`--sello-opacidad`: 4,5 % claro, 6 % oscuro).
+
+**Pantalla de carga (Checkpoint 10):** `js/lorenz.js` (las ecuaciones,
+Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js` (canvas). El
+atractor se dibuja en tiempo real desde un **punto inicial al azar** (cada
+carga es distinta); tres esferas recorren la trayectoria ya dibujada a
+distinta velocidad, con estela. Con `prefers-reduced-motion` se dibuja la
+figura completa, quieta. **No demora la app**: cada pantalla llama a
+`KodamaCarga.listo()` apenas tiene algo que mostrar (con la semana ya
+guardada, enseguida: ~0,4 s con la red tardando 2,5 s en la prueba) y se
+desvanece en 250 ms; si algo falla, se va sola a los 8 s. Está en todas
+las pantallas con datos (no en Configuración).
+
 **Bocetos de la mascota:** propuestos en `js/ui/espiritu.js` (`dormidoA` /
 `dormidoB`), visibles en el estado vacío de la vista de día mientras no haya
 una elección de Gerardo. Solo existe el estado **dormido** por ahora; los
@@ -1089,10 +1143,10 @@ datos distintos, ninguno solo por color.
 
 **Contraste de los colores de área en modo oscuro:** los 5 valores de la
 paleta, usados como relleno de ícono, no llegan a 3:1 (mínimo WCAG para
-elementos gráficos) sobre el fondo oscuro `#0E1713` — el peor caso,
-Universidad, da 2.54:1. `css/styles.css` define variantes más claras (mismo
-matiz, más luminosidad) solo bajo `[data-theme="dark"]`, todas por encima de
-4.5:1. En modo claro se usan los valores de la paleta sin cambios (ya dan
+elementos gráficos) sobre un fondo oscuro. `css/styles.css` define
+variantes más claras (mismo matiz, más luminosidad) solo bajo
+`[data-theme="dark"]`; desde el Checkpoint 10, sobre el marino oscuro
+`#070F28`, todas por encima de 5,5:1 (ver la tabla de la paleta). En modo claro se usan los valores de la paleta sin cambios (ya dan
 5.2–6.4:1 sobre `bone`). Desde el Checkpoint 9 el modo oscuro se activa
 con el botón de tema de cada pantalla (ver "Formularios prácticos, tema y
 PWA").
@@ -1160,6 +1214,7 @@ KODAMA/
 │   ├── plantillas.js            # plantillas de bloques (+ copia en el dispositivo)
 │   ├── tema.js                  # tema claro/oscuro, en el <head> de cada página
 │   ├── pwa.js                   # registra el service worker
+│   ├── lorenz.js                # ecuaciones del atractor de Lorenz (lógica pura)
 │   └── ui/
 │       ├── dia.js                # vista de día (grilla de una columna) y estados vacío/carga/error
 │       ├── semana.js             # grilla de semana: días × horas
@@ -1169,9 +1224,11 @@ KODAMA/
 │       ├── graficas.js            # barras horizontales en SVG propio
 │       ├── horas.js               # conecta inicio/fin/área/tipo de un formulario
 │       ├── dias.js                # botones Lun–Dom
+│       ├── carga.js               # pantalla de carga: el atractor dibujándose
 │       ├── iconos.js              # formas SVG por tipo de bloque
 │       └── espiritu.js            # bocetos SVG de la mascota
-├── icons/                   # íconos PWA (icono.svg es la fuente; los PNG salen de ahí)
+├── academia-fractal-logo.png  # el logo original (fuente del símbolo)
+├── icons/                   # símbolo e íconos (los SVG son la fuente; los PNG salen de ahí)
 ├── apps-script/
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
 │   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
@@ -1208,5 +1265,8 @@ antes.
 9. **Tema claro/oscuro + PWA + contraste WCAG AA + formularios prácticos**
    (duración automática, días con botones, Hoy/Mañana, duplicar con solo
    la fecha, plantillas) y la app de tú.
+10. **Identidad visual**: marino del logo, símbolo de Academia Fractal
+    (íconos, favicon, encabezado, sello de agua) y pantalla de carga con el
+    atractor de Lorenz.
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.
