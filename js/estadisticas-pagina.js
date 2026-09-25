@@ -35,6 +35,7 @@
     enlace.href = 'config.html';
     enlace.textContent = 'Configurar';
     estado.appendChild(enlace);
+    KodamaCarga.listo();
     return;
   }
 
@@ -149,6 +150,8 @@
     } catch (error) {
       if (numero !== carga) return;
       estado.textContent = 'No se pudo cargar: ' + error.message;
+    } finally {
+      KodamaCarga.listo();
     }
   }
 

@@ -89,3 +89,15 @@ test('ningún texto atenuado baja de opacity 0.75 (y con 0.75 sigue en 4.5:1)', 
     assert.ok(contraste(atenuado, color(t, 'bg')) >= 4.5, nombre + ': texto a ' + minima);
   });
 });
+
+test('el sello de agua es tan tenue que el texto encima sigue en 4.5:1 (y nunca más de 8 %)', () => {
+  TEMAS.forEach(([nombre, t]) => {
+    const opacidad = Number(t['sello-opacidad']);
+    assert.ok(opacidad > 0 && opacidad <= 0.08, nombre + ': sello a ' + opacidad);
+    const fondoConSello = mezclar(color(t, 'fg'), color(t, 'bg'), opacidad);
+    ['fg', 'tipo-reunion'].forEach((c) => {
+      const r = contraste(color(t, c), fondoConSello);
+      assert.ok(r >= 4.5, nombre + ': ' + c + ' sobre el sello da ' + r.toFixed(2));
+    });
+  });
+});

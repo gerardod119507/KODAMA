@@ -1,9 +1,10 @@
 :root {
   color-scheme: light;
-  /* Colores de marca */
-  --forest: #16372B;
+  /* Colores de marca (Checkpoint 10): el azul marino del logo de Academia
+     Fractal (medido en el núcleo de sus trazos) y el hueso de siempre. */
+  --marino: #071743;
   --bone: #F5F1E8;
-  --bg-dark: #0E1713;
+  --bg-dark: #070F28; /* marino muy oscuro: fondo del tema oscuro */
 
   /* Colores por área/tipo (valores para tema claro) */
   --area-universidad: #245A8D;
@@ -13,18 +14,18 @@
   --tipo-reunion: #9D3D2E;
 
   --bg: var(--bone);
-  --fg: var(--forest);
+  --fg: var(--marino);
   /* Botón principal y opción activa: relleno de marca con texto claro. */
-  --acento-fondo: var(--forest);
+  --acento-fondo: var(--marino);
   --acento-texto: var(--bone);
   --fondo-dialogo: var(--bone);
-  --superficie: rgba(22, 55, 43, 0.05);
-  --borde: rgba(22, 55, 43, 0.18);
+  --superficie: rgba(7, 23, 67, 0.05);
+  --borde: rgba(7, 23, 67, 0.18);
   /* "Ocupado" (bloque de otra área en una capa filtrada): rayado diagonal
      tenue + barra vertical saturada. La barra es gris azulado a propósito:
      no se confunde con ningún color de área (Personal es verde). */
-  --ocupado-fondo: rgba(22, 55, 43, 0.05);
-  --ocupado-raya: rgba(22, 55, 43, 0.17);
+  --ocupado-fondo: rgba(7, 23, 67, 0.05);
+  --ocupado-raya: rgba(7, 23, 67, 0.17);
   --ocupado-barra: #52606D;
 
   /* Tipografía */
@@ -47,7 +48,9 @@
   --radio-sm: 6px;
   --radio-md: 10px;
   --radio-lg: 16px;
-  --sombra-sm: 0 1px 2px rgba(14, 23, 19, 0.12);
+  --sombra-sm: 0 1px 2px rgba(7, 15, 40, 0.14);
+  /* Sello de agua: el símbolo detrás de todo, apenas visible. */
+  --sello-opacidad: 0.045;
 
   /* Vista de semana: alto de un minuto en la grilla (60 min = 3.6rem) */
   --escala-semana: 0.06rem;
@@ -70,11 +73,12 @@
   color-scheme: dark;
   --bg: var(--bg-dark);
   --fg: var(--bone);
-  /* En oscuro el botón principal se invierte (bone sobre forest casi no
-     se distingue del fondo #0E1713). */
+  /* En oscuro el botón principal se invierte (un botón marino casi no se
+     distingue del fondo marino oscuro). */
   --acento-fondo: var(--bone);
-  --acento-texto: var(--forest);
-  --fondo-dialogo: #15211C;
+  --acento-texto: var(--marino);
+  --fondo-dialogo: #101A3A;
+  --sello-opacidad: 0.06;
   --superficie: rgba(245, 241, 232, 0.06);
   --borde: rgba(245, 241, 232, 0.18);
   --ocupado-fondo: rgba(245, 241, 232, 0.05);
@@ -82,13 +86,13 @@
   --ocupado-barra: #A9B6C2;
   --sombra-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
 
-  /* Ajustados para mantener contraste WCAG AA (>=4.5:1) sobre el fondo
-     oscuro; los valores de tema claro no alcanzan ese mínimo ahí. */
-  --area-universidad: #3783CC;
-  --area-fractal: #B37500;
-  --area-startup: #8875BC;
-  --area-personal: #5B896C;
-  --tipo-reunion: #D86C5A;
+  /* Mismo tono de cada área, más luminoso, para el fondo marino oscuro:
+     todos por encima de 5.5:1 sobre el fondo y sobre los diálogos. */
+  --area-universidad: #5A9BE0;
+  --area-fractal: #C98A1E;
+  --area-startup: #9A88D0;
+  --area-personal: #6FA383;
+  --tipo-reunion: #E07A68;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -420,7 +424,7 @@ dialog {
 }
 
 dialog::backdrop {
-  background: rgba(14, 23, 19, 0.5);
+  background: rgba(7, 15, 40, 0.55);
 }
 
 dialog h2 {
@@ -1615,4 +1619,65 @@ button.cobro {
   padding: var(--espacio-2);
   border-left: 1px solid var(--borde) !important;
   font-size: var(--texto-sm);
+}
+
+/* --- Checkpoint 10: identidad (marca, sello de agua, pantalla de carga) -- */
+
+/* El símbolo junto al título: la versión simplificada (a este tamaño las
+   curvas finas desaparecen), pintada con el color del texto vía máscara,
+   así se invierte sola con el tema. */
+/* El título con su marca en una sola línea (en el celular el menú ocupa lugar). */
+.cabecera h1 {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.marca {
+  display: inline-block;
+  flex: none;
+  width: 1.6em;
+  height: 1.6em;
+  margin-right: var(--espacio-2);
+  background: var(--fg);
+  -webkit-mask: url("../icons/simbolo-chico.svg") center / contain no-repeat;
+  mask: url("../icons/simbolo-chico.svg") center / contain no-repeat;
+}
+
+/* Sello de agua: detrás de todo el contenido (z-index -1 sobre el fondo),
+   fijo, sin tocar nada con el dedo. Tan tenue que el texto sigue en 4.5:1. */
+.sello {
+  position: fixed;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: min(92vmin, 44rem);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: var(--sello-opacidad);
+  background: var(--fg);
+  -webkit-mask: url("../icons/simbolo.svg") center / contain no-repeat;
+  mask: url("../icons/simbolo.svg") center / contain no-repeat;
+}
+
+/* Pantalla de carga: el atractor de Lorenz sobre el fondo, arriba de todo;
+   se desvanece en 250 ms cuando la página tiene algo que mostrar. */
+.carga {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  transition: opacity 250ms var(--curva);
+}
+
+.carga--fuera {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.carga__lienzo {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
