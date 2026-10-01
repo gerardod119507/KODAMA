@@ -40,7 +40,8 @@ function cargar() {
 test('duración por defecto: 90 min en clases (Universidad, Fractal), 60 en el resto', () => {
   const ej = cargar();
   assert.deepStrictEqual(ej('KodamaFormas.porArea("Universidad")'), { tipo: 'fijo', duracion: 90 });
-  assert.deepStrictEqual(ej('KodamaFormas.porArea("Academia Fractal")'), { tipo: 'fijo', duracion: 90 });
+  // Fractal con el +: variable (los fijos van en Horario → Alumnos fijos).
+  assert.deepStrictEqual(ej('KodamaFormas.porArea("Academia Fractal")'), { tipo: 'variable', duracion: 90 });
   assert.deepStrictEqual(ej('KodamaFormas.porArea("Startup")'), { tipo: 'variable', duracion: 60 });
   assert.deepStrictEqual(ej('KodamaFormas.porArea("Personal")'), { tipo: 'variable', duracion: 60 });
   assert.deepStrictEqual(ej('KodamaFormas.porArea("otra")'), { tipo: 'variable', duracion: 60 });

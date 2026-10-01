@@ -14,6 +14,16 @@ const KodamaClases = (function () {
   const NOMBRES = { programada: 'Programada', dictada: 'Dictada', movida: 'Movida', cancelada: 'Cancelada' };
   const AREA_QUE_SE_DICTA = 'Academia Fractal';
 
+  /**
+   * Una materia de la universidad: un bloque de Universidad que sale de una
+   * regla de Horario (id "hxxxxxxxx-AAAA-MM-DD"). Su ficha es otra: solo ver
+   * y "No hubo clase"; todo lo demás se cambia en Horario → Materias.
+   */
+  function esMateria(bloque) {
+    return Boolean(bloque) && String(bloque.area || '').trim() === 'Universidad' &&
+      /^h[0-9a-f]{8}-\d{4}-\d{2}-\d{2}$/.test(String(bloque.id || ''));
+  }
+
   function puedeDictarse(bloque) {
     return Boolean(bloque) && String(bloque.area || '').trim() === AREA_QUE_SE_DICTA;
   }
@@ -42,14 +52,15 @@ const KodamaClases = (function () {
     return 'Movida de ' + bloque.inicio_original + ' a ' + bloque.inicio + ' (' + KodamaFecha.diaCorto(bloque.fecha) + ')';
   }
 
-  /** Lo que dice la ficha: "Dictada", "Cancelada · feriado", "Programada"… */
+  /** Lo que dice la ficha: "Dictada", "Cancelada · feriado", "Programada"… (en una materia, "No hubo clase"). */
   function textoEstado(bloque) {
     const e = estado(bloque);
-    return NOMBRES[e] + (e === 'cancelada' && bloque.motivo ? ' · ' + bloque.motivo : '');
+    const nombre = e === 'cancelada' && esMateria(bloque) ? 'No hubo clase' : NOMBRES[e];
+    return nombre + (e === 'cancelada' && bloque.motivo ? ' · ' + bloque.motivo : '');
   }
 
   return {
-    estado: estado, puedeDictarse: puedeDictarse, esCancelada: esCancelada,
+    estado: estado, puedeDictarse: puedeDictarse, esMateria: esMateria, esCancelada: esCancelada,
     textoMovida: textoMovida, textoEstado: textoEstado, NOMBRES: NOMBRES
   };
 })();

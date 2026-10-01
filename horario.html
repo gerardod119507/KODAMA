@@ -37,27 +37,60 @@
 
   <main>
     <h1 class="titulo-pagina">Horario</h1>
-    <p class="nota">
-      Cada fila es una regla del semestre. "Regenerar" crea los bloques de
-      cada fecha; nunca toca fechas pasadas.
-    </p>
 
-    <button id="regenerar" type="button">Regenerar horario</button>
+    <!-- Tres secciones: lo que se repite en la U, los alumnos fijos de Fractal
+         (por mes) y lo demás. En la hoja todas son filas de "Horario". -->
+    <div class="pestanas" role="group" aria-label="Sección">
+      <button type="button" class="boton-barra" data-seccion="materias" aria-pressed="true">Materias</button>
+      <button type="button" class="boton-barra" data-seccion="fijos" aria-pressed="false">Alumnos fijos</button>
+      <button type="button" class="boton-barra" data-seccion="otros" aria-pressed="false">Otros</button>
+    </div>
+
+    <p id="estado-horario" class="estado" role="status"></p>
+
+    <section id="seccion-materias" class="seccion-horario">
+      <p class="nota">Tus materias de la universidad: se repiten cada semana del semestre. Al guardar, las clases se actualizan solas.</p>
+      <button type="button" id="nueva-materia" class="secundario">+ Nueva materia</button>
+      <div id="lista-materias" class="lista-reglas"></div>
+    </section>
+
+    <section id="seccion-fijos" class="seccion-horario" hidden>
+      <p class="nota">Alumnos de Academia Fractal con horario fijo en el mes. Al guardar o borrar, sus clases se actualizan solas.</p>
+      <div class="fila-mes">
+        <label for="mes-fijos">Mes</label>
+        <input id="mes-fijos" type="month" />
+      </div>
+      <button type="button" id="nuevo-fijo" class="secundario">+ Alumno fijo</button>
+      <div id="lista-fijos" class="lista-reglas"></div>
+
+      <h2>Clases sueltas marcadas como fijo</h2>
+      <p class="nota">Clases de Fractal creadas con el + y tipo "Fijo". No se repiten: puedes pasarlas a variable o borrarlas.</p>
+      <div id="lista-sueltos" class="lista-reglas"></div>
+      <button type="button" id="sueltos-todas" class="secundario" hidden>Pasar todas a variable</button>
+    </section>
+
+    <section id="seccion-otros" class="seccion-horario" hidden>
+      <p class="nota">Horarios que se repiten en Startup y Personal.</p>
+      <button type="button" id="nuevo-otro" class="secundario">+ Nuevo horario</button>
+      <div id="lista-otros" class="lista-reglas"></div>
+    </section>
+
+    <hr class="separador" />
+    <p class="nota">Si cambiaste la hoja Horario a mano en el Drive, regenera para pasar los cambios a la grilla. Nunca toca fechas pasadas.</p>
+    <button id="regenerar" type="button" class="secundario">Regenerar todo el horario</button>
     <p id="resultado-regenerar" role="status"></p>
-
-    <div id="lista-reglas"></div>
   </main>
-
-  <div class="acciones-flotantes">
-    <button id="nueva-regla" type="button" class="fab" aria-label="Nueva regla">+</button>
-  </div>
 
   <dialog id="dialogo-regla">
     <form id="form-regla">
       <h2 id="titulo-dialogo-regla">Nueva regla</h2>
 
-      <label for="regla-area">Área</label>
-      <select id="regla-area"></select>
+      <!-- El área la pone la sección (materia = Universidad, fijo = Fractal);
+           solo en "Otros" se elige. -->
+      <div class="solo-otro">
+        <label for="regla-area">Área</label>
+        <select id="regla-area"></select>
+      </div>
 
       <!-- Solo en Academia Fractal (lo arma js/ui/selector-alumnos.js). -->
       <div id="regla-alumnos" hidden></div>
@@ -84,28 +117,30 @@
 
       <div class="fila-horas">
         <div>
-          <label for="regla-desde">Desde</label>
+          <label for="regla-desde" id="etiqueta-regla-desde">Desde</label>
           <input id="regla-desde" type="date" />
         </div>
         <div>
-          <label for="regla-hasta">Hasta</label>
+          <label for="regla-hasta" id="etiqueta-regla-hasta">Hasta</label>
           <input id="regla-hasta" type="date" />
         </div>
       </div>
 
-      <label for="regla-lugar">Lugar</label>
+      <label for="regla-lugar" id="etiqueta-regla-lugar">Lugar</label>
       <input id="regla-lugar" type="text" autocomplete="off" autocapitalize="sentences"
              placeholder="Aula E511" />
 
-      <label for="regla-etiqueta">Etiqueta</label>
-      <input id="regla-etiqueta" type="text" list="sugerencias-etiqueta-regla" autocomplete="off" />
-      <datalist id="sugerencias-etiqueta-regla">
-        <option value="Nerak"></option>
-        <option value="Data cocha"></option>
-        <option value="otro"></option>
-      </datalist>
+      <div class="solo-otro">
+        <label for="regla-etiqueta">Etiqueta</label>
+        <input id="regla-etiqueta" type="text" list="sugerencias-etiqueta-regla" autocomplete="off" />
+        <datalist id="sugerencias-etiqueta-regla">
+          <option value="Nerak"></option>
+          <option value="Data cocha"></option>
+          <option value="otro"></option>
+        </datalist>
+      </div>
 
-      <label for="regla-notas">Notas</label>
+      <label for="regla-notas" id="etiqueta-regla-notas">Notas</label>
       <textarea id="regla-notas" rows="3" autocapitalize="sentences"></textarea>
 
       <p id="error-regla" class="error" role="alert"></p>
@@ -113,6 +148,7 @@
       <div class="acciones-dialogo">
         <button type="button" id="cancelar-regla" class="secundario">Cancelar</button>
         <button type="button" id="archivar-regla" class="fantasma" hidden>Archivar</button>
+        <button type="button" id="borrar-regla" class="fantasma" hidden>Borrar</button>
         <button type="submit" id="guardar-regla">Guardar</button>
       </div>
     </form>
@@ -126,6 +162,7 @@
   <script src="js/ui/horas.js"></script>
   <script src="js/ui/dias.js"></script>
   <script src="js/ui/selector-alumnos.js"></script>
+  <script src="js/horario-secciones.js"></script>
   <script src="js/horario.js"></script>
   <script src="js/pwa.js"></script>
 </body>

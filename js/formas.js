@@ -4,11 +4,14 @@
  * valores según el área y días de la semana como botones.
  */
 const KodamaFormas = (function () {
-  // Universidad y Academia Fractal son clases: 90 min y tipo "fijo".
+  // Universidad y Academia Fractal son clases: 90 min. Universidad "fijo";
+  // Fractal "variable": con el + se agenda una clase suelta, y los alumnos
+  // fijos se programan en Horario → Alumnos fijos (Checkpoint 12; antes el
+  // + ponía "fijo" y así quedaban clases sueltas marcadas fijo sin querer).
   // Startup y Personal: 60 min y "variable".
   const POR_AREA = {
     Universidad: { tipo: 'fijo', duracion: 90 },
-    'Academia Fractal': { tipo: 'fijo', duracion: 90 },
+    'Academia Fractal': { tipo: 'variable', duracion: 90 },
     Startup: { tipo: 'variable', duracion: 60 },
     Personal: { tipo: 'variable', duracion: 60 }
   };

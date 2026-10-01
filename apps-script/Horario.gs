@@ -283,6 +283,46 @@ function borrarSerie(idSerie) {
   return { borrados: aBorrar.length };
 }
 
+/** La regla guardada, y si se pidió, el resumen de regenerar el horario. */
+function conRegeneracion(regla, regenerar) {
+  if (regenerar) regla.generado = generarHorario();
+  return regla;
+}
+
+/**
+ * Borra DE VERDAD un horario fijo (Gerardo lo pidió para los alumnos fijos
+ * de Fractal, que se reprograman cada mes): la fila de Horario y sus clases
+ * de hoy en adelante. Las pasadas quedan (y las dictadas, aunque sean de
+ * hoy): cuentan para el cobro y las estadísticas.
+ */
+function borrarRegla(id) {
+  const ubicacion = buscarFilaDeRegla(id);
+  const idSerie = ubicacion.regla.id;
+  const hoy = Utilities.formatDate(new Date(), ZONA_HORARIA, 'yyyy-MM-dd');
+  const hojaBloques = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES);
+  const filas = hojaBloques.getDataRange().getDisplayValues();
+  const aBorrar = [];
+  let quedan = 0;
+
+  for (let f = 1; f < filas.length; f++) {
+    const partes = partirIdDeBloque(filas[f][0]);
+    if (!partes || partes.idSerie !== idSerie) continue;
+    const bloque = filaABloque(filas[f]);
+    if (bloque.fecha >= hoy && estadoDeBloque(bloque) !== 'dictada') {
+      aBorrar.push(f + 1);
+    } else {
+      quedan++;
+    }
+  }
+
+  // De abajo hacia arriba, para que cada borrado no corra los demás.
+  for (let i = aBorrar.length - 1; i >= 0; i--) {
+    hojaBloques.deleteRow(aBorrar[i]);
+  }
+  ubicacion.hoja.deleteRow(ubicacion.fila);
+  return { borradas: aBorrar.length, quedan: quedan };
+}
+
 /** Devuelve las reglas tal como están en la hoja, para el editor de la app. */
 function listarHorario() {
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_HORARIO);

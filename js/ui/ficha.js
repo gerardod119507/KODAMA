@@ -1,5 +1,10 @@
 /**
- * Ficha de un bloque: solo lectura (título, área, horario, estado, lugar,
+ * Ficha de un bloque. Una MATERIA de la universidad (bloque de Universidad
+ * generado por una regla de Horario) tiene otra ficha: solo ver (materia,
+ * horario, aula) y "No hubo clase" / "Sí hubo clase"; lo demás se cambia en
+ * Horario → Materias.
+ *
+ * El resto: solo lectura (título, área, horario, estado, lugar,
  * etiqueta, notas) con las acciones Editar, Mover, Duplicar y Archivar, y
  * el estado de la clase (Checkpoint 8): "Marcar dictada" es un solo toque
  * y solo aparece en Academia Fractal; "Cancelar clase" (en todas las
@@ -58,6 +63,13 @@ const KodamaFicha = (function () {
     document.getElementById('ficha-reactivar').addEventListener('click', function () {
       cambiarEstado('programada', '', this);
     });
+    // Materias: un toque, sin motivo.
+    document.getElementById('ficha-sin-clase').addEventListener('click', function () {
+      cambiarEstado('cancelada', '', this);
+    });
+    document.getElementById('ficha-con-clase').addEventListener('click', function () {
+      cambiarEstado('programada', '', this);
+    });
     document.getElementById('ficha-cancelar').addEventListener('click', function () {
       document.getElementById('ficha-plantilla').hidden = true;
       document.getElementById('ficha-cancelacion').hidden = false;
@@ -103,7 +115,12 @@ const KodamaFicha = (function () {
     icono.innerHTML = KodamaIconos.svgTipo(tipo); // plantilla fija, sin datos
     dialogo.style.setProperty('--color-bloque', KodamaDia.colorDeBloque(bloque));
 
-    escribir('ficha-tipo-area', (bloque.tipo || 'variable') + ' · ' + bloque.area);
+    // Una materia de la U no es una clase de Fractal: otra ficha (ver pintarEstado).
+    const materia = KodamaClases.esMateria(bloque);
+    dialogo.classList.toggle('ficha--materia', materia);
+    document.getElementById('ficha-materia').hidden = !materia;
+    escribir('ficha-etiqueta-lugar', materia ? 'Aula' : 'Lugar');
+    escribir('ficha-tipo-area', (materia ? 'materia' : (bloque.tipo || 'variable')) + ' · ' + bloque.area);
     escribir('ficha-titulo', bloque.tituloMostrado || bloque.titulo || '(sin título)');
     escribir('ficha-horario', KodamaFecha.legible(bloque.fecha) + ' · ' + bloque.inicio + '–' + bloque.fin);
     pintarEstado(bloque);
@@ -126,6 +143,20 @@ const KodamaFicha = (function () {
     const movida = document.getElementById('ficha-movida');
     movida.textContent = KodamaClases.textoMovida(bloque);
     movida.hidden = !movida.textContent;
+
+    // Materia: el estado solo se dice si no hubo clase; un solo botón.
+    const materia = KodamaClases.esMateria(bloque);
+    texto.hidden = materia && estado !== 'cancelada';
+    document.getElementById('ficha-sin-clase').hidden = !materia || estado === 'cancelada';
+    document.getElementById('ficha-con-clase').hidden = !materia || estado !== 'cancelada';
+    document.getElementById('ficha-cancelacion').hidden = true;
+    document.getElementById('ficha-plantilla').hidden = true;
+    if (materia) {
+      ['ficha-dictada', 'ficha-cancelar', 'ficha-reactivar'].forEach(function (id) {
+        document.getElementById(id).hidden = true;
+      });
+      return;
+    }
 
     // Programada o movida: se puede dictar o cancelar. Dictada o
     // cancelada: un solo botón para deshacerlo.

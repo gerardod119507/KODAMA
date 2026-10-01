@@ -192,6 +192,45 @@ function corregirDictadasFueraDeFractal(hoja) {
   return cambiados;
 }
 
+// Un bloque suelto (creado con el +, duplicado o importado): "b" + 8
+// hexadecimales. Los de un horario fijo son "idDeSerie-fecha".
+const PATRON_ID_SUELTO = /^b[0-9a-f]{8}$/;
+
+/**
+ * Borra DE VERDAD una clase suelta (para las de Fractal marcadas "fijo"
+ * por error). Una clase de un horario fijo no se borra acá: el generador la
+ * volvería a crear; se borra el horario fijo. Una dictada tampoco: cuenta
+ * para el cobro.
+ */
+function borrarBloque(id) {
+  const ubicacion = buscarFilaDeBloque(id);
+  const bloque = ubicacion.bloque;
+  if (!PATRON_ID_SUELTO.test(bloque.id)) {
+    throw new Error('bloque_de_horario_fijo: esta clase sale de un horario fijo; bórrala desde Horario.');
+  }
+  if (estadoDeBloque(bloque) === 'dictada') {
+    throw new Error('bloque_dictado: una clase dictada no se borra (cuenta para el cobro).');
+  }
+  ubicacion.hoja.deleteRow(ubicacion.fila);
+  return { borrado: bloque.id };
+}
+
+/**
+ * Clases sueltas de Academia Fractal marcadas "fijo", de hoy en adelante y
+ * sin archivar: las que se crearon con el + eligiendo "Fijo". Ordenadas.
+ */
+function listarFijosSueltos() {
+  const hoy = Utilities.formatDate(new Date(), ZONA_HORARIA, 'yyyy-MM-dd');
+  const filas = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_BLOQUES).getDataRange().getDisplayValues();
+  return filas.slice(1)
+    .map(filaABloque)
+    .filter(function (b) {
+      return PATRON_ID_SUELTO.test(b.id) && b.area === AREA_QUE_SE_DICTA && b.tipo === 'fijo' &&
+        b.archivado !== 'TRUE' && b.fecha >= hoy;
+    })
+    .sort(function (a, b) { return a.fecha.localeCompare(b.fecha) || a.inicio.localeCompare(b.inicio); });
+}
+
 function escribirBloque(ubicacion, bloque) {
   ubicacion.hoja
     .getRange(ubicacion.fila, 1, 1, COLUMNAS_BLOQUES.length)
