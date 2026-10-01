@@ -163,7 +163,7 @@
     <p id="ficha-movida" class="ficha__movida" hidden></p>
     <dl class="ficha__datos">
       <div id="ficha-fila-lugar">
-        <dt>Lugar</dt>
+        <dt id="ficha-etiqueta-lugar">Lugar</dt>
         <dd></dd>
       </div>
       <div id="ficha-fila-etiqueta">
@@ -181,7 +181,13 @@
       <button type="button" id="ficha-dictada">✓ Marcar dictada</button>
       <button type="button" id="ficha-cancelar" class="secundario">Cancelar clase</button>
       <button type="button" id="ficha-reactivar" class="secundario" hidden></button>
+      <!-- Materias de la universidad: solo esto (lo demás, en Horario → Materias). -->
+      <button type="button" id="ficha-sin-clase" class="secundario" hidden>No hubo clase</button>
+      <button type="button" id="ficha-con-clase" class="secundario" hidden>Sí hubo clase</button>
     </div>
+    <p class="ficha__enlace-materia" id="ficha-materia" hidden>
+      <a href="horario.html#materias">Cambiar la materia en Horario</a>
+    </p>
     <div id="ficha-plantilla" class="ficha__cancelacion" hidden>
       <label for="ficha-nombre-plantilla">Nombre de la plantilla</label>
       <input type="text" id="ficha-nombre-plantilla" maxlength="60" autocomplete="off" autocapitalize="sentences" />

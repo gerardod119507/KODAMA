@@ -84,14 +84,25 @@ const ACCIONES = {
   listarHorario: function () {
     return listarHorario();
   },
+  // Con regenerar: true, después de guardar se regenera el horario en la
+  // misma petición (un solo viaje): la grilla queda al día sin otro toque.
   crearRegla: function (peticion) {
-    return crearRegla(peticion.regla);
+    return conRegeneracion(crearRegla(peticion.regla), peticion.regenerar === true);
   },
   actualizarRegla: function (peticion) {
-    return actualizarRegla(peticion.id, peticion.cambios);
+    return conRegeneracion(actualizarRegla(peticion.id, peticion.cambios), peticion.regenerar === true);
   },
   archivarRegla: function (peticion) {
-    return archivarRegla(peticion.id);
+    return conRegeneracion(archivarRegla(peticion.id), peticion.regenerar === true);
+  },
+  borrarRegla: function (peticion) {
+    return borrarRegla(peticion.id);
+  },
+  borrarBloque: function (peticion) {
+    return borrarBloque(peticion.id);
+  },
+  listarFijosSueltos: function () {
+    return listarFijosSueltos();
   },
   listarSeries: function () {
     return listarSeries();

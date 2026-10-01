@@ -210,3 +210,21 @@ test('el backend manda "ms" (lo que tardó su código) con token válido, y no s
   assert.strictEqual(typeof mal.ms, 'number', 'también en un error del backend');
   assert.deepStrictEqual(env.post({ token: 'otro', action: 'ping' }), { ok: false, error: 'no_autorizado' });
 });
+
+test('resumen para copiar: una línea por operación con sus partes, sin datos personales', () => {
+  const { M } = cargar();
+  const lista = [
+    { en: Date.UTC(2026, 8, 26), tipo: 'apertura', ok: true, red: 1800, servidor: 300, render: 40, total: 2100, vista: 400 },
+    { en: Date.UTC(2026, 8, 27), tipo: 'llamada', accion: 'listarBloquesRango', ok: true, red: 1800, servidor: 300, total: 1800 },
+    { en: Date.UTC(2026, 8, 27), tipo: 'guardar', ok: false, red: 0, servidor: 0, render: 0, total: 30 }
+  ];
+  const texto = M.resumenEnTexto(lista, 'Android 14');
+  assert.deepStrictEqual(texto.split('\n'), [
+    'KODAMA · rendimiento (3 mediciones desde 2026-09-26)',
+    'Navegador: Android 14',
+    'Apertura de la app: n=1 · prom 2,1 s · peor 2,1 s · red 1,8 s (servidor 300 ms) · render 40 ms · resto 260 ms · algo visible 400 ms',
+    'Guardar un bloque: n=1 (1 fallaron)',
+    'Llamada · listarBloquesRango: n=1 · prom 1,8 s · peor 1,8 s · servidor 300 ms'
+  ]);
+  assert.match(M.resumenEnTexto([]), /todavía no hay mediciones/);
+});

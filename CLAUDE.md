@@ -323,6 +323,16 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   y entero sobre el atractor del logo), el marino igual al del manifest,
   las partes marcadas del símbolo (3 puntos = 3 esferas) y que todas las
   pantallas la tengan antes del encabezado.
+- `tests/fijos.test.js` — Checkpoint 12, backend: guardar con
+  `regenerar` (una sola petición), sin `regenerar` no toca Bloques,
+  `borrarRegla` (futuras sí, pasadas y dictadas no, otros alumnos no, sin
+  revivir al regenerar), archivar una materia con `regenerar`,
+  `listarFijosSueltos` (solo Fractal + fijo + suelta + de hoy en
+  adelante), `borrarBloque` (nunca de un horario fijo ni dictada) y token.
+- `tests/materias.test.js` — Checkpoint 12, navegador: qué es una materia,
+  "No hubo clase", el reparto en Materias / Alumnos fijos / Otros, los
+  fijos de un mes (también los que cruzan de mes), límites del mes
+  (bisiesto) y que las páginas tengan las secciones y la ficha nueva.
 - `tests/navegacion.test.js` — navegación: destinos de abajo y de
   "Más" (con ícono y página existente), qué queda activo en cada pantalla,
   `#dia`/`#semana`, que cada página tenga arriba solo logo, fecha y tema
@@ -333,7 +343,7 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   dos llamadas en paralelo cuentan una vez, `cerrarRed`, "vista" de la
   apertura, resumen (promedio, peor, sin las fallidas), tope de 300,
   últimas 20, textos, sin almacenamiento, llamadas cortadas al irse,
-  `KodamaApi.llamar` y el `ms` del backend.
+  `KodamaApi.llamar`, el `ms` del backend y el resumen para copiar.
 - `tests/semana.test.js` — Checkpoint 6: `listarBloquesRango` (extremos
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
@@ -383,8 +393,11 @@ Columnas: `id`, `título`, `área`, `tipo` (`fijo` / `variable` / `reunión`),
   pedida; con la hoja ordenada ese tramo es exactamente la semana. **La
   corrección no depende del orden**: si la hoja se desordena a mano, el
   tramo es más largo (más lento) pero sigue incluyendo todo.
-- **Archivar, no borrar:** `archivado` es `TRUE`/`FALSE` (o vacío). Borrar un
-  bloque de verdad no es parte del MVP.
+- **Archivar, no borrar:** `archivado` es `TRUE`/`FALSE` (o vacío).
+  Excepciones, pedidas por Gerardo (Checkpoint 12): `borrarRegla` (un
+  alumno fijo de Fractal, con sus clases de hoy en adelante; las pasadas y
+  las dictadas quedan), `borrarBloque` (solo una clase suelta `b…` no
+  dictada) y `borrarSerie` (limpieza de pruebas).
 - **`etiqueta`** (Checkpoint 4): texto libre, opcional. Para Startup se
   sugieren "Nerak", "Data cocha" y "otro" — sugieren, no restringen: la
   celda tiene una lista desplegable de Sheets con "permitir inválido"
@@ -684,6 +697,15 @@ los alumnos que lo tenían.
 
 ## Estado de clases, cobros y estadísticas (Checkpoint 8)
 
+- **Materias de la universidad ≠ clases de Fractal** (Checkpoint 12): un
+  bloque de Universidad que sale de una regla (`KodamaClases.esMateria`:
+  id `hxxxxxxxx-AAAA-MM-DD`) tiene **otra ficha**: "materia ·
+  Universidad", horario y **Aula**; un solo botón **"No hubo clase"**
+  (estado `cancelada`, un toque, sin motivo) o **"Sí hubo clase"** para
+  deshacerlo, y el enlace "Cambiar la materia en Horario"
+  (`horario.html#materias`). Sin editar, mover, duplicar, plantilla ni
+  archivar: la materia se cambia entera en Horario. Un bloque suelto de la
+  U (un examen creado con el +) sigue con la ficha general.
 - **Ficha** (`js/ui/ficha.js`): muestra el estado ("✓ Dictada", "✕
   Cancelada · feriado", "↷ Movida"; "Marcar dictada" solo en Academia
   Fractal, "Cancelar clase" en todas las áreas) y, si se movió, "Movida del jue 24 al
@@ -743,8 +765,9 @@ los alumnos que lo tenían.
   inicio se corrige solo y lo avisa ("lo cambié a 16:30"); guardar nunca
   manda un horario invertido. Nada cruza la medianoche (tope 23:59).
 - **Valores por área** (en un bloque o regla nuevos, mientras no los
-  toques): Universidad y Fractal → tipo `fijo`, 90 min; Startup y
-  Personal → `variable`, 60 min.
+  toques): Universidad → tipo `fijo`, 90 min; Fractal → `variable`, 90 min
+  (desde el Checkpoint 12: con el + se agenda una clase suelta; los fijos
+  van en Horario → Alumnos fijos); Startup y Personal → `variable`, 60 min.
 - **Días de la semana** en las reglas: 7 botones Lun–Dom
   (`js/ui/dias.js`); marcado = relleno + línea gruesa abajo (no solo
   color). En la hoja sigue siendo el texto "Lun, Mié".
@@ -851,6 +874,22 @@ del backend (para la medición de rendimiento).
   `actualizarBloque`.
 - `archivarRegla` — parámetro `id`. La regla deja de generar bloques; sus
   bloques futuros se archivan en la próxima corrida de `generarHorario`.
+- `crearRegla`/`actualizarRegla`/`archivarRegla` aceptan `regenerar: true`:
+  después de guardar corren `generarHorario()` en la **misma petición** y
+  devuelven la regla con `generado: { creados, actualizados, archivados }`
+  (un solo viaje: la grilla y el Sheet quedan al día).
+- `borrarRegla` — `id`. **Borra de verdad** la fila de `Horario` y sus
+  bloques de hoy en adelante que no estén dictados; las pasadas (y las
+  dictadas) quedan para el cobro. Devuelve `{ borradas, quedan }`. Es lo
+  que usa "Alumnos fijos". Las clases pasadas quedan como una serie sin
+  regla: "Limpiar bloques generados" (Configuración) las borraría, así
+  que ahí no se tocan si cuentan para el cobro.
+- `borrarBloque` — `id`. Borra de verdad una clase **suelta** (`b…`). Una
+  de un horario fijo falla con `bloque_de_horario_fijo` (el generador la
+  volvería a crear) y una dictada con `bloque_dictado`.
+- `listarFijosSueltos` — las clases sueltas de Academia Fractal con tipo
+  `fijo`, de hoy en adelante y sin archivar (las creadas con el + eligiendo
+  "Fijo").
 - `listarSeries` — sin parámetros. Devuelve
   `[{ idSerie, titulo, cantidad }]` con las series que hoy tienen bloques,
   incluidas las **huérfanas** (sin fila en `Horario`), que son las que hay
@@ -969,7 +1008,10 @@ registra tiempos **reales del dispositivo** en `localStorage`
 (`kodama.medicion`, como mucho 300; los más viejos se borran) y
 Configuración → **Rendimiento** (`js/ui/rendimiento.js`) los muestra: por
 operación, promedio, peor caso y en qué se fue el tiempo (la parte más
-pesada en negrita), y las últimas 20 mediciones.
+pesada en negrita), y las últimas 20 mediciones. **"Copiar para enviar"**
+(`KodamaMedicion.resumenEnTexto`) copia el resumen en texto (solo tiempos,
+acciones y navegador) para pegarlo en el chat: las mediciones viven solo
+en el celular y Claude no las ve de otra forma.
 
 - **Cada llamada al backend** la mide `KodamaApi.llamar`: **red** = desde
   que sale el POST hasta tener la respuesta leída; **servidor** = el campo
@@ -1019,8 +1061,25 @@ diario**. La hoja sigue siendo la base de datos, pero se escribe por la API.
   Chromium (se tocaron todos los bloques, día y semana, sin ningún salto);
   la única navegación automática del código era esa redirección al cargar,
   así que se eliminó.
-- **Editor de horario** (`horario.html` + `js/horario.js`): lista de reglas,
-  crear/editar/archivar, y botón "Regenerar horario".
+- **Horario** (`horario.html` + `js/horario.js` + `js/horario-secciones.js`,
+  Checkpoint 12): las reglas en **tres secciones** (botones arriba; la
+  elegida queda en la dirección, `#materias`/`#fijos`/`#otros`), cada una
+  con sus palabras y su formulario (el mismo diálogo en modo
+  `modo-materia`/`modo-fijo`/`modo-otro`):
+  - **Materias** (Universidad): materia, días y horario, inicio y fin del
+    semestre, aula, notas (docente, paralelo). Sin área, alumnos ni
+    etiqueta. Se **archivan**, no se borran.
+  - **Alumnos fijos** (Academia Fractal), **por mes** (selector de mes):
+    los que tienen clases ese mes, aunque crucen de mes. Nuevo = alumnos,
+    días, horario, del 1 al último del mes (editable), lugar. Se **borran**
+    de verdad (`borrarRegla`). Debajo, **clases sueltas marcadas como
+    fijo** (`listarFijosSueltos`): "Pasar a variable" (una o todas) o
+    "Borrar" (`borrarBloque`).
+  - **Otros** (Startup y Personal): como antes, con área y etiqueta.
+  - Guardar, archivar o borrar **regenera en la misma petición**
+    (`regenerar: true`): no hace falta tocar "Regenerar". Ese botón queda
+    abajo ("Regenerar todo el horario") para cuando se edita la hoja a
+    mano en el Drive.
 - **Valores por defecto**: fecha = el día que se está viendo; inicio = la
   próxima media hora en `America/La_Paz`; área = la capa activa, o
   Universidad si la capa es General; tipo y fin según el área (ver
@@ -1330,7 +1389,8 @@ KODAMA/
 │   ├── api.js                # fetch al Web App (POST text/plain), mide cada llamada
 │   ├── medicion.js            # tiempos reales: llamadas y operaciones (red/servidor/render)
 │   ├── config.js              # lógica de config.html
-│   ├── horario.js              # lógica de horario.html (editor de reglas)
+│   ├── horario.js              # lógica de horario.html: Materias, Alumnos fijos, Otros
+│   ├── horario-secciones.js     # qué regla va en qué sección, fijos del mes (lógica pura)
 │   ├── state.js               # semana por llamada + caché local (lectura)
 │   ├── fecha.js                # fecha "hoy" y formato legible en America/La_Paz
 │   ├── capas.js                 # selector de capa (día y semana): leer/guardar/filtrar
@@ -1406,5 +1466,9 @@ antes.
 11. **Medición, navegación y arranque**: tiempos reales en el dispositivo
     (Configuración → Rendimiento), barra de navegación abajo con hoja
     "Más", y pantalla de arranque que se asienta en el logo.
+12. **Materias ≠ clases de Fractal**: Horario en tres secciones (Materias,
+    Alumnos fijos por mes con borrado, Otros), ficha de materia con "No
+    hubo clase", clases sueltas marcadas "fijo" (pasar a variable o
+    borrar) y copiar el resumen de rendimiento.
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.
