@@ -259,8 +259,37 @@ const KodamaMedicion = (function () {
     return parte === null || !total ? null : Math.round(parte / total * 100);
   }
 
+  /**
+   * Todo el resumen como texto plano, para copiarlo y mandarlo (las
+   * mediciones viven solo en este dispositivo). Sin datos personales: solo
+   * tiempos, nombres de acciones y el navegador.
+   */
+  function resumenEnTexto(lista, navegador) {
+    const todas = lista || leer();
+    if (!todas.length) return 'KODAMA · rendimiento: todavía no hay mediciones.';
+    const desde = new Date(todas[0].en).toISOString().slice(0, 10);
+    const lineas = ['KODAMA · rendimiento (' + todas.length + ' mediciones desde ' + desde + ')'];
+    if (navegador) lineas.push('Navegador: ' + navegador);
+    resumen(todas).forEach(function (r) {
+      const partes = ['n=' + r.n + (r.errores ? ' (' + r.errores + ' fallaron)' : '')];
+      if (r.total !== null) {
+        partes.push('prom ' + texto(r.total), 'peor ' + texto(r.peor));
+        if (r.tipo === 'llamada') {
+          if (r.servidor !== null) partes.push('servidor ' + texto(r.servidor));
+        } else {
+          partes.push('red ' + texto(r.red) + (r.servidor !== null ? ' (servidor ' + texto(r.servidor) + ')' : ''),
+            'render ' + texto(r.render), 'resto ' + texto(r.resto));
+          if (r.vista !== null) partes.push('algo visible ' + texto(r.vista));
+        }
+      }
+      lineas.push(r.nombre + ': ' + partes.join(' · '));
+    });
+    return lineas.join('\n');
+  }
+
   return {
     empezar: empezar,
+    resumenEnTexto: resumenEnTexto,
     llamada: llamada,
     leer: leer,
     registrar: registrar,

@@ -107,6 +107,27 @@ const KodamaRendimiento = (function () {
     const actualizar = document.getElementById('rendimiento-actualizar');
     const borrar = document.getElementById('rendimiento-borrar');
     if (actualizar) actualizar.addEventListener('click', pintar);
+    // Copiar el resumen para mandarlo por el chat. Si el navegador no deja
+    // copiar, se muestra el texto ya seleccionado para copiarlo a mano.
+    const copiar = document.getElementById('rendimiento-copiar');
+    if (copiar) {
+      copiar.addEventListener('click', async function () {
+        const texto = M.resumenEnTexto(null, navigator.userAgent);
+        const aviso = document.getElementById('rendimiento-copiado');
+        const caja = document.getElementById('rendimiento-texto');
+        try {
+          await navigator.clipboard.writeText(texto);
+          caja.hidden = true;
+          aviso.textContent = 'Copiado. Pégalo en el chat.';
+        } catch (err) {
+          caja.value = texto;
+          caja.hidden = false;
+          caja.focus();
+          caja.select();
+          aviso.textContent = 'No se pudo copiar solo: el texto está abajo, ya seleccionado. Cópialo y pégalo en el chat.';
+        }
+      });
+    }
     if (borrar) {
       borrar.addEventListener('click', function () {
         if (!window.confirm('¿Borrar todas las mediciones de este dispositivo?')) return;
