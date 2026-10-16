@@ -3,7 +3,6 @@ const campoCorreo = document.getElementById('correo');
 const campoClave = document.getElementById('clave');
 const resultado = document.getElementById('resultado');
 const listaAreas = document.getElementById('areas');
-const continuarEnvoltorio = document.getElementById('continuar-envoltorio');
 const zonaSesion = document.getElementById('sesion-iniciada');
 
 function mostrar(mensaje) {
@@ -32,7 +31,6 @@ pintarSesion();
 formulario.addEventListener('submit', async function (evento) {
   evento.preventDefault();
   listaAreas.replaceChildren();
-  continuarEnvoltorio.hidden = true;
   mostrar('Entrando...');
   try {
     await KodamaSupabase.iniciarSesion(campoCorreo.value, campoClave.value);
@@ -46,7 +44,6 @@ formulario.addEventListener('submit', async function (evento) {
     }
     mostrar('Listo: sesión iniciada en este dispositivo.');
     pintarAreas(respuesta.data);
-    continuarEnvoltorio.hidden = false;
   } catch (error) {
     mostrar(error.red ? 'Sin conexión: revisa internet y vuelve a intentar.' : error.message);
   }
@@ -58,7 +55,6 @@ document.getElementById('cerrar-sesion').addEventListener('click', async functio
   }
   await KodamaSupabase.cerrarSesion();
   listaAreas.replaceChildren();
-  continuarEnvoltorio.hidden = true;
   pintarSesion();
   mostrar('Sesión cerrada en este dispositivo.');
 });
