@@ -9,6 +9,15 @@
  * guardado en el dispositivo con "Sin conexión".
  */
 const KodamaApi = (function () {
+  // La URL y el token del Web App viejo (hasta el Checkpoint 12) ya no
+  // sirven, y el token todavía abre el Apps Script: se borran del
+  // dispositivo la primera vez que abre la app nueva.
+  try {
+    localStorage.removeItem('kodama.config');
+  } catch (error) {
+    // sin almacenamiento: no hay nada que borrar
+  }
+
   // Cada llamada se mide (js/medicion.js): el tiempo de la acción completa,
   // con todas sus consultas a la base. Si la página no cargó la medición, nada.
   const medir = typeof KodamaMedicion !== 'undefined'
