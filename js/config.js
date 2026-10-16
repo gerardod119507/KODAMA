@@ -1,16 +1,21 @@
-const campoUrl = document.getElementById('url');
-const campoToken = document.getElementById('token');
+const formulario = document.getElementById('formulario');
+const campoCorreo = document.getElementById('correo');
+const campoClave = document.getElementById('clave');
 const resultado = document.getElementById('resultado');
 const listaAreas = document.getElementById('areas');
 const continuarEnvoltorio = document.getElementById('continuar-envoltorio');
-
-const configGuardada = KodamaApi.leerConfig();
-campoUrl.value = configGuardada.url;
-campoToken.value = configGuardada.token;
-document.getElementById('bienvenida').hidden = Boolean(configGuardada.url && configGuardada.token);
+const zonaSesion = document.getElementById('sesion-iniciada');
 
 function mostrar(mensaje) {
   resultado.textContent = mensaje;
+}
+
+/** Con sesión: quién está y "Cerrar sesión". Sin sesión: el formulario. */
+function pintarSesion() {
+  const conSesion = KodamaApi.haySesion();
+  zonaSesion.hidden = !conSesion;
+  formulario.hidden = conSesion;
+  document.getElementById('sesion-correo').textContent = KodamaSupabase.correo();
 }
 
 function pintarAreas(areas) {
@@ -22,49 +27,40 @@ function pintarAreas(areas) {
   });
 }
 
-document.getElementById('formulario').addEventListener('submit', async function (evento) {
+pintarSesion();
+
+formulario.addEventListener('submit', async function (evento) {
   evento.preventDefault();
   listaAreas.replaceChildren();
   continuarEnvoltorio.hidden = true;
-  mostrar('Probando...');
+  mostrar('Entrando...');
   try {
-    const respuesta = await KodamaApi.llamar(campoUrl.value, campoToken.value, 'listarAreas');
+    await KodamaSupabase.iniciarSesion(campoCorreo.value, campoClave.value);
+    campoClave.value = '';
+    // Prueba de que la base responde con esta sesión: leer las áreas.
+    const respuesta = await KodamaApi.llamar('listarAreas');
+    pintarSesion();
     if (!respuesta.ok) {
-      mostrar('El servidor rechazó la petición: ' + respuesta.error);
+      mostrar('Entraste, pero la base rechazó la lectura: ' + respuesta.error);
       return;
     }
-    KodamaApi.guardarConfig(campoUrl.value, campoToken.value);
-    mostrar('Conexión correcta. Datos guardados en este dispositivo.');
+    mostrar('Listo: sesión iniciada en este dispositivo.');
     pintarAreas(respuesta.data);
     continuarEnvoltorio.hidden = false;
   } catch (error) {
-    mostrar('Error: ' + error.message);
+    mostrar(error.red ? 'Sin conexión: revisa internet y vuelve a intentar.' : error.message);
   }
 });
 
-document.getElementById('olvidar').addEventListener('click', function () {
-  if (!confirm('¿Olvidar la URL y el token guardados en este dispositivo?')) {
+document.getElementById('cerrar-sesion').addEventListener('click', async function () {
+  if (!confirm('¿Cerrar la sesión en este dispositivo? Para volver a entrar vas a necesitar tu contraseña.')) {
     return;
   }
-  KodamaApi.guardarConfig('', '');
-  campoUrl.value = '';
-  campoToken.value = '';
+  await KodamaSupabase.cerrarSesion();
   listaAreas.replaceChildren();
   continuarEnvoltorio.hidden = true;
-  mostrar('Conexión olvidada en este dispositivo.');
-});
-
-document.getElementById('probar-malo').addEventListener('click', async function () {
-  listaAreas.replaceChildren();
-  mostrar('Probando con un token incorrecto...');
-  try {
-    const respuesta = await KodamaApi.llamar(campoUrl.value, 'token-incorrecto', 'listarAreas');
-    mostrar(respuesta.ok
-      ? 'ATENCIÓN: el servidor aceptó un token incorrecto. Revisa el código de Apps Script.'
-      : 'Correcto: el servidor rechazó el token incorrecto (' + respuesta.error + ').');
-  } catch (error) {
-    mostrar('Error: ' + error.message);
-  }
+  pintarSesion();
+  mostrar('Sesión cerrada en este dispositivo.');
 });
 
 document.getElementById('generar-horario').addEventListener('click', async function () {
@@ -72,7 +68,7 @@ document.getElementById('generar-horario').addEventListener('click', async funct
   resultadoHorario.textContent = 'Generando...';
   const op = KodamaMedicion.empezar('generar');
   try {
-    const respuesta = await KodamaApi.llamar(campoUrl.value, campoToken.value, 'generarHorario');
+    const respuesta = await KodamaApi.llamar('generarHorario');
     op.cerrarRed();
     if (!respuesta.ok) {
       op.terminar(false);
@@ -106,7 +102,7 @@ document.getElementById('ver-series').addEventListener('click', async function (
   selectorSerie.replaceChildren();
   zonaSeries.hidden = true;
   try {
-    const respuesta = await KodamaApi.llamar(campoUrl.value, campoToken.value, 'listarSeries');
+    const respuesta = await KodamaApi.llamar('listarSeries');
     if (!respuesta.ok) {
       resultadoSeries.textContent = 'Error: ' + respuesta.error;
       return;
@@ -155,8 +151,7 @@ document.getElementById('borrar-serie').addEventListener('click', async function
   let borrados = 0;
   try {
     for (const idSerie of aBorrar) {
-      const respuesta = await KodamaApi.llamar(
-        campoUrl.value, campoToken.value, 'borrarSerie', { idSerie: idSerie });
+      const respuesta = await KodamaApi.llamar('borrarSerie', { idSerie: idSerie });
       if (!respuesta.ok) {
         resultadoSeries.textContent = 'Error: ' + respuesta.error;
         return;

@@ -7,9 +7,9 @@
  * "kodama.medicion", como mucho MAX registros; los más viejos se borran):
  *
  * - Llamada al backend (los registra KodamaApi.llamar, todas): "red" es
- *   desde que sale el POST hasta tener la respuesta leída; "servidor" es
- *   lo que tardó el código de Apps Script (el campo "ms" de la respuesta).
- *   red − servidor = internet + el arranque de Google.
+ *   la acción completa, con todas sus consultas a la base (Supabase).
+ *   "servidor" era lo que tardaba el código de Apps Script (hasta el
+ *   Checkpoint 12); las mediciones nuevas no lo traen.
  * - Operación (apertura, guardar, generar, estadísticas): la página la
  *   abre con empezar() y la cierra con terminar().
  *     · red: el tiempo con al menos una llamada en curso (si hay dos en

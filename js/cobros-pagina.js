@@ -7,7 +7,6 @@
  * corregir, y queda guardado fijo en la hoja.
  */
 (async function () {
-  const config = KodamaApi.leerConfig();
   const estado = document.getElementById('estado-cobros');
   const zona = document.getElementById('zona-cobros');
   const mes = document.getElementById('filtro-mes');
@@ -23,11 +22,11 @@
   };
   const TEXTO_SITUACION = { pagado: 'Pagado', pendiente: 'Pendiente', sin_registrar: 'Sin registrar' };
 
-  if (!config.url || !config.token) {
-    estado.textContent = 'Falta configurar la conexión con tu hoja. ';
+  if (!KodamaApi.haySesion()) {
+    estado.textContent = 'Falta iniciar sesión. ';
     const enlace = document.createElement('a');
     enlace.href = 'config.html';
-    enlace.textContent = 'Configurar';
+    enlace.textContent = 'Iniciar sesión';
     estado.appendChild(enlace);
     KodamaCarga.listo();
     return;
@@ -47,7 +46,7 @@
   }
 
   async function pedir(accion, parametros) {
-    const respuesta = await KodamaApi.llamar(config.url, config.token, accion, parametros);
+    const respuesta = await KodamaApi.llamar(accion, parametros);
     if (!respuesta.ok) throw new Error(respuesta.error);
     return respuesta.data;
   }

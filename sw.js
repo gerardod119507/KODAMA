@@ -2,8 +2,8 @@
  * Service worker de KODAMA (Checkpoint 9).
  *
  * - Guarda los archivos de la app (páginas, estilos, scripts, íconos) para
- *   que abra sin conexión. Los DATOS no pasan por acá: las llamadas al Web
- *   App son POST a otro dominio y se dejan pasar sin tocar; lo último
+ *   que abra sin conexión. Los DATOS no pasan por aquí: las consultas a
+ *   Supabase van a otro dominio y se dejan pasar sin tocar; lo último
  *   cargado ya queda en el dispositivo (caché por semana, alumnos,
  *   plantillas) y se muestra con el aviso "Sin conexión".
  * - Estrategia "lo guardado primero, y se actualiza por detrás": abre al
@@ -13,7 +13,7 @@
  * - VERSION solo hay que cambiarla si cambia la LISTA de archivos (una
  *   pantalla o script nuevo); tests/pwa.test.js avisa si falta alguno.
  */
-const VERSION = 'kodama-v5';
+const VERSION = 'kodama-v6';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -31,6 +31,15 @@ const ARCHIVOS = [
   './js/pwa.js',
   './js/fecha.js',
   './js/medicion.js',
+  './js/supabase.js',
+  './js/db.js',
+  './js/backend/comun.js',
+  './js/backend/bloques.js',
+  './js/backend/horario.js',
+  './js/backend/alumnos.js',
+  './js/backend/importar.js',
+  './js/backend/pagos.js',
+  './js/backend/acciones.js',
   './js/api.js',
   './js/state.js',
   './js/capas.js',
@@ -86,7 +95,7 @@ self.addEventListener('activate', function (evento) {
 
 self.addEventListener('fetch', function (evento) {
   const pedido = evento.request;
-  // Solo archivos de la app: nada de POST ni de otros dominios (el Web App).
+  // Solo archivos de la app: nada de otros dominios (Supabase) ni de POST.
   if (pedido.method !== 'GET' || new URL(pedido.url).origin !== self.location.origin) return;
 
   evento.respondWith(caches.open(VERSION).then(function (cache) {

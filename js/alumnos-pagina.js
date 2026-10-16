@@ -3,13 +3,12 @@
  * borrar), y editar los catálogos de cursos y colegios.
  */
 (async function () {
-  const config = KodamaApi.leerConfig();
   const estado = document.getElementById('estado-alumnos');
-  if (!config.url || !config.token) {
-    estado.textContent = 'Falta configurar la conexión con tu hoja. ';
+  if (!KodamaApi.haySesion()) {
+    estado.textContent = 'Falta iniciar sesión. ';
     const enlace = document.createElement('a');
     enlace.href = 'config.html';
-    enlace.textContent = 'Configurar';
+    enlace.textContent = 'Iniciar sesión';
     estado.appendChild(enlace);
     KodamaCarga.listo();
     return;
@@ -34,7 +33,7 @@
   let catalogoEnEdicion = null; // { tipo, anterior }
 
   async function pedir(accion, parametros) {
-    const respuesta = await KodamaApi.llamar(config.url, config.token, accion, parametros);
+    const respuesta = await KodamaApi.llamar(accion, parametros);
     if (!respuesta.ok) throw new Error(respuesta.error);
     return respuesta.data;
   }

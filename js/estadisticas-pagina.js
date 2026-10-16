@@ -3,7 +3,7 @@
  * por área; totales del periodo contra el periodo anterior del mismo
  * largo; tabla por alumno; y dos gráficas (horas por alumno, por área).
  *
- * Una sola llamada al Web App por rango (periodo anterior + actual juntos);
+ * Una sola llamada por rango (periodo anterior + actual juntos);
  * cambiar el área no pide nada, se recalcula con lo que ya está.
  */
 (async function () {
@@ -21,19 +21,17 @@
     { clave: 'movidas', nombre: 'Movidas' },
     { clave: 'canceladas', nombre: 'Canceladas' }
   ];
-
-  const config = KodamaApi.leerConfig();
   const estado = document.getElementById('estado-estadisticas');
   const zona = document.getElementById('zona-estadisticas');
   const desde = document.getElementById('filtro-desde');
   const hasta = document.getElementById('filtro-hasta');
   const area = document.getElementById('filtro-area');
 
-  if (!config.url || !config.token) {
-    estado.textContent = 'Falta configurar la conexión con tu hoja. ';
+  if (!KodamaApi.haySesion()) {
+    estado.textContent = 'Falta iniciar sesión. ';
     const enlace = document.createElement('a');
     enlace.href = 'config.html';
-    enlace.textContent = 'Configurar';
+    enlace.textContent = 'Iniciar sesión';
     estado.appendChild(enlace);
     KodamaCarga.listo();
     return;
@@ -57,7 +55,7 @@
   }
 
   async function pedir(accion, parametros) {
-    const respuesta = await KodamaApi.llamar(config.url, config.token, accion, parametros);
+    const respuesta = await KodamaApi.llamar(accion, parametros);
     if (!respuesta.ok) throw new Error(respuesta.error);
     return respuesta.data;
   }

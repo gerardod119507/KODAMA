@@ -64,15 +64,14 @@ const KodamaState = (function () {
     });
   }
 
-  /** Pide la semana al Web App (una sola llamada) y la guarda. */
+  /** Pide la semana a la base (una sola llamada) y la guarda. */
   async function pedirSemana(lunes, domingo) {
-    const config = KodamaApi.leerConfig();
-    if (!config.url || !config.token) {
+    if (!KodamaApi.haySesion()) {
       const error = new Error('sin_configuracion');
       error.codigo = 'sin_configuracion';
       throw error;
     }
-    const respuesta = await KodamaApi.llamar(config.url, config.token, 'listarBloquesRango', { desde: lunes, hasta: domingo });
+    const respuesta = await KodamaApi.llamar('listarBloquesRango', { desde: lunes, hasta: domingo });
     if (!respuesta.ok) {
       throw new Error(respuesta.error);
     }
