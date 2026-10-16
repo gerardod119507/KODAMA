@@ -185,18 +185,28 @@ test('al irse de la página, una llamada cortada no se anota como falla', () => 
   assert.strictEqual(leer().length, 1);
 });
 
-test('KodamaApi.llamar mide cada llamada: servidor desde "ms"; sin red se anota como fallida', async () => {
+test('KodamaApi.llamar mide cada acción entera; sin red se anota como fallida (Checkpoint 13)', async () => {
   const { entorno, avanzar, leer } = cargar();
-  entorno.fetch = async () => {
-    avanzar(1200);
-    return { text: async () => JSON.stringify({ ok: false, error: 'bloque_no_encontrado', ms: 80 }) };
+  // La acción corre en la página (js/backend/) con sus consultas a Supabase.
+  entorno.KodamaBackend = {
+    ejecutar: async (accion, parametros) => {
+      avanzar(1200);
+      return { ok: false, error: 'bloque_no_encontrado', accion, parametros };
+    }
   };
-  const r = await vm.runInContext('KodamaApi.llamar("u", "t", "archivarBloque", {})', entorno);
-  assert.strictEqual(r.error, 'bloque_no_encontrado');
-  entorno.fetch = async () => { avanzar(300); throw new Error('Failed to fetch'); };
-  await assert.rejects(vm.runInContext('KodamaApi.llamar("u", "t", "ping")', entorno));
+  const r = await vm.runInContext('KodamaApi.llamar("archivarBloque", { id: "b1" })', entorno);
+  assert.deepStrictEqual([r.error, r.accion, r.parametros.id], ['bloque_no_encontrado', 'archivarBloque', 'b1']);
+  entorno.KodamaBackend = {
+    ejecutar: async () => {
+      avanzar(300);
+      const sinRed = new Error('Failed to fetch');
+      sinRed.red = true;
+      throw sinRed;
+    }
+  };
+  await assert.rejects(vm.runInContext('KodamaApi.llamar("ping")', entorno), /Failed to fetch/);
   const [a, b] = leer();
-  assert.deepStrictEqual([a.accion, a.red, a.servidor, a.ok], ['archivarBloque', 1200, 80, true], 'un error del backend igual es un viaje completo');
+  assert.deepStrictEqual([a.accion, a.red, a.servidor, a.ok], ['archivarBloque', 1200, null, true], 'un error de la acción igual es un viaje completo');
   assert.deepStrictEqual([b.accion, b.red, b.servidor, b.ok], ['ping', 300, null, false]);
 });
 
