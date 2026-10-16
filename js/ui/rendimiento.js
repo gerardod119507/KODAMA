@@ -50,7 +50,7 @@ const KodamaRendimiento = (function () {
     const linea = el('p', 'rendimiento__partes');
     if (r.tipo === 'llamada') {
       if (r.servidor === null) {
-        linea.textContent = 'Todo es red (esta respuesta no trae el tiempo del servidor).';
+        linea.textContent = 'Es la acción completa: sus consultas a la base de datos, con internet incluido.';
       } else {
         partes(linea, [
           { nombre: 'Servidor', ms: r.servidor },

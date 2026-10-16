@@ -9,9 +9,7 @@
   const rangoHasta = document.getElementById('rango-hasta');
   // Celular: día y semana colapsan los huecos largos (en escritorio no).
   const pantallaCelular = window.matchMedia('(max-width: 699px)');
-
-  const config = KodamaApi.leerConfig();
-  if (!config.url || !config.token) {
+  if (!KodamaApi.haySesion()) {
     // Sin conexión configurada se avisa aquí mismo, con un enlace. Nunca se
     // salta solo a Configuración: la app no debe cambiar de página sin que
     // Gerardo lo pida.
@@ -123,9 +121,6 @@
       KodamaDia.render(contenedor, bloques.filter(function (b) { return b.fecha === fecha; }), {
         fecha: fecha,
         hoy: KodamaFecha.hoy(),
-        // Los bocetos del espíritu solo se comparan mientras no haya una
-        // elección — no depende de si hay o no bloques ese día en particular.
-        compararBocetos: true,
         esDeLaCapa: esDeLaCapa,
         alTocar: KodamaFicha.abrir,
         colapsarHuecos: pantallaCelular.matches
@@ -149,7 +144,7 @@
 
   /**
    * Muestra al instante lo que haya (en memoria o guardado en el
-   * dispositivo) y pide la semana al Web App por detrás, en una sola
+   * dispositivo) y pide la semana a la base por detrás, en una sola
    * llamada. Solo muestra "Cargando..." si no hay nada guardado.
    */
   async function cargar() {
@@ -242,7 +237,7 @@
   }
 
   async function pedir(accion, parametros) {
-    const respuesta = await KodamaApi.llamar(config.url, config.token, accion, parametros);
+    const respuesta = await KodamaApi.llamar(accion, parametros);
     if (!respuesta.ok) {
       throw new Error(respuesta.error);
     }
@@ -322,7 +317,7 @@
   });
 
   // Elegir los días: solo cambia qué parte de la semana (ya en memoria) se
-  // dibuja, así que no pide nada al Web App.
+  // dibuja, así que no pide nada a la base.
   rangoDesde.addEventListener('change', function () {
     rango = KodamaVista.ajustarRango(rango, 'desde', rangoDesde.value);
     pintarEncabezado();

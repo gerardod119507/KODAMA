@@ -1,54 +1,48 @@
+/**
+ * KODAMA — la puerta por la que las pantallas piden y guardan datos.
+ *
+ * Hasta el Checkpoint 12 cada llamada era un POST al Web App de Apps
+ * Script. Desde el Checkpoint 13 la acción corre aquí mismo
+ * (js/backend/) y lee y escribe Supabase. La respuesta tiene la misma
+ * forma de siempre: { ok: true, data } o { ok: false, error }; sin red,
+ * la llamada falla (como fallaba fetch), y cada pantalla muestra lo
+ * guardado en el dispositivo con "Sin conexión".
+ */
 const KodamaApi = (function () {
-  const CLAVE_CONFIG = 'kodama.config';
-
-  function leerConfig() {
-    try {
-      return JSON.parse(localStorage.getItem(CLAVE_CONFIG)) || { url: '', token: '' };
-    } catch (err) {
-      return { url: '', token: '' };
-    }
+  // La URL y el token del Web App viejo (hasta el Checkpoint 12) ya no
+  // sirven, y el token todavía abre el Apps Script: se borran del
+  // dispositivo la primera vez que abre la app nueva.
+  try {
+    localStorage.removeItem('kodama.config');
+  } catch (error) {
+    // sin almacenamiento: no hay nada que borrar
   }
 
-  function guardarConfig(url, token) {
-    localStorage.setItem(CLAVE_CONFIG, JSON.stringify({ url: url, token: token }));
-  }
-
-  // Cada llamada se mide (js/medicion.js): tiempo de red y, si el backend
-  // lo manda, tiempo del servidor. Si la página no cargó la medición, nada.
+  // Cada llamada se mide (js/medicion.js): el tiempo de la acción completa,
+  // con todas sus consultas a la base. Si la página no cargó la medición, nada.
   const medir = typeof KodamaMedicion !== 'undefined'
     ? KodamaMedicion.llamada
     : function () { return function () {}; };
 
-  async function llamar(url, token, action, parametros) {
-    const cuerpo = Object.assign({ token: token, action: action }, parametros || {});
-    const terminar = medir();
-    let texto;
-    try {
-      const respuesta = await fetch(url, {
-        method: 'POST',
-        // text/plain es un valor "safelisted" de CORS: el navegador no manda
-        // preflight OPTIONS, que Apps Script no sabe responder.
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(cuerpo)
-      });
-      texto = await respuesta.text();
-    } catch (err) {
-      terminar(action, null, false); // sin red: también se anota (falló)
-      throw err;
-    }
-    let datos;
-    try {
-      datos = JSON.parse(texto);
-    } catch (err) {
-      terminar(action, null, false);
-      throw new Error('La respuesta no es JSON. Revisa que la URL termine en /exec y que ' +
-        'el despliegue tenga acceso "Cualquier usuario".');
-    }
-    // Un error del backend (ok: false) igual fue un viaje completo: su
-    // tiempo cuenta. "Falló" es solo sin red o sin respuesta legible.
-    terminar(action, datos && datos.ms, true);
-    return datos;
+  /** ¿Hay una sesión iniciada en este dispositivo? */
+  function haySesion() {
+    return KodamaSupabase.haySesion();
   }
 
-  return { leerConfig: leerConfig, guardarConfig: guardarConfig, llamar: llamar };
+  async function llamar(accion, parametros) {
+    const terminar = medir();
+    let respuesta;
+    try {
+      respuesta = await KodamaBackend.ejecutar(accion, parametros);
+    } catch (error) {
+      terminar(accion, null, false); // sin red: también se anota (falló)
+      throw error;
+    }
+    // Un error de la acción (ok: false) igual fue un viaje completo: su
+    // tiempo cuenta. "Falló" es solo sin red.
+    terminar(accion, null, true);
+    return respuesta;
+  }
+
+  return { haySesion: haySesion, llamar: llamar };
 })();

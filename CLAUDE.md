@@ -37,14 +37,16 @@ Además existen las **reuniones imprevistas**, que no son un área: son un
 
 ## Stack (100% gratuito, sin excepciones)
 
-- **Base de datos:** Google Sheets.
-- **API:** Google Apps Script publicado como Web App. El código fuente vive
-  en `apps-script/` en este repo. Un workflow de GitHub Actions lo despliega
-  solo con cada push a `main` que toque esa carpeta (`clasp push` +
-  `clasp deploy`) — ver "Despliegue de Apps Script (CI/CD)" más abajo. El
-  editor de Apps Script deja de ser donde se edita código; sigue siendo
-  necesario para tareas puntuales que no se pueden hacer por API (generar el
-  token, ver logs de ejecución).
+Desde el **Checkpoint 13** (octubre 2026):
+
+- **Base de datos:** Supabase (Postgres), proyecto `kodama`, región São
+  Paulo (`sa-east-1`, la más cercana a Bolivia), plan gratis. Las tablas
+  son las mismas hojas que tenía el Sheet, con las mismas columnas (ver
+  "Supabase").
+- **Lógica ("backend"):** JavaScript que corre **en la página**
+  (`js/backend/`), con los mismos nombres de acciones y las mismas reglas
+  que tenía el Apps Script. Lee y escribe Supabase con `fetch` por su API
+  REST (`js/supabase.js` + `js/db.js`). Sin librerías.
 - **Frontend:** HTML + CSS + JavaScript vanilla. Sin frameworks, sin build
   step. Publicado en GitHub Pages.
 - **PWA** instalable en el celular (manifest + service worker, Checkpoint 9).
@@ -52,11 +54,37 @@ Además existen las **reuniones imprevistas**, que no son un área: son un
   micrófono del teclado del móvil, así que basta con buenos campos de texto;
   no hace falta integrar reconocimiento de voz en la app.
 
+Hasta el Checkpoint 12 la base era **Google Sheets** y la API un **Web App
+de Apps Script**. `apps-script/`, su workflow de despliegue y sus pruebas
+(`tests/fake-google.js` y las que lo usan) **quedan en el repo solo hasta
+que Gerardo confirme la mudanza**; después se borran en un PR de limpieza.
+Mientras tanto **no tocar `apps-script/`**: cualquier cambio ahí dispara
+el despliegue al Web App viejo.
+
 ### Por qué este stack
 
-Cero costo, cero servidor propio que mantener, y todo el código (menos el
-Apps Script) es estático y cacheable por el navegador — ideal para una PWA
-simple sin build tools.
+Cero costo, cero servidor propio que mantener, y todo el código es
+estático y cacheable por el navegador — ideal para una PWA simple sin
+build tools.
+
+**Por qué se dejó Sheets (Checkpoint 13):** cada lectura o guardado pasaba
+por Apps Script, que tarda segundos en arrancar y responder: la app se
+sentía lenta en el uso diario. Supabase responde en décimas de segundo, da
+inicio de sesión de verdad (en vez de un token copiado a mano) y una base
+con reglas que protegen los datos de los alumnos. GitHub Pages se quedó:
+servir la página nunca fue lo lento.
+
+**Por qué sin `supabase-js`:** el inicio de sesión y la API REST son
+peticiones HTTP comunes; `js/supabase.js` hace lo que la app
+necesita y se entiende entero. Así se cumple la regla de no sumar
+dependencias, y no se carga en la página código de terceros que podría
+leer los datos.
+
+**Por qué la lógica en la página y no en funciones del servidor:** es un
+solo usuario, y la base igual protege todo con RLS (nadie más que la
+sesión de Gerardo ve o toca sus filas): validar en la página no abre
+ningún hueco. Las funciones de servidor (Edge Functions) sumarían otro
+despliegue, otro arranque lento y otra cosa que mantener.
 
 ## Código anterior (abandonado)
 
@@ -67,41 +95,41 @@ Se parte de cero.
 ## Seguridad (no negociable)
 
 - El repo es **público** (requisito de GitHub Pages gratis en cuenta
-  personal). Nunca subir datos reales, IDs de hojas, tokens ni la URL del
-  Web App al repo.
-- El Web App valida un **token secreto** guardado en *Script Properties* de
-  Apps Script (nunca en el código fuente). El frontend lo pide una vez
-  (prompt) y lo guarda solo en el dispositivo (`localStorage`), nunca en el
-  repo.
-- **El token nunca va en la URL** (ni como query param, ni en `doGet`).
-  Todas las llamadas —incluidas las de prueba— son `POST` con el token en el
-  cuerpo. Motivo: las URLs quedan en logs del navegador, del proxy, del
-  historial y de Apps Script; el cuerpo de un POST no se loguea igual.
-- **CORS con Apps Script:** el Web App no permite configurar headers CORS
-  personalizados en un `doPost` normal, así que evitamos el *preflight*
-  (`OPTIONS`) enviando el `POST` con `Content-Type: text/plain`. Si usáramos
-  `application/json`, el navegador dispararía un preflight que Apps Script no
-  responde bien, y la petición fallaría. El body igual contiene JSON (como
-  texto), y lo parseamos manualmente en `doPost`.
-- **Riesgo residual del token en `localStorage`:** si alguien tiene acceso
-  físico al celular desbloqueado, o si en el futuro se agrega una librería de
-  terceros comprometida (XSS), el token podría leerse. Mitigamos limitando
-  qué puede hacer el token (solo esta Web App, no acceso directo a la
-  cuenta de Google) y evitando cualquier script de terceros no auditado. No
-  es un secreto de nivel bancario; es suficiente para un proyecto personal.
-- **Nunca usar `innerHTML` con contenido que venga del usuario o del Sheet**
-  (notas, títulos). Usar `textContent` o creación de nodos DOM, para evitar
-  XSS.
-- **Cómo probar el Web App sin exponer el token:** nunca pegar el token en la
-  barra de direcciones ni en un comando que quede en el historial de shell en
-  texto plano. La prueba es `config.html`: el token se escribe en un campo
-  `type="password"`, viaja en el cuerpo del `POST` y se guarda solo en
-  `localStorage` del dispositivo. Se eligió una página en vez de un script de
-  terminal por dos motivos: Gerardo prueba desde el celular, y una prueba con
-  `curl` no verificaría CORS —solo una petición real desde el origen de
-  GitHub Pages demuestra que el navegador puede hablar con el Web App.
+  personal). **Nunca subir datos reales** (nombres de alumnos, teléfonos,
+  pagos) al repo: ni en el código, ni en pruebas, ni en datos de ejemplo,
+  ni en capturas.
+- **Qué protege los datos:** cada tabla tiene Row Level Security con la
+  regla `owner = auth.uid()` (`supabase/migraciones/001_esquema_inicial.sql`):
+  solo la sesión de Gerardo ve y toca sus filas; sin sesión (`anon`) no hay
+  acceso a ninguna tabla. Cada fila guarda su dueño (`owner`), que pone la
+  base sola.
+- **Lo que sí puede estar en el repo:** la URL del proyecto y la **clave
+  pública** (`sb_publishable_…`, en `js/supabase.js`). Identifican el
+  proyecto, no abren nada sin una sesión. **Lo que nunca va al repo ni a
+  la página:** la clave secreta (`service_role` / `sb_secret_…`), que se
+  salta RLS.
+- **Registro cerrado:** en Supabase → Authentication → Sign In / Providers
+  está apagado *Allow new users to sign up*. El único usuario es el de
+  Gerardo, creado a mano en el panel.
+- **La contraseña nunca se guarda.** `config.html` la manda una vez a
+  Supabase Auth y guarda en el dispositivo (`localStorage`,
+  `kodama.sesion`) solo la sesión: un token que vence en una hora y otro
+  para renovarlo. "Cerrar sesión" los borra y avisa al servidor.
+- **Riesgo residual de la sesión en `localStorage`:** quien tenga el celular
+  desbloqueado, o un script de terceros comprometido (XSS), podría leerla.
+  Se mitiga sin cargar scripts de terceros (por eso tampoco `supabase-js`)
+  y con la sesión que vence sola. Suficiente para un proyecto personal.
+- **Nunca usar `innerHTML` con contenido que venga del usuario o de la
+  base** (notas, títulos, nombres). Usar `textContent` o creación de nodos
+  DOM, para evitar XSS.
+- **Permisos mínimos** (`003_permisos_minimos.sql`): `authenticated` solo
+  puede leer, crear, editar y borrar filas (siempre bajo RLS); se le quitó
+  `TRUNCATE`, que Supabase da por defecto y se salta RLS.
 
-## Despliegue de Apps Script (CI/CD)
+## Despliegue de Apps Script (CI/CD) — retirado en el Checkpoint 13
+
+> Todo lo de esta sección es del backend viejo. Sigue en el repo solo
+> hasta el PR de limpieza (ver "Stack"). No se usa más.
 
 `.github/workflows/deploy-apps-script.yml` corre en cada push a `main` que
 toque `apps-script/**` **o el propio archivo del workflow**, y también se
@@ -207,6 +235,45 @@ rompió una hoja a mano, esa petición falla y la siguiente la repara.
 `tests/` + `.github/workflows/tests.yml`. Corren con `npm test` (que es
 `node --test tests/*.test.js`) en cada push y cada PR. **Cero dependencias:**
 usan el runner de pruebas que ya trae Node, no se instala nada.
+
+**Backend nuevo (Checkpoint 13):**
+
+- `tests/fake-supabase.js` — base de datos falsa en memoria con el mismo
+  "transporte" que `js/db.js` usa contra la API REST (mismos filtros).
+  Imita **a propósito** lo que la base real rechaza: clave repetida,
+  columna obligatoria vacía, valor fuera de lo permitido, fecha imposible,
+  área/curso/colegio/alumno inexistente, columna que no existe o que
+  calcula la base (`serie_id`), y que todas las filas de un envío traigan
+  las mismas columnas. También hace lo que la base hace sola: `serie_id`,
+  `orden`, `actualizado`, valores por defecto y el cambio en cascada al
+  renombrar un curso o colegio. Cada envío es todo o nada.
+- `tests/entorno-backend.js` — carga `js/db.js` y `js/backend/` en un
+  sandbox con esa base, un reloj fijo (en hora de La Paz) e ids previsibles
+  (`b00000001`, …). `env.post({ action, … })` es lo que pide la app;
+  `env.tabla('bloques')` muestra lo guardado como lo ve la app;
+  `env.peticiones()` cuenta los viajes a la base.
+- `tests/backend-*.test.js` — las pruebas que tenía el Apps Script,
+  pasadas al backend nuevo: `escritura` (bloques y reglas, lectura por día
+  y semana, ids, viajes a la base), `horario` (generador y series),
+  `estados`, `fijos`, `alumnos` (y catálogos), `importar` (alumnos, reglas
+  e histórico), `pagos` (y plantillas) y `lugar`.
+- `tests/backend-supabase.test.js` — la conexión, con un `fetch` falso que
+  contesta como Supabase: inicio de sesión (y que la contraseña no se
+  guarde), renovación del token (una sola vez con varias peticiones),
+  reintento ante 401, sesión vencida, sin red, errores de la base con su
+  prefijo, cómo se arman las consultas, páginas de 1000 filas, envíos en
+  lotes, la traducción app ↔ base, y que cada pantalla cargue los scripts
+  en orden.
+
+**Probado además contra Postgres de verdad** (no queda en el repo: corre
+en una máquina con Postgres): las mismas `backend-*.test.js` contra un
+Postgres local con las migraciones de `supabase/migraciones/` y RLS, más
+un recorrido de la app en Chromium (iniciar sesión, ver el día, crear,
+marcar dictada, mover, día vacío, crear una materia, crear un alumno,
+cobros, estadísticas, token vencido, cerrar sesión). Si se vuelve a hacer,
+el esquema de la carpeta de migraciones es la fuente de verdad.
+
+**Backend viejo (Apps Script), hasta el PR de limpieza:**
 
 - `tests/fake-google.js` — entorno falso de Apps Script (`SpreadsheetApp`,
   `Utilities`, `PropertiesService`, `ContentService`) que evalúa los `.gs`
@@ -348,15 +415,81 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   incluidos, orden, archivados, token), semana lunes–domingo cruzando mes y
   año, franja horaria, reparto lado a lado y recordar día/semana.
 
-**Qué NO cubren:** nada que necesite un navegador o el Sheet real (render
-del DOM, CSS, permisos de Google, que el despliegue efectivamente sirva la
+**Qué NO cubren:** nada que necesite un navegador o la base real (render
+del DOM, CSS, la sesión y las reglas reales de Supabase, que el despliegue sirva la
 versión nueva). Eso se verifica a mano, y si no se verificó hay que decirlo
 como riesgo, no darlo por bueno.
 
 **Al agregar comportamiento nuevo al backend o a la lógica del frontend, se
 agrega su prueba en el mismo PR.**
 
-## Modelo de datos (Google Sheets)
+## Supabase (Checkpoint 13)
+
+- **Proyecto:** `kodama` (`jpceexuzagfyiqvoxmud`), región São Paulo, plan
+  gratis. Panel: supabase.com → el proyecto. **Si pasa más de una semana
+  sin usarse, el plan gratis lo pone en pausa**: no se pierde nada, se
+  reactiva desde el panel (la app avisa con `servidor_no_disponible`).
+- **Esquema:** `supabase/migraciones/`, numeradas y en orden. Son la fuente
+  de verdad: un cambio de tablas o columnas es **una migración nueva** (un
+  archivo `00N_…sql`) que se aplica en Supabase (SQL Editor, o la
+  herramienta de Claude) y se sube en el mismo PR. Nunca editar una
+  migración ya aplicada.
+- **Tablas:** `areas`, `cursos`, `colegios`, `alumnos`, `horario`,
+  `bloques`, `pagos`, `plantillas`: las mismas hojas del Sheet, con las
+  mismas columnas y sin tildes en los nombres (`titulo`, `area`, `dias`).
+  Cambios respecto del Sheet:
+  - `alumno_id` (texto "a1,a2") es `alumno_ids` (lista `text[]`).
+  - `archivado` es sí/no (`boolean`); fechas `date`; tarifa, monto y
+    duración números. Las horas siguen siendo texto `HH:mm`.
+  - `estado` nunca está vacío: lo que era vacío es `programada`.
+  - `bloques.serie_id` lo calcula la base desde el id (`h1234abcd-fecha` →
+    `h1234abcd`); `actualizado` lo pone un trigger en cada cambio.
+  - Cada tabla tiene `owner` (el dueño, para RLS) y `orden` (un número que
+    crece con cada fila nueva: el orden de las filas del Sheet, porque
+    Postgres no garantiza ninguno sin `ORDER BY`).
+  - Enlaces: `area` → `areas`; `curso` → `cursos` y `colegio` →
+    `colegios` (renombrar un curso o colegio cambia solo a sus alumnos);
+    `pagos.alumno_id` → `alumnos`.
+  - `alumnos` tiene columnas nuevas, vacías por ahora: `materias`,
+    `tutor_nombre`, `tutor_parentesco`, `tutor_telefono`, `fecha_inicio`
+    (para la ficha completa del alumno, un checkpoint futuro).
+- **Traducción app ↔ base** (`js/db.js`, `KodamaDB`): la app sigue viendo
+  objetos de texto como las filas del Sheet (`archivado: "TRUE"`,
+  `alumno_id: "a1,a2"`, vacío = `""`, `creado: "2026-09-25 16:32"` en La
+  Paz). Así ninguna pantalla cambió. Las escrituras completas mandan todas
+  las columnas (la API REST exige las mismas claves en un envío de varias
+  filas); las ediciones, solo las que cambian.
+- **Filtros** (`KodamaDB.leer(tabla, filtros)`): lista de `[columna,
+  operador, valor]` con nombres y valores **de la base** (`alumno_ids`,
+  `['archivado', 'is', false]`). Operadores: `eq`, `neq`, `gt`, `gte`, `lt`,
+  `lte`, `in`, `is`, `not_null`, `like`. Se lee de a 1000 filas (el tope de
+  Supabase) hasta que vienen menos; se escribe en lotes de 500. Editar o
+  borrar sin filtro se niega.
+- **Sesión** (`js/supabase.js`, `KodamaSupabase`): `iniciarSesion(correo,
+  clave)`, `cerrarSesion()`, `haySesion()`. El token se renueva solo un
+  minuto antes de vencer (una sola vez aunque haya varias peticiones a la
+  vez) y, si el servidor igual dice 401, se renueva y se reintenta una vez.
+  Si la renovación es rechazada, se borra la sesión
+  (`sesion_vencida: vuelve a iniciar sesión en Configuración.`).
+- **Errores:** sin red, el error lleva `red = true` y se deja pasar (la
+  pantalla muestra lo guardado con "Sin conexión", igual que con el Web
+  App); un 5xx de Supabase cuenta igual. Los de la base llevan prefijo:
+  `duplicado`, `referencia_invalida`, `dato_invalido`, `no_autorizado`,
+  `servidor_no_disponible`, `error_base_datos`. Lo normal es no verlos: el
+  backend valida todo antes de escribir.
+- **Editar a mano:** Supabase → Table Editor (como era abrir el Sheet). Si
+  se cambian reglas de `horario` a mano, después "Regenerar todo el
+  horario". La app nunca necesita el panel para el uso diario.
+
+## Modelo de datos (heredado del Sheet)
+
+> Las reglas de esta sección (qué significa cada columna, cómo se generan
+> y mueven las clases) siguen valiendo tal cual: el backend se pasó a
+> `js/backend/` sin cambiar comportamiento. Lo que cambió es dónde se
+> guardan (tablas de Supabase, ver arriba). Las partes sobre formato de
+> celdas, columnas agregadas al final, `asegurarEstructura` y ordenar la
+> hoja son historia del Sheet.
+
 
 ### Hoja `Areas`
 4 filas fijas al arrancar (sin fila para "Reunión": no es un área, es un
@@ -804,31 +937,32 @@ los alumnos que lo tenían.
   archivos de la app y responde **primero con lo guardado y actualiza por
   detrás**: abre al instante y sin conexión; una versión nueva se ve al
   abrir la app por segunda vez después del despliegue. Los datos no pasan
-  por el service worker (son POST a otro dominio): offline se ve lo último
+  por el service worker (van a otro dominio, Supabase): offline se ve lo último
   cargado (caché por semana, alumnos, plantillas) con "Sin conexión".
   `VERSION` en `sw.js` solo cambia si cambia la lista de archivos;
   `tests/pwa.test.js` avisa si una página usa un archivo que no está.
 
-## API (acciones del Web App)
+## API (acciones)
 
-Todas se piden con `POST` (`action` + `token` + parámetros en el cuerpo).
-Respuesta uniforme: `{ ok: true, data: ... }` o `{ ok: false, error: "..." }`.
+Desde el Checkpoint 13 cada pantalla pide **`KodamaApi.llamar(accion,
+parametros)`** y la acción corre en la página (`js/backend/`), con sus
+consultas a Supabase. Respuesta uniforme, igual que con el Web App:
+`{ ok: true, data: ... }` o `{ ok: false, error: "..." }`; sin red, la
+llamada falla. `KodamaApi.haySesion()` dice si hay sesión (reemplaza la
+URL + token de antes).
 
-**Fuente de verdad de los nombres:** el objeto `ACCIONES` en
-`apps-script/Code.gs`. Es lo único que decide qué `action` reconoce el
-backend — no hay un `switch` aparte ni una lista duplicada. Si el nombre
-que manda el frontend (`KodamaApi.llamar(url, token, 'nombreDeAccion', ...)`
-en `js/*.js`) no coincide **letra por letra** con una clave de `ACCIONES`,
-el backend responde `accion_desconocida` y el mensaje de error incluye la
-acción recibida y la lista de acciones válidas — no hace falta adivinar,
-revisar la respuesta alcanza. Agregar una acción nueva es agregar una
-entrada a `ACCIONES`, en un solo lugar.
+**Fuente de verdad de los nombres:** el objeto `B.acciones` en
+`js/backend/acciones.js` (antes `ACCIONES` en `apps-script/Code.gs`, con
+los mismos nombres). Si el nombre que pide una pantalla no coincide
+**letra por letra**, la respuesta es `accion_desconocida` con la acción
+recibida y la lista de las válidas. Agregar una acción nueva es agregar una
+entrada ahí, en un solo lugar.
 
-Esta tabla es una copia legible de `ACCIONES` — si alguna vez no coincide
-con el código, el código manda:
-
-Con token válido, la respuesta trae además `ms`: lo que tardó el código
-del backend (para la medición de rendimiento).
+Esta lista es una copia legible — si alguna vez no coincide con el código,
+el código manda. (Las menciones al Web App, el token o "la hoja" son del
+backend viejo: el comportamiento es el mismo.) `migrarAlumnosFractal` ya
+no existe: era la herramienta para pasar a alumnos los nombres escritos en
+los títulos, y antes de la mudanza no quedaba nada por vincular.
 
 - `ping` — sin parámetros. Devuelve `{ mensaje, zonaHoraria }`; confirma que
   el Web App responde.
@@ -1013,13 +1147,12 @@ pesada en negrita), y las últimas 20 mediciones. **"Copiar para enviar"**
 acciones y navegador) para pegarlo en el chat: las mediciones viven solo
 en el celular y Claude no las ve de otra forma.
 
-- **Cada llamada al backend** la mide `KodamaApi.llamar`: **red** = desde
-  que sale el POST hasta tener la respuesta leída; **servidor** = el campo
-  `ms` que manda `doPost` (lo que tardó el código de Apps Script, solo con
-  token válido). red − servidor = internet + el arranque de Google (Apps
-  Script además responde con una redirección, otro viaje). Un error del
-  backend (`ok: false`) igual cuenta como viaje completo; "falló" es solo
-  sin red o sin respuesta legible. Una llamada que el navegador corta al
+- **Cada llamada** la mide `KodamaApi.llamar`: **red** = la acción
+  completa, con todas sus consultas a Supabase. Hasta el Checkpoint 12
+  había además **servidor** (el `ms` que mandaba el Apps Script); las
+  mediciones nuevas no lo traen (`null`), las viejas guardadas en el
+  celular lo conservan. Un error de la acción (`ok: false`) igual cuenta
+  como viaje completo; "falló" es solo sin red. Una llamada que el navegador corta al
   irse de la página (`pagehide`) no se anota.
 - **Operaciones** (`empezar` … `terminar`): `apertura` (index.html, desde
   que el navegador empieza a abrir la página hasta pintar la semana recién
@@ -1321,10 +1454,12 @@ ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
   Configuración no espera datos: la suelta enseguida.
 - **`prefers-reduced-motion`:** el logo completo, quieto.
 
-**Bocetos de la mascota:** propuestos en `js/ui/espiritu.js` (`dormidoA` /
-`dormidoB`), visibles en el estado vacío de la vista de día mientras no haya
-una elección de Gerardo. Solo existe el estado **dormido** por ahora; los
-otros 3 estados se agregan una vez elegido el diseño base.
+**Mascota:** `js/ui/espiritu.js` (`dormidoA`), en el estado vacío de la
+vista de día. Hasta el Checkpoint 13 el día vacío mostraba también el
+boceto B con "Elige uno (A o B)": un resto de cuando se comparaban, que se
+quitó (queda el A, el que ya se mostraba solo). Solo existe el estado
+**dormido**; la mascota definitiva (el cuervo de bosque) es un trabajo
+aparte.
 
 **Forma por tipo de bloque** (`js/ui/iconos.js`): cuadrado = fijo, círculo =
 variable, triángulo = reunión. La forma es el canal accesible para el tipo;
@@ -1369,14 +1504,14 @@ notificaciones, cola offline.
 KODAMA/
 ├── .github/
 │   └── workflows/
-│       ├── deploy-apps-script.yml  # clasp push + clasp deploy en cada push a main
+│       ├── deploy-apps-script.yml  # (viejo) clasp push + deploy; se borra en la limpieza
 │       └── tests.yml                # npm test en cada push y PR
 ├── .gitignore               # .clasp.json / .clasprc.json (nunca al repo)
 ├── package.json             # sin dependencias: solo el comando de pruebas
 ├── tests/                   # pruebas con el runner de Node (ver "Pruebas automáticas")
 ├── index.html              # vista de día/semana + alta/edición de bloques
 ├── horario.html            # editor de las reglas del semestre
-├── config.html             # URL del Web App + token, prueba de conexión, importador
+├── config.html             # inicio de sesión, rendimiento, horario, importador
 ├── alumnos.html            # alumnos de Fractal + catálogos de cursos y colegios
 ├── cobros.html             # pago mensual y pagos registrados (Checkpoint 8)
 ├── estadisticas.html       # totales, por alumno y gráficas (Checkpoint 8)
@@ -1386,7 +1521,17 @@ KODAMA/
 │   └── styles.css
 ├── js/
 │   ├── app.js               # bootstrap de index.html (vista de día)
-│   ├── api.js                # fetch al Web App (POST text/plain), mide cada llamada
+│   ├── api.js                # KodamaApi: corre la acción (js/backend/) y la mide
+│   ├── supabase.js           # sesión (Supabase Auth) y peticiones REST, sin librerías
+│   ├── db.js                 # tablas vistas como texto (app ↔ base), filtros, lotes
+│   ├── backend/              # la lógica que antes era Apps Script (Checkpoint 13)
+│   │   ├── comun.js            # reloj de La Paz, ids, validaciones, áreas
+│   │   ├── bloques.js          # leer/crear/editar/mover/estado/archivar/borrar (Bloques.gs)
+│   │   ├── horario.js          # reglas, generador y series (Horario.gs)
+│   │   ├── alumnos.js          # alumnos y catálogos (Alumnos.gs)
+│   │   ├── importar.js         # importador de filas pegadas (Importar.gs)
+│   │   ├── pagos.js            # pagos y plantillas (Pagos.gs, Plantillas.gs)
+│   │   └── acciones.js         # la lista de acciones (ACCIONES de Code.gs)
 │   ├── medicion.js            # tiempos reales: llamadas y operaciones (red/servidor/render)
 │   ├── config.js              # lógica de config.html
 │   ├── horario.js              # lógica de horario.html: Materias, Alumnos fijos, Otros
@@ -1424,7 +1569,9 @@ KODAMA/
 │       └── espiritu.js            # bocetos SVG de la mascota
 ├── academia-fractal-logo.png  # el logo original (fuente del símbolo)
 ├── icons/                   # símbolo e íconos (los SVG son la fuente; los PNG salen de ahí)
-├── apps-script/
+├── supabase/
+│   └── migraciones/          # el esquema de la base, en orden (001, 002, 003…)
+├── apps-script/             # (viejo, hasta la limpieza) el backend en Google
 │   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
 │   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
 │   ├── Bloques.gs             # crear/editar/archivar/mover bloques y su estado
@@ -1470,5 +1617,11 @@ antes.
     Alumnos fijos por mes con borrado, Otros), ficha de materia con "No
     hubo clase", clases sueltas marcadas "fijo" (pasar a variable o
     borrar) y copiar el resumen de rendimiento.
+13. **Mudanza a Supabase**: la base pasa de Google Sheets a Supabase
+    (Postgres con RLS), la lógica del Apps Script pasa a la página
+    (`js/backend/`) sin cambiar comportamiento, inicio de sesión con correo
+    y contraseña, y el día vacío sin los bocetos A/B. Después: limpieza
+    (borrar `apps-script/`), aviso al guardar, ficha completa del alumno,
+    y APK con Capacitor y notificaciones.
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.

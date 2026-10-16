@@ -16,15 +16,13 @@
 (async function () {
   const S = KodamaSeccionesHorario;
   const estado = document.getElementById('estado-horario');
-
-  const config = KodamaApi.leerConfig();
-  if (!config.url || !config.token) {
+  if (!KodamaApi.haySesion()) {
     // Igual que en la vista principal: se avisa aquí, nunca se salta solo a
     // Configuración.
-    estado.textContent = 'Falta configurar la conexión con tu hoja. ';
+    estado.textContent = 'Falta iniciar sesión. ';
     const enlace = document.createElement('a');
     enlace.href = 'config.html';
-    enlace.textContent = 'Configurar';
+    enlace.textContent = 'Iniciar sesión';
     estado.appendChild(enlace);
     KodamaCarga.listo();
     return;
@@ -89,7 +87,7 @@
   });
 
   async function pedir(accion, parametros) {
-    const respuesta = await KodamaApi.llamar(config.url, config.token, accion, parametros);
+    const respuesta = await KodamaApi.llamar(accion, parametros);
     if (!respuesta.ok) {
       throw new Error(respuesta.error);
     }

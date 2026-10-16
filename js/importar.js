@@ -1,7 +1,6 @@
 /**
- * Configuración → importar filas pegadas y vincular alumnos en las clases
- * de Fractal. Las dos cosas funcionan igual: primero una vista previa (el
- * backend no escribe nada), después se confirma.
+ * Configuración → importar filas pegadas. Primero una vista previa (no se
+ * escribe nada), después se confirma.
  */
 (function () {
   const AYUDA = {
@@ -30,9 +29,8 @@
   }
 
   async function pedir(accion, parametros) {
-    const config = KodamaApi.leerConfig();
-    if (!config.url || !config.token) throw new Error('falta configurar la conexión (arriba)');
-    const respuesta = await KodamaApi.llamar(config.url, config.token, accion, parametros);
+    if (!KodamaApi.haySesion()) throw new Error('falta iniciar sesión (arriba)');
+    const respuesta = await KodamaApi.llamar(accion, parametros);
     if (!respuesta.ok) throw new Error(respuesta.error);
     return respuesta.data;
   }
@@ -120,88 +118,5 @@
   document.getElementById('cancelar-importar').addEventListener('click', function () {
     zonaPrevia.hidden = true;
     previaActual = null;
-  });
-
-  // --- Vincular alumnos en clases de Fractal -------------------------------
-
-  const zonaMigrar = document.getElementById('zona-migrar');
-  const resultadoMigrar = document.getElementById('resultado-migrar');
-
-  function pintarMigracion(datos) {
-    const lista = document.getElementById('filas-migrar');
-    lista.replaceChildren();
-    if (datos.filas.length === 0 && datos.sinResolver.length === 0) {
-      document.getElementById('resumen-migrar').textContent =
-        'No hay clases de Fractal con el nombre en el título: todo está vinculado.';
-      document.getElementById('aplicar-migrar').hidden = true;
-      zonaMigrar.hidden = false;
-      return;
-    }
-    let resumen = datos.filas.length + ' clases para vincular.';
-    if (datos.alumnosNuevos.length) resumen += ' Alumnos nuevos: ' + datos.alumnosNuevos.join(', ') + '.';
-    if (datos.sinResolver.length) resumen += ' ' + datos.sinResolver.length + ' sin resolver (quedan igual, ver abajo).';
-    document.getElementById('resumen-migrar').textContent = resumen;
-
-    datos.filas.forEach(function (fila) {
-      const li = el('li', 'fila-importar');
-      const etiqueta = el('label', 'fila-migrar');
-      const casilla = el('input');
-      casilla.type = 'checkbox';
-      casilla.checked = true;
-      casilla.value = fila.id;
-      etiqueta.appendChild(casilla);
-      const donde = fila.hoja === 'Horario' ? 'Regla del horario' : 'Clase del ' + fila.fecha;
-      const alumnos = fila.alumnos.map(function (a) { return a.nombre + (a.nuevo ? ' (nuevo)' : ''); }).join(', ');
-      const texto = el('span', 'fila-importar__detalle',
-        donde + ': "' + fila.tituloAntes + '" → ' + alumnos +
-        (fila.tituloDespues ? ' · tema: ' + fila.tituloDespues : ''));
-      etiqueta.appendChild(texto);
-      li.appendChild(etiqueta);
-      lista.appendChild(li);
-    });
-    // Sin casilla: no se pueden aplicar (nombre no reconocible o de varios alumnos).
-    datos.sinResolver.forEach(function (fila) {
-      const li = el('li', 'fila-importar fila-importar--error');
-      li.appendChild(el('span', 'fila-importar__detalle',
-        (fila.hoja === 'Horario' ? 'Regla del horario' : 'Clase') + ': "' + fila.titulo + '" — ' + fila.motivo));
-      lista.appendChild(li);
-    });
-    document.getElementById('aplicar-migrar').hidden = datos.filas.length === 0;
-    zonaMigrar.hidden = false;
-  }
-
-  document.getElementById('previa-migrar').addEventListener('click', async function () {
-    this.disabled = true;
-    resultadoMigrar.textContent = 'Buscando...';
-    try {
-      pintarMigracion(await pedir('migrarAlumnosFractal', { aplicar: false }));
-      resultadoMigrar.textContent = '';
-    } catch (error) {
-      resultadoMigrar.textContent = 'Error: ' + error.message;
-    } finally {
-      this.disabled = false;
-    }
-  });
-
-  document.getElementById('aplicar-migrar').addEventListener('click', async function () {
-    const ids = Array.prototype.map.call(
-      document.querySelectorAll('#filas-migrar input:checked'), function (c) { return c.value; });
-    if (ids.length === 0) {
-      resultadoMigrar.textContent = 'No marcaste ninguna clase.';
-      return;
-    }
-    this.disabled = true;
-    resultadoMigrar.textContent = 'Vinculando...';
-    try {
-      const datos = await pedir('migrarAlumnosFractal', { aplicar: true, ids: ids });
-      resultadoMigrar.textContent = 'Listo: ' + ids.length + ' clases vinculadas' +
-        (datos.alumnosNuevos.length ? ', ' + datos.alumnosNuevos.length + ' alumnos creados' : '') +
-        '. Completa curso, colegio y tarifa en Alumnos.';
-      zonaMigrar.hidden = true;
-    } catch (error) {
-      resultadoMigrar.textContent = 'No se pudo vincular: ' + error.message;
-    } finally {
-      this.disabled = false;
-    }
   });
 })();

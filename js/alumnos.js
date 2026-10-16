@@ -146,11 +146,10 @@ const KodamaAlumnos = (function () {
     oyentes.forEach(function (fn) { fn(directorio); });
   }
 
-  /** Pide alumnos y catálogos al Web App (una sola llamada) y avisa a quien escuche. */
+  /** Pide alumnos y catálogos a la base (una sola llamada) y avisa a quien escuche. */
   async function cargar() {
-    const config = KodamaApi.leerConfig();
-    if (!config.url || !config.token) return directorio;
-    const respuesta = await KodamaApi.llamar(config.url, config.token, 'listarAlumnos');
+    if (!KodamaApi.haySesion()) return directorio;
+    const respuesta = await KodamaApi.llamar('listarAlumnos');
     if (!respuesta.ok) throw new Error(respuesta.error);
     fijar(respuesta.data);
     return directorio;

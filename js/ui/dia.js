@@ -47,37 +47,24 @@ const KodamaDia = (function () {
     contenedor.replaceChildren();
     const p = document.createElement('p');
     p.className = 'estado';
-    p.textContent = 'Falta configurar la conexión con tu hoja. ';
+    p.textContent = 'Falta iniciar sesión. ';
     const enlace = document.createElement('a');
     enlace.href = 'config.html';
-    enlace.textContent = 'Configurar';
+    enlace.textContent = 'Iniciar sesión';
     p.appendChild(enlace);
     contenedor.appendChild(p);
   }
 
-  function renderVacio(contenedor, opciones) {
+  function renderVacio(contenedor) {
     contenedor.replaceChildren();
     const vacio = document.createElement('div');
     vacio.className = 'estado-vacio';
 
-    if (opciones && opciones.compararBocetos) {
-      const grupo = document.createElement('div');
-      grupo.className = 'bocetos';
-      grupo.innerHTML =
-        '<div class="boceto">' + KodamaEspiritu.dormidoA + '<p>Boceto A</p></div>' +
-        '<div class="boceto">' + KodamaEspiritu.dormidoB + '<p>Boceto B</p></div>';
-      vacio.appendChild(grupo);
-
-      const nota = document.createElement('p');
-      nota.className = 'nota';
-      nota.textContent = 'Elige uno (A o B) y cuéntamelo para integrarlo en el próximo checkpoint.';
-      vacio.appendChild(nota);
-    } else {
-      const mascota = document.createElement('div');
-      mascota.className = 'mascota';
-      mascota.innerHTML = KodamaEspiritu.dormidoA;
-      vacio.appendChild(mascota);
-    }
+    // El espíritu dormido (dibujo propio, sin datos del usuario: innerHTML es seguro).
+    const mascota = document.createElement('div');
+    mascota.className = 'mascota';
+    mascota.innerHTML = KodamaEspiritu.dormidoA;
+    vacio.appendChild(mascota);
 
     const texto = document.createElement('p');
     texto.className = 'estado-vacio__texto';
@@ -119,12 +106,12 @@ const KodamaDia = (function () {
    * mascota.
    *
    * bloques: TODOS los del día (todas las áreas).
-   * opciones: { fecha, hoy, esDeLaCapa, alTocar, colapsarHuecos, compararBocetos }
+   * opciones: { fecha, hoy, esDeLaCapa, alTocar, colapsarHuecos }
    */
   function render(contenedor, bloques, opciones) {
     const config = opciones || {};
     if (bloques.length === 0) {
-      renderVacio(contenedor, config);
+      renderVacio(contenedor);
       return;
     }
     KodamaSemana.render(contenedor, {
