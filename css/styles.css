@@ -390,19 +390,6 @@ ul {
   50% { transform: translateY(-4px); }
 }
 
-.bocetos {
-  display: flex;
-  justify-content: center;
-  gap: var(--espacio-5);
-  flex-wrap: wrap;
-}
-
-.boceto p {
-  margin: var(--espacio-1) 0 0;
-  font-size: var(--texto-sm);
-  opacity: 0.75;
-}
-
 /* Acciones flotantes (siempre visibles sobre la vista de día) */
 
 .acciones-flotantes {

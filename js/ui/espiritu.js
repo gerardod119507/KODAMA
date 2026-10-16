@@ -1,15 +1,14 @@
 /**
- * Bocetos del espíritu del bosque de KODAMA, estado "dormido" (día libre /
- * vista vacía). Dos alternativas para que Gerardo elija una en el
- * Checkpoint 3; los otros 3 estados (tranquilo, atento, contento) se
- * agregan recién cuando haya una elegida.
+ * El espíritu del bosque de KODAMA, estado "dormido" (día libre / vista
+ * vacía). Hasta el Checkpoint 13 había dos bocetos (A y B) para comparar;
+ * quedó el A, el que ya se mostraba solo.
  *
  * SVG propio, formas simples, sin referencias a diseños de terceros.
  */
 const KodamaEspiritu = (function () {
   const dormidoA =
     '<svg viewBox="0 0 160 140" width="120" height="105" role="img" ' +
-    'aria-label="Espíritu del bosque durmiendo, boceto A">' +
+    'aria-label="Espíritu del bosque durmiendo">' +
       '<ellipse cx="80" cy="122" rx="46" ry="8" fill="var(--fg)" opacity="0.12" />' +
       '<path d="M35 60 Q20 38 40 26 Q46 40 52 32 Q56 16 70 24 Q72 8 88 18 ' +
         'Q98 6 106 22 Q120 18 118 36 Q134 40 122 58 ' +
@@ -32,31 +31,5 @@ const KodamaEspiritu = (function () {
       '</g>' +
     '</svg>';
 
-  const dormidoB =
-    '<svg viewBox="0 0 160 140" width="120" height="105" role="img" ' +
-    'aria-label="Espíritu del bosque durmiendo, boceto B">' +
-      '<ellipse cx="76" cy="124" rx="48" ry="8" fill="var(--fg)" opacity="0.12" />' +
-      '<path d="M52 118 Q28 112 30 88 Q14 78 26 60 Q22 40 44 34 ' +
-        'Q52 16 74 22 Q90 8 104 24 Q120 22 118 42 ' +
-        'Q128 56 114 68 L96 116 Q80 128 52 118 Z" ' +
-        'fill="var(--fg)" />' +
-      '<path d="M74 22 Q90 8 104 24 Q116 30 112 46 Q96 42 86 30 Q78 30 74 22 Z" ' +
-        'fill="var(--bg)" opacity="0.85" />' +
-      '<path d="M84 30 L90 20 M90 34 L98 26 M86 40 L94 34" ' +
-        'stroke="var(--fg)" stroke-width="1.4" stroke-linecap="round" opacity="0.5" />' +
-      '<path d="M56 86 Q62 81 68 86" stroke="var(--bg)" stroke-width="3" ' +
-        'stroke-linecap="round" fill="none" />' +
-      '<path d="M78 86 Q84 81 90 86" stroke="var(--bg)" stroke-width="3" ' +
-        'stroke-linecap="round" fill="none" />' +
-      '<ellipse cx="34" cy="112" rx="14" ry="10" fill="var(--fg)" opacity="0.5" />' +
-      '<path d="M38 118 Q46 100 62 104" stroke="var(--fg)" stroke-width="4" ' +
-        'stroke-linecap="round" fill="none" opacity="0.6" />' +
-      '<g fill="var(--bg)">' +
-        '<circle cx="132" cy="26" r="2.5" />' +
-        '<circle cx="144" cy="38" r="1.6" />' +
-        '<path d="M124 42a10 10 0 1 0 10 -14a8 8 0 1 1 -10 14Z" />' +
-      '</g>' +
-    '</svg>';
-
-  return { dormidoA: dormidoA, dormidoB: dormidoB };
+  return { dormidoA: dormidoA };
 })();
