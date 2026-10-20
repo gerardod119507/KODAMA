@@ -142,6 +142,39 @@ test('filtro por área; horas por área = clases no canceladas, en el orden fijo
   assert.deepStrictEqual([soloU.totales.canceladas, soloU.totales.dictadas, soloU.porAlumno.length], [1, 0, 0]);
 });
 
+test('filtro por alumno: totales, porAlumno y monto corresponden solo al alumno elegido', () => {
+  const ej = cargar();
+  const bloques = [
+    clase('2026-09-02', '15:00', '16:00', 'a1', 'dictada'),
+    clase('2026-09-03', '15:00', '17:00', 'a1,a2', 'dictada'),
+    clase('2026-09-04', '15:00', '16:00', 'a2', 'dictada'),
+    clase('2026-09-05', '15:00', '16:00', 'a1', 'cancelada')
+  ];
+
+  const soloA1 = calcular(ej, bloques, { alumnoId: 'a1' });
+  assert.strictEqual(soloA1.totales.dictadas, 2);
+  assert.strictEqual(soloA1.totales.horas, 3);
+  assert.strictEqual(soloA1.totales.monto, 240);
+  assert.strictEqual(soloA1.totales.canceladas, 1);
+  assert.strictEqual(soloA1.porAlumno.length, 1);
+  assert.strictEqual(soloA1.porAlumno[0].id, 'a1');
+  assert.strictEqual(soloA1.porAlumno[0].monto, 240);
+
+  const soloA2 = calcular(ej, bloques, { alumnoId: 'a2' });
+  assert.strictEqual(soloA2.totales.dictadas, 2);
+  assert.strictEqual(soloA2.totales.horas, 3);
+  assert.strictEqual(soloA2.totales.monto, 180);
+  assert.strictEqual(soloA2.totales.canceladas, 0);
+  assert.strictEqual(soloA2.porAlumno[0].id, 'a2');
+
+  const soloA3 = calcular(ej, bloques, { alumnoId: 'a3' });
+  assert.strictEqual(soloA3.totales.dictadas, 0);
+  assert.strictEqual(soloA3.totales.horas, 0);
+  assert.strictEqual(soloA3.totales.monto, 0);
+  assert.strictEqual(soloA3.porAlumno.length, 1);
+  assert.strictEqual(soloA3.porAlumno[0].id, 'a3');
+});
+
 test('periodo anterior: mismo largo, justo antes (cruzando mes y año)', () => {
   const ej = cargar();
   assert.deepStrictEqual(ej('KodamaEstadisticas.periodoAnterior("2026-09-01", "2026-09-30")'),

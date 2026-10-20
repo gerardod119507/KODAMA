@@ -93,6 +93,8 @@ const KodamaEstadisticas = (function () {
     (bloques || []).forEach(function (b) {
       if (b.archivado === 'TRUE' || b.fecha < o.desde || b.fecha > o.hasta) return;
       if (o.area && b.area !== o.area) return;
+      const alumnoIds = ids(b.alumno_id);
+      if (o.alumnoId && alumnoIds.indexOf(o.alumnoId) === -1) return;
       const e = estado(b);
       const dur = duracion(b);
       const movida = fueMovida(b);
@@ -107,7 +109,8 @@ const KodamaEstadisticas = (function () {
       }
       if (movida) totales.movidas++;
 
-      ids(b.alumno_id).forEach(function (id) {
+      alumnoIds.forEach(function (id) {
+        if (o.alumnoId && id !== o.alumnoId) return;
         const alumno = porId[id];
         const tarifa = tarifaDe(alumno);
         const fila = filas[id] || (filas[id] = {
@@ -124,6 +127,14 @@ const KodamaEstadisticas = (function () {
       });
     });
 
+    if (o.alumnoId && porId[o.alumnoId] && !filas[o.alumnoId]) {
+      const alumno = porId[o.alumnoId];
+      const tarifa = tarifaDe(alumno);
+      filas[o.alumnoId] = {
+        id: o.alumnoId, nombre: nombreDe(alumno, o.alumnoId), dictadas: 0, minutos: 0, monto: 0,
+        movidas: 0, canceladas: 0, tarifa: tarifa, sinTarifa: tarifa === null
+      };
+    }
     const porAlumno = Object.keys(filas).map(function (id) {
       const f = filas[id];
       f.monto = redondear(f.monto);

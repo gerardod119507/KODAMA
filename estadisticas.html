@@ -56,11 +56,18 @@
           <option>Personal</option>
         </select>
       </div>
+      <div>
+        <label for="filtro-alumno">Alumno</label>
+        <select id="filtro-alumno">
+          <option value="">Todos los alumnos</option>
+        </select>
+      </div>
     </div>
 
     <p id="estado-estadisticas" class="estado" role="status"></p>
 
     <section id="zona-estadisticas" hidden>
+      <div id="ficha-alumno-estadisticas" class="ficha-alumno" hidden></div>
       <h2>Totales del periodo</h2>
       <p id="nota-anterior" class="nota"></p>
       <div class="tabla-envoltorio">
