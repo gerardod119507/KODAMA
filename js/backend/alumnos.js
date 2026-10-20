@@ -11,13 +11,16 @@
  * alumno_id (ids separados por coma: una clase puede tener varios).
  */
 (function (B) {
-  const CAMPOS_EDITABLES_ALUMNO = ['nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora', 'forma_pago', 'notas', 'lugar'];
+  const CAMPOS_EDITABLES_ALUMNO = ['nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora', 'forma_pago', 'notas', 'lugar',
+    'materias', 'tutor_nombre', 'tutor_parentesco', 'tutor_telefono', 'fecha_inicio'];
+  var PARENTESCOS_VALIDOS = ['madre', 'padre', 'tía', 'tío', 'abuela', 'abuelo', 'hermana', 'hermano', 'otro'];
   const CATALOGOS = { cursos: 'cursos', colegios: 'colegios' };
 
   // forma_calculo: cómo se calcula lo que se debe (siempre por hora).
   // forma_pago: cuándo se cobra. Son cosas distintas: un alumno puede
   // calcularse por hora y pagar por mes.
   B.FORMA_CALCULO = 'hora';
+  B.PARENTESCOS_VALIDOS = PARENTESCOS_VALIDOS;
 
   // --- Lectura -------------------------------------------------------
 
@@ -117,6 +120,18 @@
     alumno.forma_calculo = B.FORMA_CALCULO;
     alumno.forma_pago = B.normalizarFormaPago(alumno.forma_pago);
 
+    // --- Campos de la ficha (tutor, materias, fecha de inicio) ---
+    alumno.materias = String(alumno.materias || '').trim();
+    alumno.tutor_nombre = String(alumno.tutor_nombre || '').trim();
+    alumno.tutor_telefono = String(alumno.tutor_telefono || '').trim();
+    alumno.fecha_inicio = String(alumno.fecha_inicio || '').trim();
+
+    var parentesco = String(alumno.tutor_parentesco || '').trim().toLowerCase();
+    if (parentesco && PARENTESCOS_VALIDOS.indexOf(parentesco) === -1) {
+      throw new Error('parentesco_invalido: "' + alumno.tutor_parentesco + '" (usa ' + PARENTESCOS_VALIDOS.join(', ') + ')');
+    }
+    alumno.tutor_parentesco = parentesco;
+
     const clave = B.claveDeAlumno(alumno.nombre, alumno.apellido);
     existentes.forEach(function (otro) {
       if (otro.id !== alumno.id && B.claveDeAlumno(otro.nombre, otro.apellido) === clave) {
@@ -180,11 +195,12 @@
     return encontrado;
   }
 
-  function soloCamposDelSheet(alumno) {
-    // Lo que se escribe al editar: los campos de siempre. Los nuevos de la
-    // ficha (tutor, teléfono…) no se tocan desde aquí.
+  function todosLosCampos(alumno) {
+    // Lo que se escribe al editar: todos los campos del alumno, incluidos
+    // los de la ficha (tutor, materias, fecha de inicio).
     const fila = {};
-    ['nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora', 'forma_calculo', 'forma_pago', 'notas', 'archivado', 'lugar']
+    ['nombre', 'apellido', 'curso', 'colegio', 'tarifa_hora', 'forma_calculo', 'forma_pago', 'notas', 'archivado', 'lugar',
+     'materias', 'tutor_nombre', 'tutor_parentesco', 'tutor_telefono', 'fecha_inicio']
       .forEach(function (campo) { fila[campo] = alumno[campo]; });
     return fila;
   }
@@ -198,7 +214,7 @@
       }
     });
     B.prepararAlumno(alumno, leidos[1], leidos[0]);
-    await KodamaDB.actualizar('alumnos', [['id', 'eq', alumno.id]], soloCamposDelSheet(alumno));
+    await KodamaDB.actualizar('alumnos', [['id', 'eq', alumno.id]], todosLosCampos(alumno));
     return alumno;
   };
 

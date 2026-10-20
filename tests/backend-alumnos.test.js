@@ -96,6 +96,41 @@ test('editar un alumno no borra los datos nuevos de su ficha (tutor, teléfono)'
   assert.deepStrictEqual([guardado.notas, guardado.tutor_nombre, guardado.tutor_telefono], ['nueva nota', 'Rosa', '70000000']);
 });
 
+
+test('crear y actualizar guarda los datos de la ficha (tutor, materias, fecha_inicio) y valida parentesco', async () => {
+  const env = crearEntorno();
+  const creado = await ok(env, {
+    action: 'crearAlumno',
+    alumno: alumno({
+      materias: 'Matemáticas, Física',
+      fecha_inicio: '2026-03-01',
+      tutor_nombre: 'María Gómez',
+      tutor_parentesco: 'Madre',
+      tutor_telefono: '71234567'
+    })
+  });
+  assert.strictEqual(creado.materias, 'Matemáticas, Física');
+  assert.strictEqual(creado.tutor_nombre, 'María Gómez');
+  assert.strictEqual(creado.tutor_parentesco, 'madre');
+  assert.strictEqual(creado.tutor_telefono, '71234567');
+  assert.strictEqual(creado.fecha_inicio, '2026-03-01');
+
+  const editado = await ok(env, {
+    action: 'actualizarAlumno',
+    id: creado.id,
+    cambios: { tutor_parentesco: 'padre', tutor_nombre: 'Carlos Gómez' }
+  });
+  assert.strictEqual(editado.tutor_parentesco, 'padre');
+  assert.strictEqual(editado.tutor_nombre, 'Carlos Gómez');
+
+  const fallo = await env.post({
+    action: 'actualizarAlumno',
+    id: creado.id,
+    cambios: { tutor_parentesco: 'vecino' }
+  });
+  assert.strictEqual(fallo.ok, false);
+  assert.match(fallo.error, /parentesco_invalido/);
+});
 test('editar o archivar un alumno que no existe falla claro', async () => {
   const env = crearEntorno();
   assert.match((await env.post({ action: 'actualizarAlumno', id: 'a12345678', cambios: {} })).error, /alumno_no_encontrado/);

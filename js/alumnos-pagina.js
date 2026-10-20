@@ -27,7 +27,12 @@
     tarifa_hora: document.getElementById('alumno-tarifa'),
     forma_pago: document.getElementById('alumno-pago'),
     lugar: document.getElementById('alumno-lugar'),
-    notas: document.getElementById('alumno-notas')
+    notas: document.getElementById('alumno-notas'),
+    materias: document.getElementById('alumno-materias'),
+    fecha_inicio: document.getElementById('alumno-fecha-inicio'),
+    tutor_nombre: document.getElementById('alumno-tutor-nombre'),
+    tutor_parentesco: document.getElementById('alumno-tutor-parentesco'),
+    tutor_telefono: document.getElementById('alumno-tutor-telefono')
   };
   let idEnEdicion = null;
   let catalogoEnEdicion = null; // { tipo, anterior }
@@ -67,6 +72,11 @@
       tarjeta.appendChild(el('p', 'regla__titulo',
         KodamaAlumnos.etiqueta(alumno, dir) + (alumno.archivado === 'TRUE' ? ' (archivado)' : '')));
       tarjeta.appendChild(el('p', 'regla__meta', textoPago(alumno)));
+      if (alumno.tutor_nombre || alumno.tutor_telefono) {
+        const par = alumno.tutor_parentesco ? ' (' + alumno.tutor_parentesco + ')' : '';
+        const tel = alumno.tutor_telefono ? ' · 📱 ' + alumno.tutor_telefono : '';
+        tarjeta.appendChild(el('p', 'regla__meta', 'Tutor: ' + (alumno.tutor_nombre || '') + par + tel));
+      }
       tarjeta.addEventListener('click', function () { abrir(alumno); });
       lista.appendChild(tarjeta);
     });
