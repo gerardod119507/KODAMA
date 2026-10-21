@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="css/styles.css" />
   <meta name="theme-color" content="#F5F1E8" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <!-- Íconos chicos: versión simplificada del símbolo (las curvas finas desaparecen). -->
   <link rel="icon" href="icons/icono.svg" type="image/svg+xml" />
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="icons/favicon-16.png" sizes="16x16" type="image/png" />
@@ -17,17 +16,12 @@
   <script src="js/tema.js"></script>
 </head>
 <body data-pagina="estadisticas">
-  <!-- Sello de agua: el símbolo de Academia Fractal, grande y muy tenue, detrás de todo. -->
   <div class="sello" aria-hidden="true"></div>
-  <!-- Pantalla de arranque (js/ui/carga.js): solo al abrir la app. El atractor se
-       asienta en el logo; se va apenas hay algo que mostrar. -->
   <div id="carga" class="carga" role="status" aria-label="Cargando">
     <canvas class="carga__lienzo"></canvas>
   </div>
   <script src="js/lorenz.js"></script>
   <script src="js/ui/carga.js"></script>
-  <!-- Arriba solo el logo, la fecha y el tema. La navegación la arma
-       js/ui/navegacion.js: barra abajo en el celular, arriba en pantallas anchas. -->
   <header class="cabecera">
     <a class="logo" href="index.html"><span class="marca" aria-hidden="true"></span>KODAMA</a>
     <p class="cabecera__fecha"><span class="fecha" data-fecha-hoy></span></p>
@@ -49,65 +43,148 @@
       <div>
         <label for="filtro-area">Área</label>
         <select id="filtro-area">
-          <option value="">Todas</option>
+          <option value="">General</option>
           <option>Universidad</option>
           <option>Academia Fractal</option>
           <option>Startup</option>
           <option>Personal</option>
         </select>
       </div>
-      <div>
-        <label for="filtro-alumno">Alumno</label>
-        <select id="filtro-alumno">
-          <option value="">Todos los alumnos</option>
-        </select>
+      <div id="filtro-alumno-grupo" hidden>
+        <label for="filtro-alumno-input">Alumno</label>
+        <div class="estad-buscador-alumno">
+          <div class="estad-buscador-alumno__fila">
+            <input id="filtro-alumno-input" type="text" placeholder="Todos los alumnos" autocomplete="off" />
+            <button id="filtro-alumno-limpiar" type="button" class="estad-buscador-alumno__limpiar" title="Limpiar alumno" hidden aria-label="Limpiar selección de alumno">✕</button>
+          </div>
+          <ul id="filtro-alumno-sugerencias" class="estad-sugerencias" hidden></ul>
+          <input type="hidden" id="filtro-alumno-id" value="" />
+        </div>
       </div>
     </div>
 
     <p id="estado-estadisticas" class="estado" role="status"></p>
 
     <section id="zona-estadisticas" hidden>
+      <!-- Componentes exclusivos de alumno individual (Estado 4) -->
       <div id="ficha-alumno-estadisticas" class="ficha-alumno" hidden></div>
-      <h2>Totales del periodo</h2>
-      <p id="nota-anterior" class="nota"></p>
-      <div class="tabla-envoltorio">
-        <table class="tabla-datos">
-          <thead>
-            <tr>
-              <th scope="col"></th>
-              <th scope="col" class="numero">Actual</th>
-              <th scope="col" class="numero">Anterior</th>
-              <th scope="col" class="numero"><abbr title="Diferencia">Dif.</abbr></th>
-            </tr>
-          </thead>
-          <tbody id="tabla-totales"></tbody>
-        </table>
-      </div>
 
-      <h2>Por alumno</h2>
-      <div class="tabla-envoltorio">
-        <table class="tabla-datos">
-          <thead>
-            <tr>
-              <th scope="col">Alumno</th>
-              <th scope="col" class="numero"><abbr title="Clases dictadas">Clases</abbr></th>
-              <th scope="col" class="numero">Horas</th>
-              <th scope="col" class="numero">Monto</th>
-              <th scope="col" class="numero"><abbr title="Movidas">Mov.</abbr></th>
-              <th scope="col" class="numero"><abbr title="Canceladas">Canc.</abbr></th>
-            </tr>
-          </thead>
-          <tbody id="tabla-alumnos"></tbody>
-        </table>
-      </div>
-      <p id="nota-alumnos" class="nota"></p>
+      <section id="zona-compromiso" class="estad-compromiso-tarjeta" hidden>
+        <h2 style="margin-top:0">Compromiso de agenda</h2>
+        <p id="compromiso-descripcion" class="nota"></p>
+        <div class="estad-compromiso__barra">
+          <div id="compromiso-seg-dictadas" class="estad-compromiso__segmento estad-compromiso__segmento--dictadas" title="Dictadas en fecha planeada"></div>
+          <div id="compromiso-seg-movidas" class="estad-compromiso__segmento estad-compromiso__segmento--movidas" title="Reprogramadas / Movidas"></div>
+          <div id="compromiso-seg-canceladas" class="estad-compromiso__segmento estad-compromiso__segmento--canceladas" title="Canceladas"></div>
+        </div>
+        <div class="estad-compromiso__leyenda">
+          <span><strong id="compromiso-pct-puntual">0%</strong> puntual</span>
+          <span>·</span>
+          <span><strong id="compromiso-pct-efectivo">0%</strong> dictadas</span>
+          <span>·</span>
+          <span id="compromiso-resumen-cantidades"></span>
+        </div>
+      </section>
 
-      <h2>Horas dictadas por alumno</h2>
-      <div id="grafica-alumnos" class="grafica-envoltorio"></div>
+      <section id="zona-calendarios" hidden>
+        <h2>Calendario de clases</h2>
+        <p class="nota">Clases organizadas por mes dentro del periodo seleccionado.</p>
+        <div id="contenedor-calendarios" class="estad-calendarios-envoltorio"></div>
+      </section>
 
-      <h2>Horas por área</h2>
-      <p class="nota">Todas las clases que no se cancelaron.</p>
-      <div id="grafica-areas" class="grafica-envoltorio"></div>
+      <!-- Totales del periodo (Estados 1, 2, 3, 4) -->
+      <section id="zona-totales">
+        <h2>Totales del periodo</h2>
+        <p id="nota-anterior" class="nota"></p>
+        <div class="tabla-envoltorio">
+          <table class="tabla-datos">
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col" class="numero">Actual</th>
+                <th scope="col" class="numero">Anterior</th>
+                <th scope="col" class="numero"><abbr title="Diferencia">Dif.</abbr></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-totales"></tbody>
+          </table>
+        </div>
+        <!-- Contenedor para desglose interactivo de clases movidas/canceladas -->
+        <div id="detalle-clases-contenedor" class="estad-detalle-clases" hidden></div>
+      </section>
+
+      <!-- Desglose por Área (Estado 1: General) -->
+      <section id="zona-desglose-areas" hidden>
+        <h2>Desglose por área</h2>
+        <div class="tabla-envoltorio">
+          <table class="tabla-datos">
+            <thead>
+              <tr>
+                <th scope="col">Área</th>
+                <th scope="col" class="numero"><abbr title="Clases dictadas">Dictadas</abbr></th>
+                <th scope="col" class="numero">Horas</th>
+                <th scope="col" class="numero"><abbr title="Clases movidas">Mov.</abbr></th>
+                <th scope="col" class="numero"><abbr title="Clases canceladas">Canc.</abbr></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-desglose-areas"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Comparativa por colegios (Estado 3: Fractal con todos los alumnos) -->
+      <section id="zona-colegios" hidden>
+        <h2>Comparativa por colegios</h2>
+        <div id="grafica-colegios" class="grafica-envoltorio"></div>
+        <div class="tabla-envoltorio" style="margin-top: var(--espacio-3)">
+          <table class="tabla-datos">
+            <thead>
+              <tr>
+                <th scope="col">Colegio</th>
+                <th scope="col" class="numero">Alumnos</th>
+                <th scope="col" class="numero"><abbr title="Clases dictadas">Clases</abbr></th>
+                <th scope="col" class="numero">Horas</th>
+                <th scope="col" class="numero">Monto</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-colegios"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Por alumno (Estado 3: Fractal con todos los alumnos) -->
+      <section id="zona-por-alumno" hidden>
+        <h2>Por alumno</h2>
+        <div class="tabla-envoltorio">
+          <table class="tabla-datos">
+            <thead>
+              <tr>
+                <th scope="col">Alumno</th>
+                <th scope="col" class="numero"><abbr title="Clases dictadas">Clases</abbr></th>
+                <th scope="col" class="numero">Horas</th>
+                <th scope="col" class="numero">Monto</th>
+                <th scope="col" class="numero"><abbr title="Movidas">Mov.</abbr></th>
+                <th scope="col" class="numero"><abbr title="Canceladas">Canc.</abbr></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-alumnos"></tbody>
+          </table>
+        </div>
+        <p id="nota-alumnos" class="nota"></p>
+      </section>
+
+      <!-- Horas dictadas por alumno (Estado 3: Fractal con todos los alumnos) -->
+      <section id="zona-grafica-alumnos" hidden>
+        <h2>Horas dictadas por alumno</h2>
+        <div id="grafica-alumnos" class="grafica-envoltorio"></div>
+      </section>
+
+      <!-- Horas por área (Estados 1 y 2) -->
+      <section id="zona-grafica-areas" hidden>
+        <h2>Horas por área</h2>
+        <p class="nota">Todas las clases que no se cancelaron.</p>
+        <div id="grafica-areas" class="grafica-envoltorio"></div>
+      </section>
     </section>
   </main>
 

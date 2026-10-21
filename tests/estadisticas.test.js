@@ -292,3 +292,62 @@ test('situación de pago: pendiente, y los archivados no cuentan', () => {
   const r = ej('KodamaCobros.situacion(__arg, "a1", "2026-09-01", "2026-09-30")', pagos);
   assert.deepStrictEqual([r.estado, r.monto], ['pendiente', 240]);
 });
+
+test('fechaCorta y rangoCorto formatea DD/MM/AAAA', () => {
+  const ej = cargar();
+  assert.strictEqual(ej('KodamaFecha.fechaCorta("2026-10-05")'), '05/10/2026');
+  assert.strictEqual(ej('KodamaFecha.rangoCorto("2026-10-01", "2026-10-31")'), '01/10/2026 - 31/10/2026');
+});
+
+test('calcularPorColegio agrupa horas y montos por colegio', () => {
+  const ej = cargar();
+  const alumnos = [
+    { id: 'a1', nombre: 'Camila', apellido: 'A', colegio: 'San Agustín', tarifa_hora: '80' },
+    { id: 'a2', nombre: 'Lucas', apellido: 'B', colegio: 'San Agustín', tarifa_hora: '60' },
+    { id: 'a3', nombre: 'Pedro', apellido: 'C', colegio: '', tarifa_hora: '50' }
+  ];
+  const porAlumno = [
+    { id: 'a1', dictadas: 2, minutos: 120, monto: 160, movidas: 0, canceladas: 0 },
+    { id: 'a2', dictadas: 1, minutos: 60, monto: 60, movidas: 1, canceladas: 0 },
+    { id: 'a3', dictadas: 1, minutos: 60, monto: 50, movidas: 0, canceladas: 1 }
+  ];
+  const catalogo = [{ nombre: 'San Agustín', corto: 'SA' }];
+  const colegios = ej('KodamaEstadisticas.calcularPorColegio(__arg.p, __arg.a, __arg.c)', { p: porAlumno, a: alumnos, c: catalogo });
+  assert.strictEqual(colegios.length, 2);
+  assert.deepStrictEqual([colegios[0].colegio, colegios[0].corto, colegios[0].horas, colegios[0].monto, colegios[0].alumnos], ['San Agustín', 'SA', 3, 220, 2]);
+  assert.deepStrictEqual([colegios[1].colegio, colegios[1].corto, colegios[1].horas, colegios[1].monto, colegios[1].alumnos], ['Sin especificar', 'S/E', 1, 50, 1]);
+});
+
+test('detalleClases devuelve clases movidas y canceladas con fechas legibles', () => {
+  const ej = cargar();
+  const bloques = [
+    clase('2026-09-02', '15:00', '16:00', 'a1', 'dictada'),
+    clase('2026-09-04', '16:00', '17:00', 'a1', 'movida', { fecha_original: '2026-09-03', motivo: 'enfermedad' }),
+    clase('2026-09-05', '15:00', '16:00', 'a1', 'cancelada', { motivo: 'feriado' })
+  ];
+  const movidas = ej('KodamaEstadisticas.detalleClases(__arg.b, __arg.a, { desde: "2026-09-01", hasta: "2026-09-30" }, "movida")', { b: bloques, a: ALUMNOS });
+  assert.strictEqual(movidas.length, 1);
+  assert.strictEqual(movidas[0].fechaFormateada, '04/09/2026');
+  assert.strictEqual(movidas[0].fechaOriginalFormateada, '03/09/2026');
+  assert.strictEqual(movidas[0].motivo, 'enfermedad');
+
+  const canceladas = ej('KodamaEstadisticas.detalleClases(__arg.b, __arg.a, { desde: "2026-09-01", hasta: "2026-09-30" }, "cancelada")', { b: bloques, a: ALUMNOS });
+  assert.strictEqual(canceladas.length, 1);
+  assert.strictEqual(canceladas[0].fechaFormateada, '05/09/2026');
+  assert.strictEqual(canceladas[0].motivo, 'feriado');
+});
+
+test('calcularDesgloseAreas devuelve las 4 áreas desglosadas', () => {
+  const ej = cargar();
+  const bloques = [
+    clase('2026-09-02', '15:00', '16:00', 'a1', 'dictada', { area: 'Academia Fractal' }),
+    clase('2026-09-02', '08:00', '10:00', '', '', { area: 'Universidad' }),
+    clase('2026-09-03', '10:00', '11:00', '', '', { area: 'Startup' })
+  ];
+  const areas = ej('KodamaEstadisticas.calcularDesgloseAreas(__arg, { desde: "2026-09-01", hasta: "2026-09-30" })', bloques);
+  assert.strictEqual(areas.length, 4);
+  assert.strictEqual(areas.find(a => a.area === 'Universidad').horas, 2);
+  assert.strictEqual(areas.find(a => a.area === 'Academia Fractal').dictadas, 1);
+  assert.strictEqual(areas.find(a => a.area === 'Startup').horas, 1);
+  assert.strictEqual(areas.find(a => a.area === 'Personal').horas, 0);
+});
