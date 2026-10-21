@@ -113,6 +113,18 @@ const KodamaFecha = (function () {
     return a.getUTCDate() + ' ' + mesA + ' – ' + b.getUTCDate() + ' ' + mesB;
   }
 
+  /** "2026-10-01" -> "01/10/2026" */
+  function fechaCorta(fechaIso) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaIso || '')) return String(fechaIso || '');
+    const partes = fechaIso.split('-');
+    return partes[2] + '/' + partes[1] + '/' + partes[0];
+  }
+
+  /** "01/10/2026 - 31/10/2026" */
+  function rangoCorto(desde, hasta) {
+    return fechaCorta(desde) + ' - ' + fechaCorta(hasta);
+  }
+
   return {
     hoy: hoy,
     legible: legible,
@@ -122,6 +134,8 @@ const KodamaFecha = (function () {
     inicioDeSemana: inicioDeSemana,
     diasDeSemana: diasDeSemana,
     diaCorto: diaCorto,
-    rangoLegible: rangoLegible
+    rangoLegible: rangoLegible,
+    fechaCorta: fechaCorta,
+    rangoCorto: rangoCorto
   };
 })();

@@ -1515,6 +1515,350 @@ main textarea {
 .ficha-alumno__valor a:hover {
   text-decoration: underline;
 }
+/* Contraste en desplegables de filtros */
+.filtros select option {
+  color: #071743;
+  background: #F5F1E8;
+}
+[data-theme="dark"] .filtros select option {
+  color: #F5F1E8;
+  background: #101A3A;
+}
+
+/* Números interactivos en totales */
+.estad-numero-interactivo {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--area-fractal);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  cursor: pointer;
+  padding: 0;
+  display: inline;
+}
+.estad-numero-interactivo:hover,
+.estad-numero-interactivo:focus-visible {
+  color: var(--fg);
+  text-decoration-style: solid;
+}
+
+/* Detalle de clases movidas y canceladas */
+.estad-detalle-clases {
+  margin-top: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-md);
+  font-size: var(--texto-sm);
+}
+.estad-detalle-clases__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--espacio-2);
+}
+.estad-detalle-clases__titulo {
+  font-weight: 600;
+  margin: 0;
+}
+.estad-detalle-clases__cerrar {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: var(--texto-base);
+  cursor: pointer;
+  color: var(--fg);
+  opacity: 0.75;
+}
+.estad-detalle-clases__item {
+  padding: var(--espacio-2) 0;
+  border-bottom: 1px dashed var(--borde);
+}
+.estad-detalle-clases__item:last-child {
+  border-bottom: none;
+}
+
+/* Calendarios mensuales del estudiante */
+.estad-calendarios-envoltorio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+  margin-top: var(--espacio-4);
+  margin-bottom: var(--espacio-4);
+}
+
+.estad-mes-bloque {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-md);
+  padding: var(--espacio-4);
+}
+
+.estad-mes-bloque__titulo {
+  margin: 0 0 var(--espacio-3) 0;
+  font-size: var(--texto-base);
+  font-weight: 700;
+  text-transform: capitalize;
+  border-bottom: 1px solid var(--borde);
+  padding-bottom: var(--espacio-2);
+}
+
+.estad-mes-bloque__cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-4);
+  align-items: flex-start;
+}
+
+.estad-calendario {
+  flex: 1 1 18rem;
+  min-width: 0;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.estad-calendario th {
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  text-align: center;
+  padding: var(--espacio-1) 0;
+  opacity: 0.75;
+}
+
+.estad-calendario td {
+  width: 14.28%;
+  height: 2.75rem;
+  text-align: center;
+  vertical-align: middle;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.estad-dia {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radio-sm);
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+}
+
+.estad-dia--vacio {
+  visibility: hidden;
+}
+
+/* Colores pastel accesibles */
+.estad-dia--dictada {
+  background: #D4EDDA;
+  color: #155724;
+  border-color: #C3E6CB;
+  font-weight: 700;
+}
+[data-theme="dark"] .estad-dia--dictada {
+  background: rgba(46, 125, 50, 0.35);
+  color: #A3E9A4;
+  border-color: rgba(46, 125, 50, 0.6);
+}
+
+.estad-dia--movida {
+  background: #EAEAEA;
+  color: #383d41;
+  border-color: #D6D8DB;
+  font-weight: 600;
+}
+[data-theme="dark"] .estad-dia--movida {
+  background: rgba(189, 189, 189, 0.25);
+  color: #E0E0E0;
+  border-color: rgba(189, 189, 189, 0.4);
+}
+
+.estad-dia--cancelada {
+  background: #F8D7DA;
+  color: #721C24;
+  border-color: #F5C6CB;
+  font-weight: 700;
+}
+[data-theme="dark"] .estad-dia--cancelada {
+  background: rgba(198, 40, 40, 0.3);
+  color: #FFCDD2;
+  border-color: rgba(198, 40, 40, 0.5);
+}
+
+.estad-dia__simbolo {
+  font-size: var(--texto-xs);
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* Indicador lateral y leyenda del mes */
+.estad-mes-indicador {
+  flex: 0 0 13rem;
+  background: rgba(7, 23, 67, 0.03);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-sm);
+  padding: var(--espacio-3);
+  font-size: var(--texto-xs);
+}
+[data-theme="dark"] .estad-mes-indicador {
+  background: rgba(245, 241, 232, 0.03);
+}
+
+.estad-mes-indicador__metricas {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--espacio-3) 0;
+}
+
+.estad-mes-indicador__metricas li {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--espacio-1) 0;
+  border-bottom: 1px dashed var(--borde);
+}
+
+.estad-mes-indicador__metricas li:last-child {
+  border-bottom: none;
+}
+
+.estad-leyenda {
+  border-top: 1px solid var(--borde);
+  padding-top: var(--espacio-2);
+}
+
+.estad-leyenda__item {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin-bottom: var(--espacio-1);
+}
+
+.estad-leyenda__muestra {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Botón Exportar */
+.estad-boton-exportar {
+  margin-top: var(--espacio-3);
+  width: 100%;
+  font-size: var(--texto-sm);
+}
+
+/* Estadístico de compromiso */
+.estad-compromiso-tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-md);
+  padding: var(--espacio-4);
+  margin-top: var(--espacio-4);
+  margin-bottom: var(--espacio-4);
+}
+
+.estad-compromiso__barra {
+  height: 1.5rem;
+  background: var(--borde);
+  border-radius: var(--radio-sm);
+  display: flex;
+  overflow: hidden;
+  margin: var(--espacio-2) 0;
+}
+
+.estad-compromiso__segmento {
+  height: 100%;
+  transition: width var(--duracion-base) var(--curva);
+}
+
+.estad-compromiso__segmento--dictadas {
+  background: #2E7D32;
+}
+.estad-compromiso__segmento--movidas {
+  background: #9E9E9E;
+}
+.estad-compromiso__segmento--canceladas {
+  background: #D32F2F;
+}
+
+.estad-compromiso__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+  font-size: var(--texto-xs);
+  margin-top: var(--espacio-2);
+}
+
+/* Buscador inteligente de alumnos */
+.estad-buscador-alumno {
+  position: relative;
+}
+
+.estad-buscador-alumno__fila {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-1);
+}
+
+.estad-buscador-alumno input {
+  width: 100%;
+}
+
+.estad-buscador-alumno__limpiar {
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: var(--espacio-1);
+  opacity: 0.75;
+}
+.estad-buscador-alumno__limpiar:hover {
+  opacity: 1;
+}
+
+.estad-sugerencias {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--bg);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-sm);
+  box-shadow: var(--sombra-sm);
+  max-height: 14rem;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: var(--espacio-1) 0 0 0;
+}
+
+.estad-sugerencias li {
+  padding: var(--espacio-2) var(--espacio-3);
+  cursor: pointer;
+  font-size: var(--texto-sm);
+  border-bottom: 1px solid var(--borde);
+}
+
+.estad-sugerencias li:last-child {
+  border-bottom: none;
+}
+
+.estad-sugerencias li:hover,
+.estad-sugerencias li.activo {
+  background: var(--superficie);
+}
 
 /* Tablas anchas: se desplazan dentro de su caja, nunca la página entera. */
 .tabla-envoltorio {

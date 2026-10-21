@@ -189,6 +189,137 @@ const KodamaEstadisticas = (function () {
     return (diferencia > 0 ? '+' : '−') + texto;
   }
 
+  /** Agrupa las estadísticas de alumnos por su colegio */
+  function calcularPorColegio(porAlumno, alumnos, catalogoColegios) {
+    const alumnoPorId = {};
+    (alumnos || []).forEach(function (a) { alumnoPorId[a.id] = a; });
+    const colegiosMap = {};
+    (catalogoColegios || []).forEach(function (c) { colegiosMap[c.nombre] = c.corto || c.nombre; });
+
+    const grupos = {};
+    (porAlumno || []).forEach(function (fila) {
+      const alumno = alumnoPorId[fila.id];
+      const nombreColegio = (alumno && alumno.colegio && alumno.colegio.trim()) ? alumno.colegio.trim() : 'Sin especificar';
+      const corto = colegiosMap[nombreColegio] || (nombreColegio === 'Sin especificar' ? 'S/E' : nombreColegio);
+
+      const g = grupos[nombreColegio] || (grupos[nombreColegio] = {
+        colegio: nombreColegio,
+        corto: corto,
+        dictadas: 0,
+        minutos: 0,
+        horas: 0,
+        monto: 0,
+        movidas: 0,
+        canceladas: 0,
+        alumnos: 0
+      });
+
+      g.dictadas += fila.dictadas;
+      g.minutos += fila.minutos;
+      g.monto += fila.monto;
+      g.movidas += fila.movidas;
+      g.canceladas += fila.canceladas;
+      g.alumnos++;
+    });
+
+    return Object.keys(grupos).map(function (k) {
+      const g = grupos[k];
+      g.monto = redondear(g.monto);
+      g.horas = redondear(g.minutos / 60);
+      return g;
+    }).sort(function (a, b) {
+      return b.horas - a.horas || a.colegio.localeCompare(b.colegio);
+    });
+  }
+
+  /** Lista detallada de clases movidas o canceladas para auditoría */
+  function detalleClases(bloques, alumnos, opciones, tipo) {
+    const o = opciones || {};
+    const porId = {};
+    (alumnos || []).forEach(function (a) { porId[a.id] = a; });
+    const lista = [];
+
+    (bloques || []).forEach(function (b) {
+      if (b.archivado === 'TRUE' || b.fecha < o.desde || b.fecha > o.hasta) return;
+      if (o.area && b.area !== o.area) return;
+      const alumnoIds = ids(b.alumno_id);
+      if (o.alumnoId && alumnoIds.indexOf(o.alumnoId) === -1) return;
+
+      const e = estado(b);
+      const movida = fueMovida(b);
+
+      let coincide = false;
+      if (tipo === 'movida' && movida) coincide = true;
+      if (tipo === 'cancelada' && e === 'cancelada') coincide = true;
+      if (!tipo && (movida || e === 'cancelada')) coincide = true;
+
+      if (!coincide) return;
+
+      const nombresAlumnos = alumnoIds.map(function (id) {
+        return porId[id] ? nombreDe(porId[id], id) : '';
+      }).filter(Boolean).join(', ');
+
+      const fechaFmt = (typeof KodamaFecha !== 'undefined' && KodamaFecha.fechaCorta)
+        ? KodamaFecha.fechaCorta(b.fecha) : b.fecha;
+      const origFmt = (b.fecha_original && typeof KodamaFecha !== 'undefined' && KodamaFecha.fechaCorta)
+        ? KodamaFecha.fechaCorta(b.fecha_original) : (b.fecha_original || '');
+
+      lista.push({
+        id: b.id,
+        fecha: b.fecha,
+        fechaFormateada: fechaFmt,
+        inicio: b.inicio,
+        fin: b.fin,
+        titulo: b.titulo || nombresAlumnos || '(Sin título)',
+        estado: e,
+        esMovida: movida,
+        motivo: b.motivo || '',
+        fechaOriginal: b.fecha_original || '',
+        fechaOriginalFormateada: origFmt,
+        alumnoId: b.alumno_id
+      });
+    });
+
+    return lista.sort(function (a, b) {
+      return a.fecha.localeCompare(b.fecha) || a.inicio.localeCompare(b.inicio);
+    });
+  }
+
+  /** Desglose de totales por cada área (para Estado General) */
+  function calcularDesgloseAreas(bloques, opciones) {
+    const o = opciones || {};
+    const areas = o.areas || ['Universidad', 'Academia Fractal', 'Startup', 'Personal'];
+    const datos = {};
+    areas.forEach(function (a) {
+      datos[a] = { area: a, dictadas: 0, minutos: 0, horas: 0, monto: 0, movidas: 0, canceladas: 0 };
+    });
+
+    (bloques || []).forEach(function (b) {
+      if (b.archivado === 'TRUE' || b.fecha < o.desde || b.fecha > o.hasta) return;
+      const d = datos[b.area] || (datos[b.area] = {
+        area: b.area, dictadas: 0, minutos: 0, horas: 0, monto: 0, movidas: 0, canceladas: 0
+      });
+      const e = estado(b);
+      const dur = duracion(b);
+      const movida = fueMovida(b);
+
+      if (e === 'dictada') {
+        d.dictadas++;
+        d.minutos += dur;
+      } else if (e !== 'cancelada') {
+        d.minutos += dur;
+      }
+      if (e === 'cancelada') d.canceladas++;
+      if (movida) d.movidas++;
+    });
+
+    return areas.map(function (a) {
+      const d = datos[a];
+      d.horas = redondear(d.minutos / 60);
+      return d;
+    });
+  }
+
   return {
     textoHoras: textoHoras,
     textoMonto: textoMonto,
@@ -199,6 +330,9 @@ const KodamaEstadisticas = (function () {
     diasEntre: diasEntre,
     rangoValido: rangoValido,
     tarifaDe: tarifaDe,
-    duracion: duracion
+    duracion: duracion,
+    calcularPorColegio: calcularPorColegio,
+    detalleClases: detalleClases,
+    calcularDesgloseAreas: calcularDesgloseAreas
   };
 })();
