@@ -270,7 +270,9 @@ const KodamaCarga = (function () {
       });
   }
 
-  function listo() {
+  let pendienteListo = false;
+
+  function ocultar() {
     if (terminado) return;
     terminado = true;
     if (cuadro) cancelAnimationFrame(cuadro);
@@ -282,6 +284,21 @@ const KodamaCarga = (function () {
     if (typeof KodamaTema !== 'undefined') KodamaTema.aplicar();
     requestAnimationFrame(function () { raiz.classList.add('carga--fuera'); });
     setTimeout(function () { raiz.hidden = true; }, quieto ? 0 : 280);
+  }
+
+  function listo() {
+    if (terminado || pendienteListo) return;
+    pendienteListo = true;
+    const ahora = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const transcurrido = inicio !== null ? (ahora - inicio) : 0;
+    // Permite que el bucle animado completo se aprecie al menos una vez (2.9s)
+    const duracionMinima = quieto ? 0 : (TIEMPOS.fin || 2900);
+    const restante = Math.max(0, duracionMinima - transcurrido);
+    if (restante > 0) {
+      setTimeout(ocultar, restante);
+    } else {
+      ocultar();
+    }
   }
 
   medir();
