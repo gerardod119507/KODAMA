@@ -203,7 +203,9 @@ const KodamaFormulario = (function () {
 
   function escribirCampos(valores) {
     Object.keys(campos).forEach(function (clave) {
-      campos[clave].value = valores[clave] != null ? valores[clave] : '';
+      if (campos[clave]) {
+        campos[clave].value = valores[clave] != null ? valores[clave] : '';
+      }
     });
     selectorAlumnos.fijar(valores.alumno_id || '');
     actualizarSegunArea();
@@ -219,7 +221,11 @@ const KodamaFormulario = (function () {
 
   function leerCampos() {
     const datos = {};
-    Object.keys(campos).forEach(function (clave) { datos[clave] = campos[clave].value; });
+    Object.keys(campos).forEach(function (clave) {
+      if (campos[clave]) {
+        datos[clave] = campos[clave].value;
+      }
+    });
     // Si se cambió el área a otra, la clase deja de tener alumnos.
     datos.alumno_id = esFractal() ? selectorAlumnos.valor() : '';
     return datos;

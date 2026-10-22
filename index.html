@@ -139,6 +139,17 @@
 
         <label for="campo-notas">Notas</label>
         <textarea id="campo-notas" rows="3" autocapitalize="sentences"></textarea>
+
+        <label for="campo-alarma">🔔 Recordatorio / Alarma</label>
+        <select id="campo-alarma">
+          <option value="ninguna">Sin recordatorio</option>
+          <option value="0">Al comenzar la clase</option>
+          <option value="5">5 minutos antes</option>
+          <option value="10">10 minutos antes</option>
+          <option value="15">15 minutos antes</option>
+          <option value="30">30 minutos antes</option>
+          <option value="60">1 hora antes</option>
+        </select>
       </div>
 
       <p id="error-bloque" class="error" role="alert"></p>
@@ -173,6 +184,20 @@
       <div id="ficha-fila-notas">
         <dt>Notas</dt>
         <dd class="ficha__notas"></dd>
+      </div>
+      <div id="ficha-fila-alarma">
+        <dt>🔔 Recordatorio</dt>
+        <dd>
+          <select id="ficha-select-alarma">
+            <option value="ninguna">Sin recordatorio</option>
+            <option value="0">Al comenzar la clase</option>
+            <option value="5">5 minutos antes</option>
+            <option value="10">10 minutos antes</option>
+            <option value="15">15 minutos antes</option>
+            <option value="30">30 minutos antes</option>
+            <option value="60">1 hora antes</option>
+          </select>
+        </dd>
       </div>
     </dl>
     <p id="error-ficha" class="error" role="alert"></p>
