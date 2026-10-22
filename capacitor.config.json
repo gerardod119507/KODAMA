@@ -1,0 +1,10 @@
+{
+  "appId": "com.gerardo.kodama",
+  "appName": "KODAMA",
+  "webDir": "www",
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": false
+    }
+  }
+}

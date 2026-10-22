@@ -48,6 +48,7 @@ const ARCHIVOS = [
   './js/formas.js',
   './js/plantillas.js',
   './js/vista.js',
+  './js/notificaciones.js',
   './js/app.js',
   './js/horario-secciones.js',
   './js/horario.js',

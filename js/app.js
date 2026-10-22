@@ -162,6 +162,7 @@
       if (guardados) {
         bloquesSemana = guardados;
         semanaEnPantalla = s.lunes;
+        if (window.KodamaAlarmas && window.KodamaAlarmas.sincronizarSemana) window.KodamaAlarmas.sincronizarSemana(bloquesSemana);
       } else {
         bloquesSemana = [];
         semanaEnPantalla = null;
@@ -183,6 +184,7 @@
       }
       bloquesSemana = datos;
       semanaEnPantalla = s.lunes;
+      if (window.KodamaAlarmas && window.KodamaAlarmas.sincronizarSemana) window.KodamaAlarmas.sincronizarSemana(bloquesSemana);
       avisoOffline.hidden = true;
       dibujar();
       if (op) {
@@ -221,6 +223,7 @@
    * vuelve a pedir la semana por detrás para confirmar.
    */
   function aplicarLocal(bloque) {
+    if (window.KodamaAlarmas && window.KodamaAlarmas.sincronizarBloque) window.KodamaAlarmas.sincronizarBloque(bloque);
     const s = semana(fecha);
     bloquesSemana = KodamaState.aplicarCambio(bloquesSemana, bloque, s.lunes, s.domingo);
     KodamaState.guardarSemana(s.lunes, bloquesSemana);
@@ -245,6 +248,7 @@
   }
 
   async function archivar(id) {
+    if (window.KodamaAlarmas && window.KodamaAlarmas.cancelar) window.KodamaAlarmas.cancelar('bloque_' + id);
     aplicarLocal(await pedir('archivarBloque', { id: id }));
   }
 
