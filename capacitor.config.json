@@ -8,11 +8,7 @@
     },
     "SplashScreen": {
       "launchShowDuration": 0,
-      "launchAutoHide": true,
-      "backgroundColor": "#071743",
-      "androidSplashResourceName": "splash",
-      "splashFullScreen": true,
-      "splashImmersive": true
+      "launchAutoHide": true
     }
   }
 }

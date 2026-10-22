@@ -53,7 +53,7 @@ if (fs.existsSync(mPath)) {
   console.log('✓ AndroidManifest.xml actualizado con permisos y overrideLibrary');
 }
 
-// 4. Copiar los iconos oficiales de KODAMA y el splash navy #071743 a res/
+// 4. Copiar los iconos oficiales de KODAMA a res/
 const srcRes = path.join(process.cwd(), 'resources', 'android', 'res');
 const destRes = path.join(process.cwd(), 'android', 'app', 'src', 'main', 'res');
 
@@ -74,8 +74,8 @@ function copyDirRecursive(src, dest) {
 
 if (fs.existsSync(srcRes) && fs.existsSync(destRes)) {
   copyDirRecursive(srcRes, destRes);
-  
-  // Reemplazar splash.png en todas las variantes de drawable
+
+  // Copiar splash transparente a todas las carpetas drawable para eliminar cualquier splash estático
   const splashSrc = path.join(srcRes, 'drawable', 'splash.png');
   if (fs.existsSync(splashSrc)) {
     const folders = fs.readdirSync(destRes);
@@ -88,16 +88,16 @@ if (fs.existsSync(srcRes) && fs.existsSync(destRes)) {
       }
     }
   }
-  console.log('✓ Iconos nativos y splash screen marino de KODAMA copiados exitosamente a android/res');
+  console.log('✓ Iconos nativos y splash transparente copiados a android/res');
 }
 
-// 5. Asegurar fondo marino en styles.xml para el arranque nativo
+// 5. Desactivar splash screen nativo en styles.xml
 const stylesPath = path.join(destRes, 'values', 'styles.xml');
 if (fs.existsSync(stylesPath)) {
   let s = fs.readFileSync(stylesPath, 'utf8');
-  // Asegurar que NoActionBarLaunch tenga fondo marino
-  s = s.replace(/<color name="colorPrimary">.*?<\/color>/, '<color name="colorPrimary">#071743</color>');
+  s = s.replace(/<item name="android:background">@drawable\/splash<\/item>/g, '<item name="android:background">@null</item>');
   fs.writeFileSync(stylesPath, s, 'utf8');
+  console.log('✓ Splash screen nativo desactivado en styles.xml');
 }
 
 console.log('=== Parches aplicados con éxito ===');
