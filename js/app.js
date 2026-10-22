@@ -273,7 +273,8 @@
       }
       op.cerrarRed();
       op.render(function () { aplicarLocal(guardado); });
-      op.pintado().then(function () { op.terminar(true); });
+      
+      return guardado;
     },
     alArchivar: archivar,
     alArchivarPlantilla: function (id) { return KodamaPlantillas.archivar(pedir, id); },

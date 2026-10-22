@@ -53,7 +53,7 @@ if (fs.existsSync(mPath)) {
   console.log('✓ AndroidManifest.xml actualizado con permisos y overrideLibrary');
 }
 
-// 4. Copiar los iconos oficiales de KODAMA a res/
+// 4. Copiar los iconos oficiales de KODAMA y recursos a res/
 const srcRes = path.join(process.cwd(), 'resources', 'android', 'res');
 const destRes = path.join(process.cwd(), 'android', 'app', 'src', 'main', 'res');
 
@@ -88,16 +88,39 @@ if (fs.existsSync(srcRes) && fs.existsSync(destRes)) {
       }
     }
   }
-  console.log('✓ Iconos nativos y splash transparente copiados a android/res');
+  console.log('✓ Iconos nativos, silueta de notificación y splash copiados a android/res');
 }
 
-// 5. Desactivar splash screen nativo en styles.xml
+// 5. Configurar tema y splash screen nativo en styles.xml y values-v31/styles.xml
+// En Android 12+ (API 31+), windowSplashScreenBackground debe coincidir con #071743
+// y usar un icono transparente para pasar directo a la animación de KODAMA.
 const stylesPath = path.join(destRes, 'values', 'styles.xml');
 if (fs.existsSync(stylesPath)) {
   let s = fs.readFileSync(stylesPath, 'utf8');
-  s = s.replace(/<item name="android:background">@drawable\/splash<\/item>/g, '<item name="android:background">@null</item>');
+  s = s.replace(/<item name="android:background">.*?<\/item>/g, '<item name="android:background">#071743</item>');
+  if (!s.includes('android:windowBackground')) {
+    s = s.replace('</style>', '    <item name="android:windowBackground">#071743</item>\n    </style>');
+  }
   fs.writeFileSync(stylesPath, s, 'utf8');
-  console.log('✓ Splash screen nativo desactivado en styles.xml');
+  console.log('✓ values/styles.xml actualizado con fondo #071743');
 }
+
+const v31Dir = path.join(destRes, 'values-v31');
+if (!fs.existsSync(v31Dir)) fs.mkdirSync(v31Dir, { recursive: true });
+const stylesV31Path = path.join(v31Dir, 'styles.xml');
+const v31Xml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
+        <item name="android:background">#071743</item>
+        <item name="android:windowBackground">#071743</item>
+        <item name="android:windowSplashScreenBackground">#071743</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_transparent</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#071743</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+    </style>
+</resources>
+`;
+fs.writeFileSync(stylesV31Path, v31Xml, 'utf8');
+console.log('✓ values-v31/styles.xml configurado para Android 12+ (sin robot ni destello blanco)');
 
 console.log('=== Parches aplicados con éxito ===');

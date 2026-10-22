@@ -40,6 +40,22 @@ const KodamaFicha = (function () {
     });
     document.getElementById('ficha-archivar').addEventListener('click', archivar);
 
+    const selectAlarma = document.getElementById('ficha-select-alarma');
+    if (selectAlarma) {
+      selectAlarma.addEventListener('change', async function () {
+        if (!bloqueActual) return;
+        const val = this.value;
+        if (window.KodamaAlarmas && window.KodamaAlarmas.configurarYProgramar) {
+          await window.KodamaAlarmas.configurarYProgramar(bloqueActual, val);
+          const aviso = document.getElementById('ficha-aviso');
+          if (aviso) {
+            aviso.textContent = val === 'ninguna' ? '✓ Recordatorio desactivado' : '✓ Recordatorio programado';
+            setTimeout(function () { aviso.textContent = ''; }, 3000);
+          }
+        }
+      });
+    }
+
     // Guardar como plantilla: pide solo un nombre (propone el que se ve).
     document.getElementById('ficha-plantilla-abrir').addEventListener('click', function () {
       document.getElementById('ficha-cancelacion').hidden = true;
