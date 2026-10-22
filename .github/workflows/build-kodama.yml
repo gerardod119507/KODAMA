@@ -1,0 +1,102 @@
+name: Build KODAMA Android APK
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'bundle.zip'
+      - 'version.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Crear version.json y bundle.zip
+        run: |
+          SHORT_SHA="${GITHUB_SHA::8}"
+          if [ -z "$SHORT_SHA" ]; then
+            SHORT_SHA=$(git rev-parse --short=8 HEAD)
+          fi
+          echo "{\"version\": \"$SHORT_SHA\"}" > version.json
+          zip -r bundle.zip . -x ".git*" "node_modules/*" "android/*" "www/*" "bundle.zip"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.json bundle.zip
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto-generate bundle.zip and version.json [skip ci]"
+            git push origin HEAD:main
+          else
+            echo "Sin cambios en bundle.zip o version.json"
+          fi
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Configurar Java 17 Temurin
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Preparar carpeta www
+        run: |
+          mkdir -p www
+          rsync -av --exclude='www' --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='android' --exclude='bundle.zip' ./ www/
+
+      - name: Instalar dependencias de Capacitor
+        run: |
+          if [ ! -f package.json ]; then
+            npm init -y
+          fi
+          npm install @capacitor/core@^6.0.0 @capacitor/cli@^6.0.0 @capacitor/android@^6.0.0 @capacitor/local-notifications@^6.0.0 @capgo/capacitor-updater@^6.0.0
+
+      - name: Agregar y sincronizar plataforma Android
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Inyectar permisos nativos en AndroidManifest.xml
+        run: |
+          node -e '
+          const fs = require("fs");
+          const manifestPath = "android/app/src/main/AndroidManifest.xml";
+          let content = fs.readFileSync(manifestPath, "utf8");
+          const permissions = [
+            "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />",
+            "    <uses-permission android:name=\"android.permission.SCHEDULE_EXACT_ALARM\" />",
+            "    <uses-permission android:name=\"android.permission.USE_EXACT_ALARM\" />",
+            "    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />"
+          ].join("\n");
+          if (!content.includes("POST_NOTIFICATIONS")) {
+            content = content.replace("<application", permissions + "\n    <application");
+            fs.writeFileSync(manifestPath, content, "utf8");
+            console.log("Permisos inyectados exitosamente en AndroidManifest.xml");
+          } else {
+            console.log("Los permisos ya estaban presentes en AndroidManifest.xml");
+          }
+          '
+
+      - name: Compilar APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Subir APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: KODAMA-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
