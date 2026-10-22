@@ -68,40 +68,9 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Configurar compileSdkVersion y targetSdkVersion a 35
+      - name: Parchear Android (minSdk 24, compileSdk 35 y permisos)
         run: |
-          node -e '
-          const fs = require("fs");
-          const vPath = "android/variables.gradle";
-          if (fs.existsSync(vPath)) {
-            let v = fs.readFileSync(vPath, "utf8");
-            v = v.replace(/compileSdkVersion\s*=\s*\d+/g, "compileSdkVersion = 35");
-            v = v.replace(/targetSdkVersion\s*=\s*\d+/g, "targetSdkVersion = 35");
-            fs.writeFileSync(vPath, v, "utf8");
-            console.log("variables.gradle actualizado a SDK 35:\n", v);
-          }
-          '
-
-      - name: Inyectar permisos nativos en AndroidManifest.xml
-        run: |
-          node -e '
-          const fs = require("fs");
-          const manifestPath = "android/app/src/main/AndroidManifest.xml";
-          let content = fs.readFileSync(manifestPath, "utf8");
-          const permissions = [
-            "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />",
-            "    <uses-permission android:name=\"android.permission.SCHEDULE_EXACT_ALARM\" />",
-            "    <uses-permission android:name=\"android.permission.USE_EXACT_ALARM\" />",
-            "    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />"
-          ].join("\n");
-          if (!content.includes("POST_NOTIFICATIONS")) {
-            content = content.replace("<application", permissions + "\n    <application");
-            fs.writeFileSync(manifestPath, content, "utf8");
-            console.log("Permisos inyectados exitosamente en AndroidManifest.xml");
-          } else {
-            console.log("Los permisos ya estaban presentes en AndroidManifest.xml");
-          }
-          '
+          node scripts/patch-android.js
 
       - name: Compilar APK
         run: |
