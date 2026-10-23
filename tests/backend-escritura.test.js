@@ -252,7 +252,7 @@ test('cada bloque llega con los mismos campos de texto que daba el Sheet', async
 
   assert.deepStrictEqual(Object.keys(leido).sort(), [
     'actualizado', 'alumno_id', 'archivado', 'area', 'creado', 'estado', 'etiqueta', 'fecha', 'fecha_original',
-    'fin', 'fin_original', 'id', 'inicio', 'inicio_original', 'lugar', 'motivo', 'notas', 'tipo', 'titulo'
+    'fin', 'fin_original', 'id', 'inicio', 'inicio_original', 'lugar', 'motivo', 'notas', 'recordatorio', 'tipo', 'titulo'
   ]);
   Object.keys(leido).forEach((campo) => assert.strictEqual(typeof leido[campo], 'string', campo + ' es texto'));
   assert.strictEqual(leido.fecha_original, '', 'lo vacío es "" y no null');

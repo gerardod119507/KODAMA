@@ -40,21 +40,26 @@ const KodamaFicha = (function () {
     });
     document.getElementById('ficha-archivar').addEventListener('click', archivar);
 
-    const selectAlarma = document.getElementById('ficha-select-alarma');
-    if (selectAlarma) {
-      selectAlarma.addEventListener('change', async function () {
-        if (!bloqueActual) return;
-        const val = this.value;
-        if (window.KodamaAlarmas && window.KodamaAlarmas.configurarYProgramar) {
-          await window.KodamaAlarmas.configurarYProgramar(bloqueActual, val);
-          const aviso = document.getElementById('ficha-aviso');
-          if (aviso) {
-            aviso.textContent = val === 'ninguna' ? '✓ Recordatorio desactivado' : '✓ Recordatorio programado';
-            setTimeout(function () { aviso.textContent = ''; }, 3000);
-          }
-        }
-      });
-    }
+    // Recordatorio: se guarda en el bloque (Supabase), así lo ven el
+    // celular y la computadora. Si falla, vuelve a lo que estaba.
+    const selectRecordatorio = document.getElementById('ficha-recordatorio');
+    selectRecordatorio.addEventListener('change', async function () {
+      if (!bloqueActual) return;
+      const anterior = bloqueActual.recordatorio || '';
+      const valor = selectRecordatorio.value;
+      escribir('error-ficha', '');
+      selectRecordatorio.disabled = true;
+      try {
+        await acciones.alCambiarRecordatorio(bloqueActual.id, valor);
+        bloqueActual = Object.assign({}, bloqueActual, { recordatorio: valor });
+        escribir('ficha-aviso', valor === '' ? '✓ Sin recordatorio' : '✓ Recordatorio guardado');
+      } catch (error) {
+        selectRecordatorio.value = anterior;
+        escribir('error-ficha', error.message);
+      } finally {
+        selectRecordatorio.disabled = false;
+      }
+    });
 
     // Guardar como plantilla: pide solo un nombre (propone el que se ve).
     document.getElementById('ficha-plantilla-abrir').addEventListener('click', function () {
@@ -145,6 +150,8 @@ const KodamaFicha = (function () {
     mostrarFila('ficha-fila-notas', bloque.notas);
     escribir('error-ficha', '');
     escribir('ficha-aviso', '');
+    // El recordatorio elegido para este bloque (vive en el dispositivo).
+    document.getElementById('ficha-recordatorio').value = bloque.recordatorio || '';
 
     if (!dialogo.open) dialogo.showModal();
   }

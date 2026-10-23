@@ -13,7 +13,6 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const { crearEntorno } = require('./fake-google');
 
 function cargar() {
   const almacen = {};
@@ -208,17 +207,6 @@ test('KodamaApi.llamar mide cada acción entera; sin red se anota como fallida (
   const [a, b] = leer();
   assert.deepStrictEqual([a.accion, a.red, a.servidor, a.ok], ['archivarBloque', 1200, null, true], 'un error de la acción igual es un viaje completo');
   assert.deepStrictEqual([b.accion, b.red, b.servidor, b.ok], ['ping', 300, null, false]);
-});
-
-test('el backend manda "ms" (lo que tardó su código) con token válido, y no sin token', () => {
-  const env = crearEntorno({ ahora: '2026-09-25T14:30:00Z', token: 'tk' });
-  const bien = env.post({ token: 'tk', action: 'ping' });
-  assert.ok(bien.ok);
-  assert.strictEqual(typeof bien.ms, 'number');
-  assert.ok(bien.ms >= 0);
-  const mal = env.post({ token: 'tk', action: 'noExiste' });
-  assert.strictEqual(typeof mal.ms, 'number', 'también en un error del backend');
-  assert.deepStrictEqual(env.post({ token: 'otro', action: 'ping' }), { ok: false, error: 'no_autorizado' });
 });
 
 test('resumen para copiar: una línea por operación con sus partes, sin datos personales', () => {

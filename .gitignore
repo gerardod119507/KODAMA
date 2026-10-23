@@ -1,4 +1,6 @@
-# Credenciales de clasp: se generan solo dentro del workflow de GitHub
-# Actions a partir de secrets, nunca deben quedar en el repo.
-.clasp.json
-.clasprc.json
+# Lo que arma el workflow de la APK (build-kodama.yml): nunca va al repo.
+node_modules/
+www/
+android/
+bundle.zip
+version.json

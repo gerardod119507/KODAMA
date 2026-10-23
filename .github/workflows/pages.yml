@@ -1,0 +1,48 @@
+name: Publicar en GitHub Pages
+
+# Publica la app (la PWA) y, al lado, lo que baja el actualizador de la
+# APK: version.json y bundle.zip. Antes el workflow de la APK los
+# commiteaba en main en cada push (1,4 MB cada vez: el repo crecía sin
+# parar); ahora se arman acá y nunca entran al repo.
+#
+# Requiere (una sola vez): Settings → Pages → Build and deployment →
+# Source: "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Armar el sitio, version.json y bundle.zip
+        run: |
+          scripts/armar-web.sh sitio
+          echo "{\"version\": \"${GITHUB_SHA::8}\"}" > sitio/version.json
+          # index.html en la raíz del zip (lo que espera el actualizador).
+          (cd sitio && zip -qr ../bundle.zip .)
+          mv bundle.zip sitio/bundle.zip
+          ls -la sitio
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: sitio
+      - id: despliegue
+        uses: actions/deploy-pages@v4

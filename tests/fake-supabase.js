@@ -66,7 +66,8 @@ const ESQUEMA = {
   bloques: {
     clave: 'id',
     columnas: ['id', 'titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'creado', 'actualizado',
-      'archivado', 'alumno_ids', 'lugar', 'estado', 'fecha_original', 'inicio_original', 'fin_original', 'motivo'],
+      'archivado', 'alumno_ids', 'lugar', 'estado', 'fecha_original', 'inicio_original', 'fin_original', 'motivo',
+      'recordatorio'],
     obligatorias: ['id', 'area', 'tipo', 'fecha', 'inicio', 'fin'],
     porDefecto: { archivado: false, alumno_ids: [], estado: 'programada' },
     momentos: ['creado', 'actualizado'],
@@ -77,7 +78,9 @@ const ESQUEMA = {
       (f) => (HORA.test(f.inicio) && HORA.test(f.fin)) || 'hora',
       (f) => f.inicio_original === null || f.inicio_original === undefined || HORA.test(f.inicio_original) || 'inicio_original',
       (f) => f.fin_original === null || f.fin_original === undefined || HORA.test(f.fin_original) || 'fin_original',
-      (f) => f.fin > f.inicio || 'fin > inicio'
+      (f) => f.fin > f.inicio || 'fin > inicio',
+      (f) => f.recordatorio === null || f.recordatorio === undefined ||
+        (Number.isInteger(f.recordatorio) && f.recordatorio >= 0 && f.recordatorio <= 1440) || 'recordatorio'
     ],
     fechas: ['fecha', 'fecha_original'],
     tocarAlEditar: 'actualizado',

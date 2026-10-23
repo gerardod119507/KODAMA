@@ -2,13 +2,13 @@
   "appId": "com.gerardo.kodama",
   "appName": "KODAMA",
   "webDir": "www",
+  "backgroundColor": "#071743",
+  "android": {
+    "backgroundColor": "#071743"
+  },
   "plugins": {
     "CapacitorUpdater": {
       "autoUpdate": false
-    },
-    "SplashScreen": {
-      "launchShowDuration": 0,
-      "launchAutoHide": true
     }
   }
 }

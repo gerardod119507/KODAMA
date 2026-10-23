@@ -43,7 +43,7 @@ const KodamaFormulario = (function () {
       lugar: document.getElementById('campo-lugar'),
       etiqueta: document.getElementById('campo-etiqueta'),
       notas: document.getElementById('campo-notas'),
-      alarma: document.getElementById('campo-alarma')
+      recordatorio: document.getElementById('campo-recordatorio')
     };
     alGuardar = opciones.alGuardar;
     alArchivar = opciones.alArchivar;
@@ -209,14 +209,6 @@ const KodamaFormulario = (function () {
     });
     selectorAlumnos.fijar(valores.alumno_id || '');
     actualizarSegunArea();
-    if (campos.alarma) {
-      if (valores && valores.id && window.KodamaAlarmas && window.KodamaAlarmas.obtenerConfig) {
-        const cfg = window.KodamaAlarmas.obtenerConfig(valores.id);
-        campos.alarma.value = (cfg && cfg.activo) ? String(cfg.minutos) : 'ninguna';
-      } else {
-        campos.alarma.value = (valores && valores.alarma != null) ? String(valores.alarma) : 'ninguna';
-      }
-    }
   }
 
   function leerCampos() {
@@ -266,10 +258,9 @@ const KodamaFormulario = (function () {
     mostrarError('');
     ocupado(true);
     try {
-      const guardado = await alGuardar(idEnEdicion, datos, modoActual);
-      if (guardado && window.KodamaAlarmas && window.KodamaAlarmas.configurarYProgramar) {
-        await window.KodamaAlarmas.configurarYProgramar(guardado, datos.alarma);
-      }
+      // El recordatorio viaja con el bloque (se guarda en Supabase) y la
+      // app lo programa en el celular al aplicar el cambio.
+      await alGuardar(idEnEdicion, datos, modoActual);
       cerrar();
     } catch (error) {
       // No se cierra ni se limpia: lo escrito sigue ahí para reintentar.

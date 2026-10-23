@@ -255,20 +255,22 @@ test('traducción: de la base a la app todo es texto como en el Sheet, y de vuel
     inicio: '15:00', fin: '16:30', etiqueta: null, notas: null, creado: '2026-09-25T20:32:00+00:00',
     actualizado: '2026-10-01T03:05:00+00:00', archivado: false, alumno_ids: ['a1', 'a2'], lugar: 'CAFESA',
     estado: 'dictada', fecha_original: null, inicio_original: null, fin_original: null, motivo: null,
-    serie_id: 'h1234abcd', owner: 'u1', orden: 42
+    recordatorio: 10, serie_id: 'h1234abcd', owner: 'u1', orden: 42
   };
   const app = JSON.parse(JSON.stringify(DB.aApp('bloques', deLaBase)));
   assert.deepStrictEqual(app, {
     id: 'h1234abcd-2026-10-15', titulo: '', area: 'Academia Fractal', tipo: 'fijo', fecha: '2026-10-15',
     inicio: '15:00', fin: '16:30', etiqueta: '', notas: '', creado: '2026-09-25 16:32',
     actualizado: '2026-09-30 23:05', archivado: '', alumno_id: 'a1,a2', lugar: 'CAFESA',
-    estado: 'dictada', fecha_original: '', inicio_original: '', fin_original: '', motivo: ''
+    estado: 'dictada', fecha_original: '', inicio_original: '', fin_original: '', motivo: '',
+    recordatorio: '10'
   }, 'sin serie_id, owner ni orden; la hora es la de La Paz');
 
   const vuelta = JSON.parse(JSON.stringify(DB.aBase('bloques', app)));
   assert.deepStrictEqual(vuelta.alumno_ids, ['a1', 'a2']);
   assert.strictEqual(vuelta.archivado, false);
   assert.strictEqual(vuelta.titulo, null);
+  assert.strictEqual(vuelta.recordatorio, 10, 'el recordatorio es un número en la base');
   assert.strictEqual(vuelta.creado, '2026-09-25T16:32:00-04:00');
   assert.ok(!('serie_id' in vuelta) && !('owner' in vuelta) && !('orden' in vuelta), 'lo que calcula la base no se manda');
 

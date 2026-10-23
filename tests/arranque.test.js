@@ -70,7 +70,7 @@ test('fases: atractor, asentar, circunferencia, palabra, quieto', () => {
   const ej = cargarCarga();
   const T = ej('KodamaCarga.TIEMPOS');
   assert.ok(T.asentar < T.circulo && T.circulo < T.palabra && T.palabra < T.fin);
-  assert.ok(T.fin <= 3000, 'la secuencia completa dura como mucho 3 s');
+  assert.ok(T.fin + ej('KodamaCarga.PAUSA_FINAL') <= 5000, 'la secuencia completa (con la pausa final) dura como mucho 5 s');
   assert.strictEqual(ej('KodamaCarga.fase(0)'), 'atractor');
   assert.strictEqual(ej('KodamaCarga.fase(' + T.asentar + ')'), 'asentar');
   assert.strictEqual(ej('KodamaCarga.fase(' + T.circulo + ')'), 'circulo');

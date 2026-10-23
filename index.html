@@ -140,9 +140,9 @@
         <label for="campo-notas">Notas</label>
         <textarea id="campo-notas" rows="3" autocapitalize="sentences"></textarea>
 
-        <label for="campo-alarma">🔔 Recordatorio / Alarma</label>
-        <select id="campo-alarma">
-          <option value="ninguna">Sin recordatorio</option>
+        <label for="campo-recordatorio">🔔 Recordatorio</label>
+        <select id="campo-recordatorio">
+          <option value="">Sin recordatorio</option>
           <option value="0">Al comenzar la clase</option>
           <option value="5">5 minutos antes</option>
           <option value="10">10 minutos antes</option>
@@ -188,8 +188,8 @@
       <div id="ficha-fila-alarma">
         <dt>🔔 Recordatorio</dt>
         <dd>
-          <select id="ficha-select-alarma">
-            <option value="ninguna">Sin recordatorio</option>
+          <select id="ficha-recordatorio" aria-label="Recordatorio">
+            <option value="">Sin recordatorio</option>
             <option value="0">Al comenzar la clase</option>
             <option value="5">5 minutos antes</option>
             <option value="10">10 minutos antes</option>
@@ -285,7 +285,8 @@
         } catch (e) {}
       }
 
-      if (!navigator.onLine) {
+      // Solo en la APK; en el navegador (PWA) actualiza el service worker.
+      if (!updater || !updater.download || !navigator.onLine) {
         return;
       }
 
@@ -300,12 +301,12 @@
               url: 'https://gerardod119507.github.io/KODAMA/bundle.zip?t=' + Date.now(),
               version: datos.version
             });
-            if (updater.set) {
-              await updater.set(bundle.id ? { id: bundle.id } : bundle);
+            // next(): la versión nueva se usa la próxima vez que se abre la
+            // app. Antes se recargaba enseguida y cortaba la animación de
+            // arranque a la mitad.
+            if (updater.next) {
+              await updater.next({ id: bundle.id });
               localStorage.setItem('kodama_bundle_version', datos.version);
-              if (updater.reload) {
-                await updater.reload();
-              }
             }
           }
         }

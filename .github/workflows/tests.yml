@@ -1,6 +1,6 @@
 name: Tests
 
-# Corre en todo push y en todo PR: si algo de apps-script/ o js/ se rompe,
+# Corre en todo push y en todo PR: si algo de js/ se rompe,
 # tiene que verse acá antes de mergear, no en el Sheet de Gerardo.
 on:
   push:

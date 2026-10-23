@@ -55,11 +55,16 @@ Desde el **Checkpoint 13** (octubre 2026):
   no hace falta integrar reconocimiento de voz en la app.
 
 Hasta el Checkpoint 12 la base era **Google Sheets** y la API un **Web App
-de Apps Script**. `apps-script/`, su workflow de despliegue y sus pruebas
-(`tests/fake-google.js` y las que lo usan) **quedan en el repo solo hasta
-que Gerardo confirme la mudanza**; después se borran en un PR de limpieza.
-Mientras tanto **no tocar `apps-script/`**: cualquier cambio ahí dispara
-el despliegue al Web App viejo.
+de Apps Script**. Todo eso (`apps-script/`, su workflow y sus pruebas) se
+borró en la limpieza de octubre 2026; queda en el historial de git.
+
+**Publicación:** `.github/workflows/pages.yml` publica en GitHub Pages solo
+los archivos de la app (`scripts/armar-web.sh`) más `version.json` y
+`bundle.zip` (lo que baja el actualizador de la APK). Nunca se commitean.
+Requiere *Settings → Pages → Source: GitHub Actions*.
+**APK:** `.github/workflows/build-kodama.yml` (Capacitor), solo cuando cambia
+la parte nativa o a mano ("Run workflow"); deja la APK como artefacto del
+run. Los cambios de la app llegan solos por el actualizador.
 
 ### Por qué este stack
 
@@ -126,110 +131,6 @@ Se parte de cero.
   puede leer, crear, editar y borrar filas (siempre bajo RLS); se le quitó
   `TRUNCATE`, que Supabase da por defecto y se salta RLS.
 
-## Despliegue de Apps Script (CI/CD) — retirado en el Checkpoint 13
-
-> Todo lo de esta sección es del backend viejo. Sigue en el repo solo
-> hasta el PR de limpieza (ver "Stack"). No se usa más.
-
-`.github/workflows/deploy-apps-script.yml` corre en cada push a `main` que
-toque `apps-script/**` **o el propio archivo del workflow**, y también se
-puede disparar a mano (`workflow_dispatch` — botón "Run workflow" en la
-pestaña **Actions**). Usa [`clasp`](https://github.com/google/clasp) (CLI
-oficial de Google) para:
-
-1. `clasp push --force` — sube el contenido de `apps-script/` al proyecto de
-   Apps Script, pisando lo que haya en el editor. El repo es la fuente de
-   verdad; el editor ya no se edita a mano.
-2. `clasp deploy -i "$DEPLOYMENT_ID"` — crea una versión nueva del script y
-   la asocia al **mismo despliegue** que ya existía. La URL del Web App está
-   atada al despliegue (no a la versión del código), así que nunca cambia.
-
-**Versión de clasp: `@google/clasp@3`** (misma mayor que corre
-`clasp login` localmente). Motivo: clasp cambió el formato de
-`~/.clasprc.json` entre versiones mayores — v2 usa `{"token": {...}}`, v3
-usa `{"tokens": {...}}` — así que lo que importa es que la mayor coincida
-con la que generó `CLASPRC_JSON`; el número de parche no afecta el formato.
-Si el workflow instalara una mayor distinta a la que usaste para loguearte,
-`clasp push` falla leyendo el token
-(`Cannot read properties of undefined (reading 'access_token')`). Un paso
-del workflow imprime `clasp --version` en cada run, para notar enseguida si
-una mayor nueva (`@4`, etc.) alguna vez vuelve a cambiar el formato. Si en
-el futuro actualizás tu `clasp` local a otra mayor (`npm install -g
-@google/clasp@la-que-sea` + `clasp login` de nuevo para regenerar
-`CLASPRC_JSON`), actualizá el número acá y en el workflow en el mismo PR.
-
-**Por qué el workflow también se dispara con `.github/workflows/…yml` en
-los `paths`, y por qué existe `workflow_dispatch`:** "Re-run failed jobs" en
-GitHub Actions vuelve a correr el workflow **tal como estaba en el commit
-que originó ese run**, no el que está hoy en `main` — así que no sirve para
-probar un fix hecho en un PR posterior (así fue como el primer intento de
-fijar la versión de clasp pasó varios reintentos sin detectarse que nunca
-se estaba probando). Con el workflow en los `paths`, mergear un cambio al
-propio archivo dispara un run nuevo de verdad; `workflow_dispatch` da un
-botón para forzarlo a mano cuando ni `apps-script/` ni el workflow
-cambiaron.
-
-**Un job en verde no significaba "desplegado" (incidente 2026-09-23):** el
-Checkpoint 4 se dio por terminado con el workflow en verde, pero el paso de
-deploy había impreso `Invalid deployment ID` y **salido con código 0**.
-`clasp push` sí había subido el código al proyecto, pero el despliegue nunca
-se actualizó, así que el Web App siguió sirviendo la versión anterior y la
-hoja `Horario` nunca se creó. Ahora el paso de deploy revisa **la salida de
-clasp además del código de salida** y falla el job si aparece
-`invalid`/`error`/`not found`/`failed`. Regla que quedó: *clasp puede fallar
-sin fallar*, así que cualquier paso que lo use tiene que validar su salida.
-
-**Nunca imprimir el deployment ID en los logs:** el ID es literalmente la
-parte `/macros/s/<ID>/exec` de la URL del Web App, y los logs de Actions de
-un repo público son públicos. El paso de deploy reemplaza el ID por
-`<DEPLOYMENT_ID>` antes de mostrar cualquier salida de clasp.
-
-### Secrets del repo (`Settings` → `Secrets and variables` → `Actions`)
-
-- `SCRIPT_ID` — identifica el proyecto de Apps Script. Se genera un
-  `.clasp.json` con este valor dentro del workflow (nunca se commitea).
-- `DEPLOYMENT_ID` — identifica el despliegue existente (Web App), para que
-  `clasp deploy -i` actualice ese y no cree uno nuevo con otra URL.
-- `CLASPRC_JSON` — las credenciales OAuth que `clasp login` guarda en
-  `~/.clasprc.json` en una máquina local. El workflow reconstruye ese
-  archivo a partir del secret antes de correr `clasp push`/`clasp deploy`.
-  Son credenciales de la cuenta de Gerardo con permiso para editar el
-  script — por eso viven solo como secret, nunca en el repo.
-
-### Qué sigue siendo manual (no se puede automatizar por API)
-
-- **Generar el token** (`generarToken()` en Setup.gs): correrlo desde un
-  workflow público sin autenticación sería crear un secreto por un endpoint
-  no protegido — justo lo que el token existe para evitar. Se genera una
-  sola vez a mano, como en el Checkpoint 2.
-- **La primera creación del script y el primer despliegue**: `SCRIPT_ID` y
-  `DEPLOYMENT_ID` solo existen después de crear el proyecto y publicarlo una
-  vez desde la interfaz de Google (Checkpoint 2). El workflow actualiza un
-  despliegue que ya existe; no crea el primero.
-- **`clasp login`**: requiere el flujo interactivo de OAuth de Google en un
-  navegador. Se corre una vez en una computadora para generar el
-  `CLASPRC_JSON` que se pegó como secret.
-
-### Auto-creación de hojas
-
-`asegurarEstructura()` (Code.gs) corre antes de la acción pedida en el
-primer `POST` autorizado, y después solo cuando hace falta (ver abajo): crea `Areas` (con las 4 áreas) y `Bloques`
-(con encabezados, en formato texto) si no existen, y fija la zona horaria
-del libro. Es idempotente — si una hoja ya tiene filas, no la toca. Motivo:
-con el despliegue automatizado, la idea es tocar el editor de Apps Script lo
-menos posible; si alguna vez hay que recrear el Sheet desde cero, la primera
-petición al Web App ya lo deja usable. `Horario` se suma a esta función
-recién en el Checkpoint 4, cuando se defina su estructura de columnas.
-
-**Desde el Checkpoint 6.5 no corre en cada petición** (eran ~15 llamadas a
-Sheets de 18 en una lectura). `asegurarEstructuraSiHaceFalta()` guarda en
-Script Properties (`KODAMA_ESTRUCTURA`) una *firma* — zona horaria +
-encabezados de `Bloques` y `Horario` — y solo verifica si la firma guardada
-no coincide con la del código. Así, un cambio de columnas en el código (una
-migración nueva) dispara la verificación solo, sin acordarse de nada al
-desplegar. Además, **cualquier error** borra la firma: si alguien borró o
-rompió una hoja a mano, esa petición falla y la siguiente la repara.
-
 ## Pruebas automáticas
 
 `tests/` + `.github/workflows/tests.yml`. Corren con `npm test` (que es
@@ -257,6 +158,11 @@ usan el runner de pruebas que ya trae Node, no se instala nada.
   y semana, ids, viajes a la base), `horario` (generador y series),
   `estados`, `fijos`, `alumnos` (y catálogos), `importar` (alumnos, reglas
   e histórico), `pagos` (y plantillas) y `lugar`.
+- `tests/backend-recordatorio.test.js` — el recordatorio de un bloque:
+  crear, cambiar, quitar, valores inválidos, y que regenerar no lo pise.
+- `tests/notificaciones.test.js` — cuándo suena, que cargar la semana
+  no llame al sistema de más, mover/quitar/cancelar, la PWA sin relojes
+  repetidos y la subida única de lo que vivía en el dispositivo.
 - `tests/backend-supabase.test.js` — la conexión, con un `fetch` falso que
   contesta como Supabase: inicio de sesión (y que la contraseña no se
   guarde), renovación del token (una sola vez con varias peticiones),
@@ -273,29 +179,13 @@ marcar dictada, mover, día vacío, crear una materia, crear un alumno,
 cobros, estadísticas, token vencido, cerrar sesión). Si se vuelve a hacer,
 el esquema de la carpeta de migraciones es la fuente de verdad.
 
-**Backend viejo (Apps Script), hasta el PR de limpieza:**
+**Navegador y lógica pura:**
 
-- `tests/fake-google.js` — entorno falso de Apps Script (`SpreadsheetApp`,
-  `Utilities`, `PropertiesService`, `ContentService`) que evalúa los `.gs`
-  reales de `apps-script/` con `vm`. Imita **a propósito** las partes
-  estrictas de Sheets (rangos de 0 filas, `setValues` con dimensiones que no
-  coinciden) para que un error que rompería en producción también rompa acá.
-  `Utilities.formatDate` devuelve un instante fijo, así las pruebas de
-  "hoy vs. futuro" son deterministas.
-- `tests/estructura.test.js` — que `asegurarEstructura()` cree las 3 hojas
-  (la prueba de regresión del incidente del Checkpoint 4), encabezados,
-  formato de texto en fechas/horas, idempotencia, y la migración de la
-  columna `etiqueta` sobre una hoja que ya tenía datos.
-- `tests/horario.test.js` — el generador: expansión de días a fechas,
-  días con y sin tilde, límites de `desde`/`hasta`, respeto del pasado al
-  regenerar, idempotencia, y convivencia con lo editado a mano.
 - `tests/frontend.test.js` — lógica pura del navegador: filtro de capas
   (qué se muestra completo y qué como "ocupado"). El reparto lado a lado y
   los huecos están en `semana.test.js`/`huecos.test.js`: la vista de día
   usa la misma grilla que la semana.
-- `tests/escritura.test.js` — las acciones de escritura del Checkpoint 5:
-  crear/editar/archivar bloques y reglas, validaciones que fallan sin tocar
-  la hoja, y que todas exijan token.
+
 - `tests/velocidad.test.js` — Checkpoint 6.5: que una semana lea una
   fracción de la hoja (no la hoja entera), que `Bloques` quede ordenada
   tras generar/crear/mover, que una hoja desordenada a mano igual dé
@@ -306,59 +196,11 @@ el esquema de la carpeta de migraciones es la fuente de verdad.
   qué huecos se colapsan (más de 2 h, libres en todos los días visibles),
   que las alturas sigan proporcionales con huecos colapsados, y qué bloques
   llevan el borde de superposición.
-- `tests/alumnos.test.js` — Checkpoint 7: hojas `Alumnos`/`Cursos`/
-  `Colegios`, alta/edición/archivo con sus validaciones (catálogo, tarifa,
-  forma de pago, duplicados), renombrar un catálogo actualiza a los
-  alumnos, bloques y reglas con `alumno_id` (título opcional), el
-  generador copia los alumnos, y la **migración** de los bloques de
-  Fractal con el nombre en el título (vista previa sin escribir, cada
-  alumno creado una sola vez, nada perdido, filas elegidas).
-- `tests/importar.test.js` — el importador: encabezados en cualquier
-  orden o sin encabezado, vista previa sin escribir, filas malas señaladas
-  sin frenar el resto, sin duplicar (ni contra la hoja ni dentro de lo
-  pegado), catálogos nuevos propuestos, y reglas del horario con alumnos
-  por nombre.
+
 - `tests/buscador.test.js` — el buscador del autocompletado (sin tildes
   ni mayúsculas, por nombre/apellido/colegio, "ag" → Agustín primero) y el
   nombre que se ve de un bloque armado desde sus alumnos.
-- `tests/vincular-horario.test.js` — `vincularAlumnosEnHorario()`:
-  vincula por nombre y apellido sin tildes/mayúsculas, varios alumnos por
-  regla, deja sin tocar (y registra) lo no encontrado o ambiguo, no toca
-  otras áreas, reglas ya vinculadas ni otras columnas, y es idempotente.
-- `tests/lugar.test.js` — el campo `lugar`: columnas al final en las tres
-  hojas (y migración de una hoja vieja), guardar/editar en bloques,
-  reglas y alumnos, el generador lo copia y lo refresca,
-  `moverAulasALugar()` (solo Universidad, resto de la nota conservado, dos
-  aulas = pendiente, idempotente) y el lugar habitual del alumno elegido.
-- `tests/auditoria.test.js` — `auditarDatos()`: encuentra cada tipo de
-  problema (repetidos, homónimos sin apellido, catálogo, tarifas,
-  vínculos faltantes o de más, nombre en el título, bloques que no
-  heredaron, huérfanos, `(vacío)`, bloques de prueba), cuenta las filas y
-  **no escribe nada**.
-- `tests/reparar.test.js` — `repararAlumnosFractal()` sobre una copia
-  armada como los datos reales: la vista previa no escribe nada, id solo
-  a alumnos con nombre, curso al del catálogo, reglas y bloques (pasados
-  y futuros) vinculados, título vaciado solo si es exactamente el nombre,
-  pendientes sin tocar, idempotencia; además los ids automáticos al leer
-  alumnos (y que las vistas previas no los escriban), la migración que
-  no crea un alumno ante un nombre ambiguo, y que el registro llegue a
-  Logger ya armado (enteros, nunca "8.0").
-- `tests/estados.test.js` — Checkpoint 8: estado de la clase (nuevo =
-  programada, dictada, cancelada con motivo, volver), "movida" solo al
-  mover, fecha/hora originales guardadas una vez, volver al original, una
-  dictada movida sigue dictada, "Editar" no marca movida, el generador no
-  toca una clase movida, y token. **Dictada solo en Fractal:** rechazada
-  en las otras áreas (cancelar y mover siguen), una dictada que cambia de
-  área (Editar o su regla) vuelve a programada/movida, y la corrección de
-  datos (qué cambia, qué no, idempotente, y que corre sola una vez tras
-  el despliegue por la firma vieja).
-- `tests/pagos.test.js` — hoja `Pagos`: alta, validaciones (alumno,
-  periodo, monto, estado, fechas), pagado sin fecha = hoy, edición
-  parcial, archivar sin borrar, token.
-- `tests/historico.test.js` — importador de clases pasadas: vista previa
-  sin escribir, bloques de Fractal "dictada", alumno nuevo creado una sola
-  vez, sin duplicar, filas malas (ambiguo, futura, horas al revés, fecha
-  mal escrita, sin alumno, repetida) sin frenar al resto.
+
 - `tests/estadisticas.test.js` — **cálculo de montos** (tarifa por
   alumno, clase compartida, solo dictadas, sin tarifa, centavos; una
   "dictada" de otra área no suma, pero sí en horas por área),
@@ -390,12 +232,7 @@ el esquema de la carpeta de migraciones es la fuente de verdad.
   y entero sobre el atractor del logo), el marino igual al del manifest,
   las partes marcadas del símbolo (3 puntos = 3 esferas) y que todas las
   pantallas la tengan antes del encabezado.
-- `tests/fijos.test.js` — Checkpoint 12, backend: guardar con
-  `regenerar` (una sola petición), sin `regenerar` no toca Bloques,
-  `borrarRegla` (futuras sí, pasadas y dictadas no, otros alumnos no, sin
-  revivir al regenerar), archivar una materia con `regenerar`,
-  `listarFijosSueltos` (solo Fractal + fijo + suelta + de hoy en
-  adelante), `borrarBloque` (nunca de un horario fijo ni dictada) y token.
+
 - `tests/materias.test.js` — Checkpoint 12, navegador: qué es una materia,
   "No hubo clase", el reparto en Materias / Alumnos fijos / Otros, los
   fijos de un mes (también los que cruzan de mes), límites del mes
@@ -450,6 +287,11 @@ agrega su prueba en el mismo PR.**
   - Enlaces: `area` → `areas`; `curso` → `cursos` y `colegio` →
     `colegios` (renombrar un curso o colegio cambia solo a sus alumnos);
     `pagos.alumno_id` → `alumnos`.
+  - `bloques.recordatorio` (migración 004): minutos antes de empezar que
+    avisa el celular (0 = al comenzar, `null` = ninguno). Lo programa
+    `js/notificaciones.js` (`KodamaAlarmas`) en la APK con notificaciones
+    nativas, y en el navegador mientras la página esté abierta. Se elige en
+    el formulario y en la ficha. El generador del horario nunca lo pisa.
   - `alumnos` tiene columnas nuevas, vacías por ahora: `materias`,
     `tutor_nombre`, `tutor_parentesco`, `tutor_telefono`, `fecha_inicio`
     (para la ficha completa del alumno, un checkpoint futuro).
@@ -489,7 +331,6 @@ agrega su prueba en el mismo PR.**
 > guardan (tablas de Supabase, ver arriba). Las partes sobre formato de
 > celdas, columnas agregadas al final, `asegurarEstructura` y ordenar la
 > hoja son historia del Sheet.
-
 
 ### Hoja `Areas`
 4 filas fijas al arrancar (sin fila para "Reunión": no es un área, es un
@@ -774,55 +615,6 @@ los alumnos que lo tenían.
   separador). En la semana compacta del celular no se ve (tampoco la
   hora). En la ficha, fila "Lugar" (oculta si está vacío) y las notas
   completas.
-- **Función manual `moverAulasALugar()`** (`apps-script/Setup.gs`, desde el
-  editor): en las reglas de `Horario` de **Universidad** con `lugar` vacío,
-  mueve el aula que está en `notas` ("Aula E511") a `lugar`; si las notas
-  tenían algo más, ese resto queda en notas. Dos aulas en las mismas notas
-  → la fila queda sin tocar y se registra. Solo escribe `notas` y `lugar`.
-  Después, "Regenerar horario" lleva el aula a los bloques ya generados.
-- **Auditoría `auditarDatos()`** (`apps-script/Auditoria.gs`, desde el
-  editor): **solo lectura**. Revisa Alumnos (repetidos, homónimos sin
-  apellido, curso/colegio fuera del catálogo, tarifa y forma de pago),
-  Horario y Bloques (Fractal sin alumnos, otras áreas con alumnos, ids de
-  alumno inexistentes, título que nombra más alumnos que los vinculados,
-  nombre todavía en el título), series (huérfanas, `(vacío)`, bloques
-  generados que no heredaron los alumnos de su regla, separando pasados y
-  futuros) y bloques de prueba (ids raros, títulos de ejemplo de la
-  documentación). Escribe en el Logger cada problema con cuántas filas
-  afecta, ejemplos con número de fila y una propuesta. Motivo de que sea
-  una función del editor: Claude no tiene acceso al Sheet real (ni el ID
-  ni el token), así que la auditoría la corre Gerardo y comparte el
-  registro.
-- **Función manual `vincularAlumnosEnHorario()`** (`apps-script/Setup.gs`,
-  se ejecuta desde el editor de Apps Script): solo para las **reglas** de
-  `Horario` de Fractal con `alumno_id` vacío. Lee los nombres del título
-  (misma `extraerNombresDeTitulo`) y los busca en `Alumnos` por nombre y
-  apellido sin tildes/mayúsculas (solo nombre: vale si hay uno solo con
-  ese nombre). Varios nombres → vincula a todos. Si alguno no aparece o es
-  ambiguo, la fila queda **sin tocar** y se anota como pendiente. A
-  diferencia de la migración de Configuración, **no crea alumnos ni cambia
-  títulos**: solo escribe la columna `alumno_id`. El resultado (vinculadas
-  y pendientes con su motivo) queda en el registro de ejecución. Después
-  hay que tocar "Regenerar horario" para que los bloques ya generados
-  hereden los alumnos.
-- **Reparación `repararAlumnosFractal()`** (`apps-script/Setup.gs`, desde
-  el editor): **vista previa, no escribe nada**; la que escribe es
-  `repararAlumnosFractalAplicar()` (el editor no deja pasar argumentos,
-  por eso son dos funciones y la sin sufijo es la segura). Arregla lo que
-  encontró la auditoría: id a los alumnos con nombre y sin id; curso
-  escrito distinto al del catálogo ("3ero de secundaria" → "3ro de
-  secundaria", solo si hay exactamente uno parecido); reglas de Fractal
-  sin alumnos, por el título; y bloques de Fractal sin alumnos, **pasados
-  y futuros** (los de una regla copian los alumnos de su regla, los
-  sueltos van por el título). El título se vacía **solo si es exactamente
-  el nombre** de los vinculados ("Katy", "Camila y Adriana"); si tiene
-  algo más ("Clase con Katy", "… - Física") queda tal cual y se anota.
-  Solo escribe `id`/`curso` en Alumnos y `título`/`alumno_id` en Horario y
-  Bloques; no toca archivados ni otras áreas; nombre ambiguo o que no
-  está → pendiente, sin tocar. Es idempotente.
-- **Registro legible:** las funciones del editor escriben con
-  `registrar()` (Setup.gs), que arma el texto antes de `Logger.log`.
-  Motivo: `Logger.log('%s', 8)` imprime "8.0".
 - **Migración y nombres ambiguos:** si el título trae solo un nombre que
   tienen varios alumnos ("Santiago" con Santiago Aliendre y Santiago
   Méndez), la migración de Configuración ya no crea un alumno nuevo: la
@@ -1066,16 +858,6 @@ los títulos, y antes de la mudanza no quedaba nada por vincular.
   `lugar`/`aula` (reglas) y `lugar`/`lugar habitual` (alumnos).
 
 Se agrega una acción por checkpoint; esta lista se mantiene al día.
-
-**Por qué pasó el bug de "accion_desconocida" después del Checkpoint 3:** la
-rama del despliegue automático (CI/CD) se había creado desde `main` *antes*
-de que el Checkpoint 3 (con `listarBloquesDia`) se mergeara. Su
-`apps-script/Code.gs` todavía no tenía esa acción. Si ese código se copió al
-editor de Apps Script después de tener el Checkpoint 3 andando, pisó
-`listarBloquesDia` con una versión anterior que no la reconocía — el
-frontend (ya en la versión del Checkpoint 3) seguía pidiéndola igual. La
-rama de CI/CD se actualizó (merge con `main`) para que esto no se repita: a
-partir de ahora, esa rama siempre incluye la última acción agregada.
 
 ## Caché local
 
@@ -1435,9 +1217,11 @@ ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
 - **Marino, en los dos temas:** el mismo `#071743` que el
   `background_color` del manifest (la bienvenida de Android), así el paso
   se siente continuo. Trazo y texto en hueso.
-- **Secuencia** (`TIEMPOS`, como mucho 2,9 s): el atractor se dibuja en
-  tiempo real desde un punto al azar con tres esferas y su estela; a los
-  1,3 s **se asienta en el logo**: el trazo se encoge sobre el atractor
+- **Secuencia** (`TIEMPOS`, 4,3 s + `PAUSA_FINAL` 0,4 s; antes 2,9 s,
+  que Gerardo sentía brusca y cortada): el atractor se dibuja en
+  tiempo real (avanza **por tiempo**, no por cuadro: igual en 60 y 120 Hz)
+  desde un punto al azar con tres esferas y su estela; a los
+  2 s **se asienta en el logo**: el trazo se encoge sobre el atractor
   del símbolo (escala y traslado calculados con `ajuste()`) y se apaga
   mientras el del símbolo aparece, la línea se dibuja y las tres esferas
   vuelan a los tres puntos del símbolo (la más grande al centro); después
@@ -1447,11 +1231,19 @@ ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
   `fetch` y `DOMParser` (sin `innerHTML`); sus partes están marcadas con
   `data-parte` (`circulo`, `linea`, `atractor`, `punto`). Si no llega a
   tiempo, sigue el atractor hasta que llegue o hasta `listo()`.
-- **Nunca demora la app:** cada pantalla llama a `KodamaCarga.listo()`
-  apenas tiene algo que mostrar y se desvanece en 250 ms, esté en la fase
-  que esté (con la semana guardada, ~0,4 s: casi nunca se llega a ver el
-  logo completo, y está bien). Si algo falla, se va sola a los 8 s.
-  Configuración no espera datos: la suelta enseguida.
+- **Se ve entera una vez** (pedido de Gerardo, octubre 2026): cada
+  pantalla llama a `KodamaCarga.listo()` cuando tiene algo que mostrar,
+  pero se desvanece (450 ms) recién al terminar la secuencia. **Un toque
+  la salta.** Si algo falla, se va sola a los 8 s. Solo pasa al abrir la
+  app (una vez por sesión).
+- **APK (Capacitor):** Android 12+ siempre muestra su propia pantalla de
+  bienvenida (no se puede quitar); se disfraza de marino liso, sin ícono
+  (`resources/android/res/values-v31/styles.xml`), y el WebView también
+  arranca marino (`backgroundColor` en `capacitor.config.json`), así no
+  hay destello blanco antes de la animación. La versión nueva que baja el
+  actualizador se aplica la próxima vez que se abre (`updater.next`),
+  nunca recargando en medio de la animación. En la APK no hay service
+  worker (`js/pwa.js`): servía archivos viejos después de actualizar.
 - **`prefers-reduced-motion`:** el logo completo, quieto.
 
 **Mascota:** `js/ui/espiritu.js` (`dormidoA`), en el estado vacío de la
@@ -1496,7 +1288,7 @@ PWA").
 8. Estado de cada clase, pagos y estadísticas (Checkpoint 8).
 
 **Fuera de alcance por ahora:** kanban, buscador global, drag & drop,
-notificaciones, cola offline.
+cola offline. (Los recordatorios de clases sí existen desde octubre 2026.)
 
 ## Estructura de carpetas
 
@@ -1504,9 +1296,10 @@ notificaciones, cola offline.
 KODAMA/
 ├── .github/
 │   └── workflows/
-│       ├── deploy-apps-script.yml  # (viejo) clasp push + deploy; se borra en la limpieza
+│       ├── pages.yml                # publica la app + bundle.zip en GitHub Pages
+│       ├── build-kodama.yml         # arma la APK (Capacitor)
 │       └── tests.yml                # npm test en cada push y PR
-├── .gitignore               # .clasp.json / .clasprc.json (nunca al repo)
+├── .gitignore               # lo que arman los workflows (www/, android/, bundle.zip)
 ├── package.json             # sin dependencias: solo el comando de pruebas
 ├── tests/                   # pruebas con el runner de Node (ver "Pruebas automáticas")
 ├── index.html              # vista de día/semana + alta/edición de bloques
@@ -1551,7 +1344,8 @@ KODAMA/
 │   ├── formas.js                # duración por área, fin corregido, días (lógica pura)
 │   ├── plantillas.js            # plantillas de bloques (+ copia en el dispositivo)
 │   ├── tema.js                  # tema claro/oscuro, en el <head> de cada página
-│   ├── pwa.js                   # registra el service worker
+│   ├── pwa.js                   # registra el service worker (no en la APK)
+│   ├── notificaciones.js        # recordatorios: los programa en el dispositivo
 │   ├── lorenz.js                # ecuaciones del atractor de Lorenz (lógica pura)
 │   └── ui/
 │       ├── dia.js                # vista de día (grilla de una columna) y estados vacío/carga/error
@@ -1571,21 +1365,9 @@ KODAMA/
 ├── icons/                   # símbolo e íconos (los SVG son la fuente; los PNG salen de ahí)
 ├── supabase/
 │   └── migraciones/          # el esquema de la base, en orden (001, 002, 003…)
-├── apps-script/             # (viejo, hasta la limpieza) el backend en Google
-│   ├── appsscript.json       # manifiesto: zona horaria, tipo de despliegue
-│   ├── Code.gs               # Web App: doPost, validación de token, hojas Areas/Bloques
-│   ├── Bloques.gs             # crear/editar/archivar/mover bloques y su estado
-│   ├── Setup.gs               # funciones manuales: configurarHojas, generarToken, vincularAlumnosEnHorario, moverAulasALugar, repararAlumnosFractal
-│   ├── Horario.gs             # hoja Horario + generarHorario(): reglas → filas de Bloques
-│   ├── Alumnos.gs             # hojas Alumnos/Cursos/Colegios, ABM y migración de Fractal
-│   ├── Importar.gs            # importador de filas pegadas (alumnos y reglas)
-│   ├── Auditoria.gs           # auditarDatos(): revisión de coherencia, solo lectura
-│   ├── Pagos.gs               # hoja Pagos: listar/crear/editar/archivar
-│   └── Plantillas.gs          # hoja Plantillas: listar/crear/archivar
-├── docs/
-│   ├── setup-google.md      # pasos exactos para Sheet + Apps Script
-│   ├── datos-prueba.md       # cómo cargar bloques de prueba a mano
-│   └── horario.md             # cómo llenar la hoja Horario y usar el generador
+├── capacitor.config.json     # APK: id, fondo marino, actualizador
+├── resources/android/        # íconos y tema nativo que copia scripts/patch-android.js
+├── scripts/                  # armar-web.sh (archivos de la app), patch-android.js
 └── CLAUDE.md
 ```
 
@@ -1623,5 +1405,8 @@ antes.
     y contraseña, y el día vacío sin los bocetos A/B. Después: limpieza
     (borrar `apps-script/`), aviso al guardar, ficha completa del alumno,
     y APK con Capacitor y notificaciones.
+14. **Limpieza y recordatorios** (octubre 2026): se borró el backend
+    viejo, la app y el bundle de la APK se publican con Pages (sin
+    commits automáticos en main) y el recordatorio se guarda en Supabase.
 
 Cada checkpoint: rama corta → PR pequeño → Gerardo prueba y aprueba → merge.

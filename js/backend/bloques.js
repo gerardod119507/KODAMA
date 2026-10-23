@@ -19,7 +19,7 @@
 
   // Campos que la app puede escribir. El resto (id, creado, actualizado,
   // archivado) los maneja el backend.
-  const CAMPOS_EDITABLES_BLOQUE = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'alumno_id', 'lugar'];
+  const CAMPOS_EDITABLES_BLOQUE = ['titulo', 'area', 'tipo', 'fecha', 'inicio', 'fin', 'etiqueta', 'notas', 'alumno_id', 'lugar', 'recordatorio'];
 
   // Un bloque suelto (creado con el +, duplicado o importado): "b" + 8
   // hexadecimales. Los de un horario fijo son "idDeSerie-fecha".
@@ -86,6 +86,20 @@
 
   // --- Validación ------------------------------------------------------
 
+  /**
+   * Recordatorio: minutos antes de empezar (0 = al comenzar, hasta 1 día)
+   * o "" = sin recordatorio. Se guarda como texto del número.
+   */
+  function normalizarRecordatorio(valor) {
+    const texto = String(valor === null || valor === undefined ? '' : valor).trim();
+    if (texto === '' || texto === 'ninguna') return '';
+    const minutos = Number(texto);
+    if (!Number.isInteger(minutos) || minutos < 0 || minutos > 1440) {
+      throw new Error('recordatorio_invalido: "' + texto + '" (minutos entre 0 y 1440)');
+    }
+    return String(minutos);
+  }
+
   async function validarBloque(bloque) {
     // Con alumnos vinculados el título es opcional: el nombre que se ve en
     // la app sale de los alumnos, no del título (Checkpoint 7).
@@ -125,6 +139,7 @@
       archivado: '',
       alumno_id: B.normalizarIdsAlumnos(entrada.alumno_id),
       lugar: String(entrada.lugar || '').trim(),
+      recordatorio: normalizarRecordatorio(entrada.recordatorio),
       // Un bloque nuevo (también un duplicado) empieza programado y sin
       // historia: el estado nunca se copia.
       estado: 'programada', fecha_original: '', inicio_original: '', fin_original: '', motivo: ''
@@ -144,6 +159,7 @@
       }
     });
     bloque.alumno_id = B.normalizarIdsAlumnos(bloque.alumno_id);
+    bloque.recordatorio = normalizarRecordatorio(bloque.recordatorio);
     B.quitarDictadaFueraDeFractal(bloque); // si cambió de área
     bloque.actualizado = B.ahora();
 
