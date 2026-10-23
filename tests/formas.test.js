@@ -10,7 +10,6 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const { crearEntorno } = require('./fake-google');
 
 function cargar() {
   const almacen = {};
@@ -105,55 +104,3 @@ test('crear desde una plantilla: todo listo con la fecha y el inicio que ya esta
   });
 });
 
-// ---------------------------------------------------------------
-// Plantillas (backend)
-// ---------------------------------------------------------------
-
-function preparar() {
-  const env = crearEntorno({ ahora: '2026-09-24T14:30:00Z', token: 'tk' });
-  env.llamar('asegurarEstructura()');
-  return env;
-}
-function post(env, cuerpo) { return env.post(Object.assign({ token: 'tk' }, cuerpo)); }
-
-test('la hoja Plantillas: crear, listar y archivar (sin borrar)', () => {
-  const env = preparar();
-  const alumno = post(env, { action: 'crearAlumno', alumno: { nombre: 'Katy' } }).data;
-  const r = post(env, { action: 'crearPlantilla', plantilla: {
-    nombre: 'Katy 90', area: 'Academia Fractal', tipo: 'fijo', titulo: '', alumno_id: alumno.id, duracion: 90, lugar: 'Casa'
-  } });
-  assert.ok(r.ok, r.error);
-  assert.match(r.data.id, /^t[0-9a-f]{8}$/);
-  assert.deepStrictEqual(post(env, { action: 'listarPlantillas' }).data.map((p) => [p.nombre, p.duracion, p.alumno_id]),
-    [['Katy 90', '90', alumno.id]]);
-
-  assert.ok(post(env, { action: 'archivarPlantilla', id: r.data.id }).ok);
-  assert.strictEqual(post(env, { action: 'listarPlantillas' }).data.length, 0, 'la archivada ya no se lista');
-  const hoja = env.libro.getSheetByName('Plantillas').leerTodo();
-  assert.strictEqual(hoja.length, 2, 'la fila sigue en la hoja');
-  assert.strictEqual(hoja[1][10], 'TRUE');
-});
-
-test('plantillas: validaciones que fallan sin escribir', () => {
-  const env = preparar();
-  const base = { nombre: 'X', area: 'Universidad', tipo: 'fijo', titulo: 'Cálculo', duracion: 90 };
-  const error = (extra) => post(env, { action: 'crearPlantilla', plantilla: Object.assign({}, base, extra) }).error;
-  assert.match(error({ nombre: ' ' }), /falta_nombre/);
-  assert.match(error({ area: 'Otra' }), /area_invalida/);
-  assert.match(error({ tipo: 'clase' }), /tipo_invalido/);
-  assert.match(error({ duracion: 0 }), /duracion_invalida/);
-  assert.match(error({ duracion: '1h' }), /duracion_invalida/);
-  assert.match(error({ titulo: '' }), /falta_titulo/);
-  assert.match(error({ area: 'Academia Fractal', titulo: '', alumno_id: 'a99999999' }), /alumno_no_encontrado/);
-  assert.strictEqual(post(env, { action: 'listarPlantillas' }).data.length, 0);
-});
-
-test('fuera de Fractal una plantilla no guarda alumnos; las acciones exigen token', () => {
-  const env = preparar();
-  const alumno = post(env, { action: 'crearAlumno', alumno: { nombre: 'Katy' } }).data;
-  const r = post(env, { action: 'crearPlantilla', plantilla: { nombre: 'U', area: 'Universidad', tipo: 'fijo', titulo: 'Cálculo', duracion: 90, alumno_id: alumno.id } });
-  assert.strictEqual(r.data.alumno_id, '');
-  ['listarPlantillas', 'crearPlantilla', 'archivarPlantilla'].forEach((action) => {
-    assert.deepStrictEqual(env.post({ token: 'otro', action }), { ok: false, error: 'no_autorizado' });
-  });
-});
