@@ -268,16 +268,21 @@
   <script src="js/notificaciones.js"></script>
   <script src="js/app.js"></script>
   <script src="js/pwa.js"></script>
-  <!-- Auto-actualizaci�n silenciosa con @capgo/capacitor-updater (offline-first) -->
+    <!-- Auto-actualización silenciosa con @capgo/capacitor-updater (offline-first) -->
   <script>
+    (function () {
+      const updater = window.CapacitorUpdater || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorUpdater);
+      if (updater && updater.notifyAppReady) {
+        updater.notifyAppReady().catch(function () {});
+      }
+    })();
+
     document.addEventListener('DOMContentLoaded', async function () {
       const updater = window.CapacitorUpdater || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorUpdater);
       if (updater && updater.notifyAppReady) {
         try {
           await updater.notifyAppReady();
-        } catch (e) {
-          console.warn('[KODAMA Updater] Error en notifyAppReady:', e);
-        }
+        } catch (e) {}
       }
 
       if (!navigator.onLine) {
@@ -292,17 +297,20 @@
         if (datos && datos.version && datos.version !== versionGuardada) {
           if (updater && updater.download) {
             const bundle = await updater.download({
-              url: 'https://gerardod119507.github.io/KODAMA/bundle.zip',
+              url: 'https://gerardod119507.github.io/KODAMA/bundle.zip?t=' + Date.now(),
               version: datos.version
             });
-            localStorage.setItem('kodama_bundle_version', datos.version);
             if (updater.set) {
               await updater.set(bundle.id ? { id: bundle.id } : bundle);
+              localStorage.setItem('kodama_bundle_version', datos.version);
+              if (updater.reload) {
+                await updater.reload();
+              }
             }
           }
         }
       } catch (err) {
-        console.warn('[KODAMA Updater] Comprobaci�n detenida sin error:', err);
+        console.warn('[KODAMA Updater] Comprobación detenida sin error:', err);
       }
     });
   </script>

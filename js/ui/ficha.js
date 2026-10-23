@@ -146,7 +146,7 @@ const KodamaFicha = (function () {
     escribir('error-ficha', '');
     escribir('ficha-aviso', '');
 
-    dialogo.showModal();
+    if (!dialogo.open) dialogo.showModal();
   }
 
   const SIMBOLO = { programada: '', dictada: '✓ ', movida: '↷ ', cancelada: '✕ ' };

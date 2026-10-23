@@ -113,7 +113,7 @@ const KodamaFormulario = (function () {
     horas.reiniciar(true);
     lugarAutomatico = !campos.lugar.value;
     pintarPlantillas();
-    dialogo.showModal();
+    if (!dialogo.open) dialogo.showModal();
     if (esFractal()) selectorAlumnos.enfocar();
     else campos.titulo.focus();
   }
@@ -122,7 +122,7 @@ const KodamaFormulario = (function () {
     preparar('Editar bloque', '', 'edicion', bloque.id);
     escribirCampos(bloque);
     horas.reiniciar(false);
-    dialogo.showModal();
+    if (!dialogo.open) dialogo.showModal();
   }
 
   /** Solo fecha y hora; el resto del bloque viaja igual, sin cambios. */
@@ -130,7 +130,7 @@ const KodamaFormulario = (function () {
     preparar('Mover bloque', bloque.tituloMostrado || bloque.titulo, 'mover', bloque.id);
     escribirCampos(bloque);
     horas.reiniciar(false);
-    dialogo.showModal();
+    if (!dialogo.open) dialogo.showModal();
     campos.fecha.focus();
   }
 
@@ -141,7 +141,7 @@ const KodamaFormulario = (function () {
     escribirCampos(valoresDuplicado(bloque));
     campos.fecha.value = ''; // vacía a propósito: que no se duplique sin querer en el mismo día
     horas.reiniciar(false);
-    dialogo.showModal();
+    if (!dialogo.open) dialogo.showModal();
     campos.fecha.focus();
   }
 
