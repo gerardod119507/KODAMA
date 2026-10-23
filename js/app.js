@@ -162,7 +162,6 @@
       if (guardados) {
         bloquesSemana = guardados;
         semanaEnPantalla = s.lunes;
-        if (window.KodamaAlarmas && window.KodamaAlarmas.sincronizarSemana) window.KodamaAlarmas.sincronizarSemana(bloquesSemana);
       } else {
         bloquesSemana = [];
         semanaEnPantalla = null;
@@ -184,7 +183,12 @@
       }
       bloquesSemana = datos;
       semanaEnPantalla = s.lunes;
-      if (window.KodamaAlarmas && window.KodamaAlarmas.sincronizarSemana) window.KodamaAlarmas.sincronizarSemana(bloquesSemana);
+      // Recordatorios: se programan con lo recién llegado de la base (no con
+      // la semana guardada en el dispositivo, que puede estar vieja).
+      KodamaAlarmas.sincronizarSemana(bloquesSemana);
+      KodamaAlarmas.migrarDelDispositivo(bloquesSemana, function (id, minutos) {
+        return pedir('actualizarBloque', { id: id, cambios: { recordatorio: minutos } }).then(aplicarLocal);
+      });
       avisoOffline.hidden = true;
       dibujar();
       if (op) {
@@ -223,7 +227,7 @@
    * vuelve a pedir la semana por detrás para confirmar.
    */
   function aplicarLocal(bloque) {
-    if (window.KodamaAlarmas && window.KodamaAlarmas.sincronizarBloque) window.KodamaAlarmas.sincronizarBloque(bloque);
+    KodamaAlarmas.sincronizarBloque(bloque); // programa, mueve o cancela el recordatorio
     const s = semana(fecha);
     bloquesSemana = KodamaState.aplicarCambio(bloquesSemana, bloque, s.lunes, s.domingo);
     KodamaState.guardarSemana(s.lunes, bloquesSemana);
@@ -248,7 +252,6 @@
   }
 
   async function archivar(id) {
-    if (window.KodamaAlarmas && window.KodamaAlarmas.cancelar) window.KodamaAlarmas.cancelar('bloque_' + id);
     aplicarLocal(await pedir('archivarBloque', { id: id }));
   }
 
@@ -288,6 +291,9 @@
     alArchivar: archivar,
     alGuardarPlantilla: function (bloque, nombre) {
       return KodamaPlantillas.crear(pedir, KodamaPlantillas.desdeBloque(bloque, nombre));
+    },
+    alCambiarRecordatorio: async function (id, recordatorio) {
+      aplicarLocal(await pedir('actualizarBloque', { id: id, cambios: { recordatorio: recordatorio } }));
     },
     alCambiarEstado: async function (id, estado, motivo) {
       aplicarLocal(await pedir('cambiarEstadoBloque', { id: id, estado: estado, motivo: motivo }));

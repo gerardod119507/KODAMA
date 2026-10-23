@@ -63,7 +63,9 @@ const KodamaDB = (function () {
         id: TEXTO, titulo: TEXTO, area: TEXTO, tipo: TEXTO, fecha: FECHA, inicio: TEXTO, fin: TEXTO,
         etiqueta: TEXTO, notas: TEXTO, creado: MOMENTO, actualizado: MOMENTO, archivado: SI_NO,
         alumno_id: [LISTA, 'alumno_ids'], lugar: TEXTO, estado: TEXTO, fecha_original: FECHA,
-        inicio_original: TEXTO, fin_original: TEXTO, motivo: TEXTO
+        inicio_original: TEXTO, fin_original: TEXTO, motivo: TEXTO,
+        // Minutos antes de empezar que avisa el celular (migración 004).
+        recordatorio: NUMERO
       }
     },
     pagos: {

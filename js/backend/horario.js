@@ -204,7 +204,7 @@
             id: idBloque, titulo: regla.titulo, area: regla.area, tipo: 'fijo',
             fecha: fecha, inicio: regla.inicio, fin: regla.fin, etiqueta: regla.etiqueta,
             notas: '', creado: ahora, actualizado: ahora, archivado: '',
-            alumno_id: regla.alumno_id, lugar: regla.lugar,
+            alumno_id: regla.alumno_id, lugar: regla.lugar, recordatorio: '',
             estado: 'programada', fecha_original: '', inicio_original: '', fin_original: '', motivo: ''
           };
           aEscribir[idBloque] = nuevo;
