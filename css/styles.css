@@ -2140,7 +2140,7 @@ html[data-arranque="si"] body {
   z-index: 100;
   background: var(--marino);
   color: var(--bone);
-  transition: opacity 250ms var(--curva);
+  transition: opacity 450ms var(--curva);
 }
 
 html[data-arranque="si"] .carga,
@@ -2168,7 +2168,7 @@ html[data-arranque="si"] .carga,
 /* El trazo en vivo se encoge sobre el atractor del logo y se apaga. */
 .carga__trazo {
   transform-origin: 0 0;
-  transition: transform 700ms ease-in-out, opacity 700ms ease-in-out;
+  transition: transform 1100ms cubic-bezier(0.65, 0, 0.35, 1), opacity 900ms ease-in-out 200ms;
 }
 
 .carga--asentar .carga__trazo {
@@ -2207,11 +2207,14 @@ html[data-arranque="si"] .carga,
 .carga__simbolo [data-parte="atractor"],
 .carga__simbolo [data-parte="punto"] {
   opacity: 0;
-  transition: opacity 700ms ease-in-out;
+  transition: opacity 900ms ease-in-out;
 }
 
+/* Aparece un poco después de que el trazo empieza a encogerse: el paso
+   de uno al otro se ve como un solo movimiento. */
 .carga--asentar .carga__simbolo [data-parte="atractor"] {
   opacity: 1;
+  transition-delay: 250ms;
 }
 
 /* Los puntos aparecen cuando llegan las esferas. */
@@ -2229,12 +2232,12 @@ html[data-arranque="si"] .carga,
 
 .carga--asentar .carga__simbolo [data-parte="linea"] {
   stroke-dashoffset: 0;
-  transition: stroke-dashoffset 700ms ease-in-out;
+  transition: stroke-dashoffset 1000ms ease-in-out 150ms;
 }
 
 .carga--circulo .carga__simbolo [data-parte="circulo"] {
   stroke-dashoffset: 0;
-  transition: stroke-dashoffset 500ms ease-in-out;
+  transition: stroke-dashoffset 800ms cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 /* Justo debajo del símbolo (fuera del centro, para que el logo quede al medio). */
@@ -2253,7 +2256,7 @@ html[data-arranque="si"] .carga,
   color: var(--bone);
   opacity: 0;
   transform: translateY(var(--espacio-2));
-  transition: opacity 350ms var(--curva), transform 350ms var(--curva);
+  transition: opacity 600ms var(--curva), transform 600ms var(--curva);
 }
 
 .carga--palabra .carga__palabra {

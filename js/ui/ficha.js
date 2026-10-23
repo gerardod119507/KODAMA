@@ -145,6 +145,12 @@ const KodamaFicha = (function () {
     mostrarFila('ficha-fila-notas', bloque.notas);
     escribir('error-ficha', '');
     escribir('ficha-aviso', '');
+    // El recordatorio elegido para este bloque (vive en el dispositivo).
+    const selectAlarma = document.getElementById('ficha-select-alarma');
+    if (selectAlarma) {
+      const cfg = window.KodamaAlarmas && window.KodamaAlarmas.obtenerConfig(bloque.id);
+      selectAlarma.value = cfg && cfg.activo ? String(cfg.minutos) : 'ninguna';
+    }
 
     if (!dialogo.open) dialogo.showModal();
   }

@@ -273,8 +273,8 @@
       }
       op.cerrarRed();
       op.render(function () { aplicarLocal(guardado); });
-      
-      return guardado;
+      op.pintado().then(function () { op.terminar(true); });
+      return guardado; // el formulario lo usa para programar el recordatorio
     },
     alArchivar: archivar,
     alArchivarPlantilla: function (id) { return KodamaPlantillas.archivar(pedir, id); },

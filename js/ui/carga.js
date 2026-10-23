@@ -12,10 +12,12 @@
  *    vuelan a los tres puntos del símbolo (la más grande, al centro).
  * 3. Se dibuja la circunferencia y después aparece la palabra KODAMA.
  *
- * - Nunca demora la app: la página llama a KodamaCarga.listo() apenas tiene
- *   algo que mostrar y la pantalla se desvanece en ese momento, esté en la
- *   fase que esté (con la semana guardada es casi enseguida). Por las
+ * - Se ve entera una vez (~4,3 s + una pausa corta): la página llama a
+ *   KodamaCarga.listo() cuando tiene algo que mostrar, y la pantalla se
+ *   desvanece recién al terminar la secuencia. Un toque la salta. Por las
  *   dudas, se va sola a los 8 s.
+ * - El trazo avanza según el tiempo, no por cuadro: en una pantalla de
+ *   120 Hz no corre al doble de velocidad.
  * - Solo en la primera pantalla de la sesión (js/tema.js lo decide en el
  *   <head> y pone html[data-arranque="si"]): moverse entre pantallas no la
  *   repite.
@@ -23,8 +25,10 @@
  */
 const KodamaCarga = (function () {
   // Milisegundos desde que empieza: cuándo arranca cada fase.
-  const TIEMPOS = { asentar: 1300, circulo: 2000, palabra: 2500, fin: 2900 };
-  const DURACION_ASENTAR = 700;
+  const TIEMPOS = { asentar: 2000, circulo: 3100, palabra: 3700, fin: 4300 };
+  const DURACION_ASENTAR = 1100;
+  // El logo completo queda a la vista un momento antes de desvanecerse.
+  const PAUSA_FINAL = 400;
 
   /** En qué fase está a los t ms (con el logo listo). */
   function fase(t) {
@@ -54,7 +58,7 @@ const KodamaCarga = (function () {
     };
   }
 
-  const puro = { fase: fase, suavizar: suavizar, ajuste: ajuste, TIEMPOS: TIEMPOS };
+  const puro = { fase: fase, suavizar: suavizar, ajuste: ajuste, TIEMPOS: TIEMPOS, PAUSA_FINAL: PAUSA_FINAL };
   const nada = Object.assign({ listo: function () {} }, puro);
   if (typeof document === 'undefined') return nada;
 
@@ -87,7 +91,7 @@ const KodamaCarga = (function () {
   raiz.appendChild(logo);
 
   const DT = 0.008;
-  const PASOS_POR_CUADRO = 18;
+  const PASOS_POR_MS = 0.7; // ~12 pasos por cuadro a 60 Hz
   const MAX_PUNTOS = 6000;
   const LARGO_ESTELA = 70;
 
@@ -97,13 +101,17 @@ const KodamaCarga = (function () {
   let estado = KodamaLorenz.puntoInicial();
   const puntos = [];
   // La más grande irá al punto del centro del símbolo; las otras, a las puntas de la línea.
+  // Velocidad en puntos por ms: siempre detrás de la punta del trazo, así
+  // nunca saltan de vuelta al comienzo.
   const esferas = [
-    { i: 0, velocidad: 6, radio: 4.5 },
-    { i: 0, velocidad: 9.5, radio: 3.5 },
-    { i: 0, velocidad: 14, radio: 2.8 }
+    { i: 0, velocidad: 0.23, radio: 4.5 },
+    { i: 0, velocidad: 0.37, radio: 3.5 },
+    { i: 0, velocidad: 0.55, radio: 2.8 }
   ];
   let svg = null; // el símbolo, cuando llegue
   let inicio = null;
+  let anteriorCuadro = null;
+  let restoPasos = 0;
   let asentarDesde = null;
   let cuadro = null;
   let terminado = false;
@@ -219,11 +227,18 @@ const KodamaCarga = (function () {
     if (terminado) return;
     if (inicio === null) inicio = ahora;
     const t = ahora - inicio;
+    // Tiempo desde el cuadro anterior (con tope: una pausa del navegador no
+    // hace saltar el trazo).
+    const dt = anteriorCuadro === null ? 16 : Math.min(50, ahora - anteriorCuadro);
+    anteriorCuadro = ahora;
 
     if (asentarDesde === null) {
-      avanzarTrazo(PASOS_POR_CUADRO);
+      restoPasos += dt * PASOS_POR_MS;
+      const pasos = Math.floor(restoPasos);
+      restoPasos -= pasos;
+      avanzarTrazo(pasos);
       esferas.forEach(function (e) {
-        e.i += e.velocidad;
+        e.i += e.velocidad * dt;
         if (e.i >= puntos.length - 1) e.i = e.i % Math.max(1, puntos.length - 1);
       });
       ectx.clearRect(0, 0, ancho, alto);
@@ -271,6 +286,7 @@ const KodamaCarga = (function () {
   }
 
   let pendienteListo = false;
+  let saltar = false;
 
   function ocultar() {
     if (terminado) return;
@@ -283,7 +299,7 @@ const KodamaCarga = (function () {
     delete html.dataset.arranque;
     if (typeof KodamaTema !== 'undefined') KodamaTema.aplicar();
     requestAnimationFrame(function () { raiz.classList.add('carga--fuera'); });
-    setTimeout(function () { raiz.hidden = true; }, quieto ? 0 : 280);
+    setTimeout(function () { raiz.hidden = true; }, quieto ? 0 : 500);
   }
 
   function listo() {
@@ -291,8 +307,8 @@ const KodamaCarga = (function () {
     pendienteListo = true;
     const ahora = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
     const transcurrido = inicio !== null ? (ahora - inicio) : 0;
-    // Permite que el bucle animado completo se aprecie al menos una vez (2.9s)
-    const duracionMinima = quieto ? 0 : (TIEMPOS.fin || 2900);
+    // La secuencia se ve entera una vez (salvo que la hayan saltado).
+    const duracionMinima = quieto || saltar ? 0 : TIEMPOS.fin + PAUSA_FINAL;
     const restante = Math.max(0, duracionMinima - transcurrido);
     if (restante > 0) {
       setTimeout(ocultar, restante);
@@ -300,6 +316,12 @@ const KodamaCarga = (function () {
       ocultar();
     }
   }
+
+  // Un toque la salta (si la página todavía no está lista, se va apenas lo esté).
+  raiz.addEventListener('click', function () {
+    saltar = true;
+    if (pendienteListo) ocultar();
+  });
 
   medir();
   if (quieto) {

@@ -13,6 +13,9 @@
   var CANAL_ID = 'kodama_alarmas';
   var canalListo = false;
   var CLAVE_CONFIG_ALARMAS = 'kodama_alarmas_config';
+  // Respaldo sin Capacitor (PWA): un reloj por alarma, así reprogramar al
+  // recargar la semana no la hace sonar dos veces.
+  var relojesWeb = {};
 
   function leerMapaAlarmas() {
     try {
@@ -157,8 +160,15 @@
     } else {
       // Respaldo en navegadores estándar de escritorio o PWA sin Capacitor nativo
       var retraso = fecha.getTime() - Date.now();
+      if (relojesWeb[id]) clearTimeout(relojesWeb[id]);
+      delete relojesWeb[id];
       if (retraso > 0 && retraso < 2147483647) {
-        setTimeout(function () {
+        if (typeof global.Notification !== 'undefined' && global.Notification.permission === 'default' &&
+            global.Notification.requestPermission) {
+          global.Notification.requestPermission();
+        }
+        relojesWeb[id] = setTimeout(function () {
+          delete relojesWeb[id];
           if (typeof global.Notification !== 'undefined' && global.Notification.permission === 'granted') {
             new global.Notification(titulo || 'KODAMA', { body: mensaje });
           } else {
@@ -173,6 +183,10 @@
   async function cancelarAlarmaKodama(idNumero) {
     var plugin = obtenerPlugin();
     var id = sanitizarId(idNumero);
+    if (relojesWeb[id]) {
+      clearTimeout(relojesWeb[id]);
+      delete relojesWeb[id];
+    }
     if (plugin && plugin.cancel) {
       try {
         await plugin.cancel({
@@ -189,17 +203,13 @@
   function sincronizarAlarmaDeBloque(bloque) {
     if (!bloque || !bloque.id) return;
     var idAlarma = 'bloque_' + bloque.id;
-    if (bloque.archivado || bloque.estado === 'cancelada') {
+    // Sin alarma elegida no hay nada que programar ni cancelar (evita una
+    // llamada al sistema por cada bloque cada vez que se carga la semana).
+    var config = obtenerConfigAlarma(bloque.id);
+    if (!config || !config.activo) return;
+    if (bloque.archivado === true || bloque.archivado === 'TRUE' || bloque.estado === 'cancelada') {
       cancelarAlarmaKodama(idAlarma);
       eliminarConfigAlarma(bloque.id);
-      return;
-    }
-
-    // Comprobar si el usuario configuró una alarma para este bloque
-    var config = obtenerConfigAlarma(bloque.id);
-    if (!config || !config.activo) {
-      // Si el usuario no la programó manualmente, nos aseguramos de no sonar
-      cancelarAlarmaKodama(idAlarma);
       return;
     }
 
@@ -216,10 +226,9 @@
       var prefijo = minutosAntes > 0 ? ('En ' + minutosAntes + ' min: ') : '';
       var titulo = prefijo + tituloBase;
       var mensaje = (bloque.lugar ? bloque.lugar + ' • ' : '') + bloque.inicio + ' - ' + (bloque.fin || '');
-      programarAlarmaKodama(idAlarma, titulo, mensaje, fechaAlarma);
-    } else {
-      cancelarAlarmaKodama(idAlarma);
+      return programarAlarmaKodama(idAlarma, titulo, mensaje, fechaAlarma);
     }
+    return cancelarAlarmaKodama(idAlarma);
   }
 
   async function configurarYProgramarAlarma(bloque, minutos) {
@@ -250,13 +259,6 @@
     eliminarConfig: eliminarConfigAlarma,
     configurarYProgramar: configurarYProgramarAlarma
   };
-
-  if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', function () {
-      var plugin = obtenerPlugin();
-      if (plugin) {
-        asegurarCanalYPermisos(plugin);
-      }
-    });
-  }
+  // El permiso se pide recién al elegir el primer recordatorio, no al abrir:
+  // si no, el diálogo de Android tapaba la animación de arranque.
 })(typeof window !== 'undefined' ? window : globalThis);

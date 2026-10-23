@@ -285,7 +285,8 @@
         } catch (e) {}
       }
 
-      if (!navigator.onLine) {
+      // Solo en la APK; en el navegador (PWA) actualiza el service worker.
+      if (!updater || !updater.download || !navigator.onLine) {
         return;
       }
 
@@ -300,12 +301,12 @@
               url: 'https://gerardod119507.github.io/KODAMA/bundle.zip?t=' + Date.now(),
               version: datos.version
             });
-            if (updater.set) {
-              await updater.set(bundle.id ? { id: bundle.id } : bundle);
+            // next(): la versión nueva se usa la próxima vez que se abre la
+            // app. Antes se recargaba enseguida y cortaba la animación de
+            // arranque a la mitad.
+            if (updater.next) {
+              await updater.next({ id: bundle.id });
               localStorage.setItem('kodama_bundle_version', datos.version);
-              if (updater.reload) {
-                await updater.reload();
-              }
             }
           }
         }

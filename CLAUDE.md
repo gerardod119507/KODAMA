@@ -1435,9 +1435,11 @@ ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
 - **Marino, en los dos temas:** el mismo `#071743` que el
   `background_color` del manifest (la bienvenida de Android), así el paso
   se siente continuo. Trazo y texto en hueso.
-- **Secuencia** (`TIEMPOS`, como mucho 2,9 s): el atractor se dibuja en
-  tiempo real desde un punto al azar con tres esferas y su estela; a los
-  1,3 s **se asienta en el logo**: el trazo se encoge sobre el atractor
+- **Secuencia** (`TIEMPOS`, 4,3 s + `PAUSA_FINAL` 0,4 s; antes 2,9 s,
+  que Gerardo sentía brusca y cortada): el atractor se dibuja en
+  tiempo real (avanza **por tiempo**, no por cuadro: igual en 60 y 120 Hz)
+  desde un punto al azar con tres esferas y su estela; a los
+  2 s **se asienta en el logo**: el trazo se encoge sobre el atractor
   del símbolo (escala y traslado calculados con `ajuste()`) y se apaga
   mientras el del símbolo aparece, la línea se dibuja y las tres esferas
   vuelan a los tres puntos del símbolo (la más grande al centro); después
@@ -1447,11 +1449,19 @@ ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
   `fetch` y `DOMParser` (sin `innerHTML`); sus partes están marcadas con
   `data-parte` (`circulo`, `linea`, `atractor`, `punto`). Si no llega a
   tiempo, sigue el atractor hasta que llegue o hasta `listo()`.
-- **Nunca demora la app:** cada pantalla llama a `KodamaCarga.listo()`
-  apenas tiene algo que mostrar y se desvanece en 250 ms, esté en la fase
-  que esté (con la semana guardada, ~0,4 s: casi nunca se llega a ver el
-  logo completo, y está bien). Si algo falla, se va sola a los 8 s.
-  Configuración no espera datos: la suelta enseguida.
+- **Se ve entera una vez** (pedido de Gerardo, octubre 2026): cada
+  pantalla llama a `KodamaCarga.listo()` cuando tiene algo que mostrar,
+  pero se desvanece (450 ms) recién al terminar la secuencia. **Un toque
+  la salta.** Si algo falla, se va sola a los 8 s. Solo pasa al abrir la
+  app (una vez por sesión).
+- **APK (Capacitor):** Android 12+ siempre muestra su propia pantalla de
+  bienvenida (no se puede quitar); se disfraza de marino liso, sin ícono
+  (`resources/android/res/values-v31/styles.xml`), y el WebView también
+  arranca marino (`backgroundColor` en `capacitor.config.json`), así no
+  hay destello blanco antes de la animación. La versión nueva que baja el
+  actualizador se aplica la próxima vez que se abre (`updater.next`),
+  nunca recargando en medio de la animación. En la APK no hay service
+  worker (`js/pwa.js`): servía archivos viejos después de actualizar.
 - **`prefers-reduced-motion`:** el logo completo, quieto.
 
 **Mascota:** `js/ui/espiritu.js` (`dormidoA`), en el estado vacío de la
