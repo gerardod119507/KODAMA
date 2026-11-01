@@ -273,52 +273,6 @@
   <script src="js/ui/resumen.js"></script>
   <script src="js/app.js"></script>
   <script src="js/pwa.js"></script>
-    <!-- Auto-actualización silenciosa con @capgo/capacitor-updater (offline-first) -->
-  <script>
-    (function () {
-      const updater = window.CapacitorUpdater || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorUpdater);
-      if (updater && updater.notifyAppReady) {
-        updater.notifyAppReady().catch(function () {});
-      }
-    })();
-
-    document.addEventListener('DOMContentLoaded', async function () {
-      const updater = window.CapacitorUpdater || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorUpdater);
-      if (updater && updater.notifyAppReady) {
-        try {
-          await updater.notifyAppReady();
-        } catch (e) {}
-      }
-
-      // Solo en la APK; en el navegador (PWA) actualiza el service worker.
-      if (!updater || !updater.download || !navigator.onLine) {
-        return;
-      }
-
-      try {
-        const respuesta = await fetch('https://gerardod119507.github.io/KODAMA/version.json?t=' + Date.now());
-        if (!respuesta.ok) return;
-        const datos = await respuesta.json();
-        const versionGuardada = localStorage.getItem('kodama_bundle_version');
-        if (datos && datos.version && datos.version !== versionGuardada) {
-          if (updater && updater.download) {
-            const bundle = await updater.download({
-              url: 'https://gerardod119507.github.io/KODAMA/bundle.zip?t=' + Date.now(),
-              version: datos.version
-            });
-            // next(): la versión nueva se usa la próxima vez que se abre la
-            // app. Antes se recargaba enseguida y cortaba la animación de
-            // arranque a la mitad.
-            if (updater.next) {
-              await updater.next({ id: bundle.id });
-              localStorage.setItem('kodama_bundle_version', datos.version);
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('[KODAMA Updater] Comprobación detenida sin error:', err);
-      }
-    });
-  </script>
+  <script src="js/actualizador.js"></script>
 </body>
 </html>

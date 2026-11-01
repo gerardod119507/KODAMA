@@ -68,7 +68,15 @@ los archivos de la app (`scripts/armar-web.sh`) más `version.json` y
 Requiere *Settings → Pages → Source: GitHub Actions*.
 **APK:** `.github/workflows/build-kodama.yml` (Capacitor), solo cuando cambia
 la parte nativa o a mano ("Run workflow"); deja la APK como artefacto del
-run. Los cambios de la app llegan solos por el actualizador.
+run. Cada APK lleva un `versionCode` nuevo (el número del run) y su
+`www/version.json`. Los cambios de la app llegan solos por el
+actualizador (`js/actualizador.js`): compara la versión que corre (el
+`version.json` del paquete) con la publicada, baja el `bundle.zip` y lo
+aplica con `set()` al irse la app a segundo plano o al tocar
+"Actualizar" en el aviso. (Hasta noviembre 2026 anotaba la versión en
+`localStorage` apenas pedía aplicarla, aunque no se aplicara, y con el
+mismo número nativo en cada APK el plugin seguía con un paquete viejo:
+los cambios no llegaban.) Configuración muestra "Versión de la app".
 
 ### Por qué este stack
 
