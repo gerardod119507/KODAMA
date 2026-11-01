@@ -4,7 +4,7 @@
  * localhost: en otro origen el navegador no lo permite y no pasa nada.
  *
  * En la APK (Capacitor) no se usa: los archivos ya están dentro de la app
- * y las versiones nuevas llegan con el actualizador (index.html). Un
+ * y las versiones nuevas llegan con el actualizador (js/actualizador.js). Un
  * service worker ahí guardaba la versión vieja y la seguía sirviendo
  * después de actualizar; si quedó uno de antes, se quita.
  */

@@ -164,4 +164,15 @@ document.getElementById('borrar-serie').addEventListener('click', async function
 
 // Configuración no espera datos: la pantalla de arranque (si la app se abrió
 // aquí) se va enseguida.
+// La versión que de verdad está corriendo (version.json viene dentro de lo
+// publicado). Sirve para saber si el celular ya recibió una actualización.
+(function () {
+  const nodo = document.getElementById('version-app');
+  if (!nodo) return;
+  fetch('version.json', { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { nodo.textContent = d && d.version ? d.version : 'la de la APK instalada'; })
+    .catch(function () { nodo.textContent = 'la de la APK instalada'; });
+})();
+
 KodamaCarga.listo();
