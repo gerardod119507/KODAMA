@@ -195,6 +195,8 @@
         await op.pintado();
         op.terminar(true);
       }
+      // Por detrás: la semana anterior y la siguiente, para que ‹ › no esperen.
+      KodamaState.precargar(s.lunes);
     } catch (err) {
       if (op) op.terminar(false);
       if (numero !== cargaActual) return;

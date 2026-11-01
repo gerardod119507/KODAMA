@@ -15,8 +15,12 @@ desarrollo.
 - Al final de cada checkpoint, dime: qué cambió, qué debo hacer (pasos
   exactos, incluidos los de Google), qué debo observar, cómo confirmar que
   funcionó.
+- **Primero planificamos juntos** (qué se hace, situaciones posibles,
+  dificultades) y nada se construye sin ese plan aprobado. Lo aprobado,
+  Claude lo une a `main` y lo publica apenas pasan las pruebas: no hace
+  falta que yo revise cada PR al detalle.
 - Commits pequeños con convención `feat:` / `fix:` / `docs:` / `chore:`, en
-  una rama por checkpoint, con un PR que yo reviso antes de merge.
+  una rama por checkpoint, con su PR (queda como registro).
 - No agregues librerías ni herramientas nuevas sin justificarlo primero.
 - **La app me habla de tú, nunca de vos** ("Elige", "Toca", "puedes"; no
   "Elegí", "Tocá", "podés"), en pantallas, errores del backend y
@@ -873,6 +877,11 @@ lo guardado con el aviso "Sin conexión".
 - Como mucho 12 semanas guardadas; las más viejas se borran. Las cachés de
   versiones anteriores (`kodama.cache.bloques.*`, `kodama.cache.rango.*`) se
   borran al abrir la app.
+- **Precarga** (noviembre 2026): después de mostrar una semana,
+  `KodamaState.precargar` pide por detrás la anterior y la siguiente (una
+  después de otra), salvo las guardadas hace menos de 10 min: ‹ y › se ven
+  al instante. Cada página además abre la conexión con Supabase
+  (`<link rel="preconnect">`) mientras cargan los scripts.
 - Al guardar, mover, duplicar o archivar, el cambio se aplica **en la
   lista local primero** (se ve al instante) y después se vuelve a pedir la
   semana para confirmar. Cada carga lleva un número; una respuesta vieja
@@ -1251,6 +1260,11 @@ ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
   `fetch` y `DOMParser` (sin `innerHTML`); sus partes están marcadas con
   `data-parte` (`circulo`, `linea`, `atractor`, `punto`). Si no llega a
   tiempo, sigue el atractor hasta que llegue o hasta `listo()`.
+- **Completa una vez al día** (noviembre 2026): `js/tema.js` anota la
+  fecha de La Paz en `kodama.arranque.dia`. Las otras aperturas de ese día
+  llevan `html[data-arranque-corto="si"]`: el logo quieto, que se va apenas
+  la pantalla tiene algo que mostrar (sin duración mínima). Antes la
+  animación entera en cada apertura sumaba ~2 s de espera ("resto").
 - **Se ve entera una vez** (pedido de Gerardo, octubre 2026): cada
   pantalla llama a `KodamaCarga.listo()` cuando tiene algo que mostrar,
   pero se desvanece (450 ms) recién al terminar la secuencia. **Un toque

@@ -113,3 +113,24 @@ test('duplicar copia los datos del bloque (alumnos incluidos) pero no su id ni s
     inicio: '06:45', fin: '08:15', lugar: '', etiqueta: 'aula 4', notas: 'traer calculadora', alumno_id: ''
   });
 });
+
+test('precarga: pide la semana anterior y la siguiente, salvo las recién guardadas', () => {
+  const datos = {};
+  const ctx = {
+    localStorage: {
+      get length() { return Object.keys(datos).length; },
+      key: (i) => Object.keys(datos)[i],
+      getItem: (k) => (k in datos ? datos[k] : null),
+      setItem: (k, v) => { datos[k] = String(v); },
+      removeItem: (k) => { delete datos[k]; }
+    }
+  };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js/fecha.js'), 'utf8') + ';this.KodamaFecha = KodamaFecha;', ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js/state.js'), 'utf8') + ';this.S = KodamaState;', ctx);
+  const ahora = Date.now();
+  assert.deepStrictEqual([...ctx.S.vecinasAPrecargar('2026-11-02', ahora)], ['2026-10-26', '2026-11-09']);
+  ctx.S.guardarSemana('2026-11-09', []);
+  assert.deepStrictEqual([...ctx.S.vecinasAPrecargar('2026-11-02', ahora)], ['2026-10-26'], 'la fresca no se pide');
+  assert.deepStrictEqual([...ctx.S.vecinasAPrecargar('2026-11-02', ahora + 11 * 60 * 1000)], ['2026-10-26', '2026-11-09'], 'pasados 10 min, sí');
+});

@@ -24,13 +24,13 @@ function cargarCarga() {
 }
 
 /** js/tema.js con un <head> falso; la sesión se comparte entre "páginas". */
-function abrirPagina(sesion) {
+function abrirPagina(sesion, local) {
   const meta = { content: '', setAttribute(k, v) { this[k] = v; } };
   const html = { dataset: {} };
   const entorno = {
     console,
     window: { matchMedia: () => ({ matches: false, addEventListener() {} }) },
-    localStorage: { getItem: () => null, setItem() {} },
+    localStorage: local || { getItem: () => null, setItem() {} },
     sessionStorage: sesion,
     document: {
       documentElement: html,
@@ -59,6 +59,18 @@ test('solo la primera pantalla de la sesión lleva el arranque (y la barra del s
   assert.strictEqual(segunda.meta.content, '#F5F1E8', 'barra del tema claro');
   const otraSesion = abrirPagina(sesionNueva());
   assert.strictEqual(otraSesion.html.dataset.arranque, 'si', 'abrir la app de nuevo sí');
+});
+
+test('la animación completa una vez al día; después, el arranque corto', () => {
+  const local = sesionNueva(); // el mismo dispositivo todo el día
+  const manana = abrirPagina(sesionNueva(), local);
+  assert.strictEqual(manana.html.dataset.arranque, 'si');
+  assert.strictEqual(manana.html.dataset.arranqueCorto, undefined, 'la primera del día, completa');
+  const tarde = abrirPagina(sesionNueva(), local);
+  assert.strictEqual(tarde.html.dataset.arranque, 'si', 'abrir de nuevo sigue con el logo');
+  assert.strictEqual(tarde.html.dataset.arranqueCorto, 'si', 'pero corto');
+  local.setItem('kodama.arranque.dia', '2000-01-01'); // otro día
+  assert.strictEqual(abrirPagina(sesionNueva(), local).html.dataset.arranqueCorto, undefined);
 });
 
 test('sin sessionStorage igual se muestra (nunca demora nada)', () => {
