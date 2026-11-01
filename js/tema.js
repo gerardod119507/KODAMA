@@ -11,12 +11,38 @@
  * sobre marino desde el primer cuadro, igual que la bienvenida de Android,
  * y la barra del sistema también en marino. Al moverse entre pantallas no
  * se repite (sessionStorage "kodama.arranque").
+ *
+ * La animación COMPLETA se ve una vez al día (localStorage
+ * "kodama.arranque.dia", la fecha de La Paz). Las otras veces que abres la
+ * app ese día, el arranque es corto: el logo quieto, que se va apenas la
+ * pantalla tiene algo que mostrar (html[data-arranque-corto="si"]).
  */
 const KodamaTema = (function () {
   const CLAVE = 'kodama.tema';
   const COLOR_BARRA = { claro: '#F5F1E8', oscuro: '#070F28' };
   const MARINO = '#071743';
   const CLAVE_ARRANQUE = 'kodama.arranque';
+  const CLAVE_DIA = 'kodama.arranque.dia';
+
+  function hoyEnLaPaz() {
+    try {
+      return new Date().toLocaleDateString('en-CA', { timeZone: 'America/La_Paz' });
+    } catch (err) {
+      return new Date().toISOString().slice(0, 10);
+    }
+  }
+
+  /** ¿Ya se vio hoy la animación completa? Si no, queda anotado que sí. */
+  function yaSeVioHoy() {
+    const hoy = hoyEnLaPaz();
+    try {
+      if (localStorage.getItem(CLAVE_DIA) === hoy) return true;
+      localStorage.setItem(CLAVE_DIA, hoy);
+    } catch (err) {
+      // sin almacenamiento: se ve completa (como antes)
+    }
+    return false;
+  }
 
   function primeraDeLaSesion() {
     try {
@@ -69,7 +95,10 @@ const KodamaTema = (function () {
     aplicar();
   }
 
-  if (primeraDeLaSesion()) document.documentElement.dataset.arranque = 'si';
+  if (primeraDeLaSesion()) {
+    document.documentElement.dataset.arranque = 'si';
+    if (yaSeVioHoy()) document.documentElement.dataset.arranqueCorto = 'si';
+  }
   aplicar();
   if (sistema && sistema.addEventListener) {
     sistema.addEventListener('change', function () { if (!guardado()) aplicar(); });

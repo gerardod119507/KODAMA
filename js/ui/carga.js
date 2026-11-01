@@ -72,7 +72,10 @@ const KodamaCarga = (function () {
 
   const TINTA = '#F5F1E8'; // hueso sobre marino, en los dos temas
   const MARINO = '#071743';
-  const quieto = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Quieto: con "reducir movimiento", o si la animación completa ya se vio
+  // hoy (js/tema.js): el logo entero, que se va apenas la pantalla está lista.
+  const quieto = html.dataset.arranqueCorto === 'si' ||
+    Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // --- Capas: trazo (lienzo del HTML), esferas encima, y el logo ---
   const lienzo = raiz.querySelector('canvas');
@@ -297,6 +300,7 @@ const KodamaCarga = (function () {
     // pantalla de arranque mientras se desvanece).
     raiz.classList.add('carga--saliendo');
     delete html.dataset.arranque;
+    delete html.dataset.arranqueCorto;
     if (typeof KodamaTema !== 'undefined') KodamaTema.aplicar();
     requestAnimationFrame(function () { raiz.classList.add('carga--fuera'); });
     setTimeout(function () { raiz.hidden = true; }, quieto ? 0 : 500);

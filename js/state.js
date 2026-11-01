@@ -95,7 +95,42 @@ const KodamaState = (function () {
     });
   }
 
+  // Precarga: después de mostrar una semana, se piden por detrás la
+  // anterior y la siguiente, así ‹ y › se ven al instante. Una semana
+  // guardada hace menos de FRESCA_MS no se vuelve a pedir.
+  const FRESCA_MS = 10 * 60 * 1000;
+
+  function guardadaEn(lunes) {
+    try {
+      const guardado = JSON.parse(localStorage.getItem(PREFIJO + lunes));
+      return guardado && guardado.guardadoEn ? guardado.guardadoEn : 0;
+    } catch (err) {
+      return 0;
+    }
+  }
+
+  /** Las semanas vecinas a pedir (las que no están frescas). */
+  function vecinasAPrecargar(lunes, ahora) {
+    return [-7, 7]
+      .map(function (dias) { return KodamaFecha.sumarDias(lunes, dias); })
+      .filter(function (otro) { return (ahora || Date.now()) - guardadaEn(otro) > FRESCA_MS; });
+  }
+
+  /** Pide por detrás las semanas vecinas, una después de otra. Nunca falla. */
+  async function precargar(lunes) {
+    const lista = vecinasAPrecargar(lunes);
+    for (let i = 0; i < lista.length; i++) {
+      try {
+        await pedirSemana(lista[i], KodamaFecha.sumarDias(lista[i], 6));
+      } catch (err) {
+        return; // sin red o sin sesión: no insiste
+      }
+    }
+  }
+
   return {
+    vecinasAPrecargar: vecinasAPrecargar,
+    precargar: precargar,
     leerSemana: leerSemana,
     guardarSemana: guardarSemana,
     pedirSemana: pedirSemana,
