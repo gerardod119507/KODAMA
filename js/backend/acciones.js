@@ -38,6 +38,9 @@
     archivarBloque: function (p) {
       return B.archivarBloque(p.id);
     },
+    desarchivarBloque: function (p) {
+      return B.desarchivarBloque(p.id);
+    },
     cambiarEstadoBloque: function (p) {
       return B.cambiarEstadoBloque(p.id, p.estado, p.motivo);
     },

@@ -978,6 +978,35 @@ Ninguna acción que escribe deja la pantalla "congelada". `js/ui/espera.js`
   `acciones.js` sea o lectura o escritura con aviso, el enganche en
   `KodamaApi.llamar` y el orden de los scripts.
 
+- **Deshacer:** archivar un bloque deja el aviso "Archivado · Deshacer"
+  5 s (acción `desarchivarBloque`). Un toque corto de vibración al
+  terminar bien cada acción (si el celular lo permite).
+- **Esqueleto:** una semana sin guardar muestra bloques grises que
+  brillan (`.esqueleto`) en vez de "Cargando..."; al llegar, los bloques
+  entran con un fundido corto (`.vista--entrando`).
+
+## Resumen del día (noviembre 2026)
+
+Ícono junto al botón de tema, solo en la vista principal
+(`js/ui/resumen.js`, `KodamaResumenUI`): el símbolo en chico con el punto
+quieto; mientras habla, el punto recorre la mariposa. **Sin texto a la
+vista**: la etiqueta "Resumen" aparece tras 5 s con el mouse o el dedo
+encima (Gerardo no quiere "Mi día" ni etiquetas fijas).
+
+- **Texto** (`js/resumen.js`, lógica pura con `tests/resumen.test.js`):
+  reglas fijas, sin IA de pago — saludo según la hora, lo que queda de
+  hoy en orden (con lugar), lo que está en curso, "lo próximo empieza en
+  N minutos" si falta menos de 1 h, y el hueco libre más largo (≥ 2 h).
+  "Próximos días": una frase por cada uno de los 3 días siguientes. Usa
+  lo que ya está en el dispositivo (la semana en pantalla y las guardadas,
+  que la precarga mantiene al día); sin datos de un día, lo dice.
+- **Voz:** en la APK, el plugin `@capacitor-community/text-to-speech`
+  (la voz de Google del celular; se instala en `build-kodama.yml`, hace
+  falta la APK nueva); en el navegador, `speechSynthesis`, frase por
+  frase. Se prefiere español latino (es-US, es-MX, es-419). Sin voz,
+  queda el texto. Si algún día suena muy robótica: voces neuronales de
+  Google Cloud (piden tarjeta aunque no cobren).
+
 ## Escritura desde la app (Checkpoint 5)
 
 Desde el Checkpoint 5 **no hace falta abrir el Sheet para nada de uso
@@ -1250,11 +1279,15 @@ ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
   que Gerardo sentía brusca y cortada): el atractor se dibuja en
   tiempo real (avanza **por tiempo**, no por cuadro: igual en 60 y 120 Hz)
   desde un punto al azar con tres esferas y su estela; a los
-  2 s **se asienta en el logo**: el trazo se encoge sobre el atractor
-  del símbolo (escala y traslado calculados con `ajuste()`) y se apaga
-  mientras el del símbolo aparece, la línea se dibuja y las tres esferas
+  2 s **se asienta en el logo**: el MISMO trazo se transforma en el
+  atractor del símbolo (noviembre 2026: cada punto de la trayectoria viaja
+  a un punto de los trazos del logo, dibujado en el lienzo; al llegar, el
+  SVG toma su lugar sin que se note). Antes se encogía y se apagaba
+  mientras el logo aparecía encima, y se veían dos dibujos distintos.
+  Además la línea se dibuja y las tres esferas
   vuelan a los tres puntos del símbolo (la más grande al centro); después
-  se dibuja la circunferencia y aparece **KODAMA**. Quieto al final (no
+  se dibuja la circunferencia y aparece **Fractal** (grande) y, debajo,
+  **KODAMA**. Quieto al final (no
   anima más: ahorra batería).
 - El símbolo es `icons/simbolo.svg` (el mismo del sello), traído con
   `fetch` y `DOMParser` (sin `innerHTML`); sus partes están marcadas con
@@ -1381,6 +1414,7 @@ KODAMA/
 │   ├── pwa.js                   # registra el service worker (no en la APK)
 │   ├── notificaciones.js        # recordatorios: los programa en el dispositivo
 │   ├── lorenz.js                # ecuaciones del atractor de Lorenz (lógica pura)
+│   ├── resumen.js               # el resumen del día en palabras (lógica pura)
 │   └── ui/
 │       ├── dia.js                # vista de día (grilla de una columna) y estados vacío/carga/error
 │       ├── semana.js             # grilla de semana: días × horas
@@ -1392,6 +1426,7 @@ KODAMA/
 │       ├── horas.js               # conecta inicio/fin/área/tipo de un formulario
 │       ├── dias.js                # botones Lun–Dom
 │       ├── espera.js              # cargador fractal + aviso Guardando/Guardado
+│       ├── resumen.js             # ícono Resumen: panel y voz
 │       ├── carga.js               # pantalla de arranque: el atractor se asienta en el logo
 │       ├── navegacion.js          # barra de abajo, hoja "Más" y navegación de arriba
 │       ├── iconos.js              # formas SVG por tipo de bloque

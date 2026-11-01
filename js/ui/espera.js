@@ -27,6 +27,7 @@ const KodamaEspera = (function () {
   const VERBOS = [
     [/^generarHorario$/, ['Generando horario…', 'Horario listo']],
     [/^importar$/, ['Importando…', 'Importación lista']],
+    [/^desarchivar/, ['Restaurando…', 'Restaurado']],
     [/^archivar/, ['Archivando…', 'Archivado']],
     [/^borrar/, ['Borrando…', 'Borrado']],
     [/^mover/, ['Moviendo…', 'Movido']],
@@ -139,6 +140,7 @@ const KodamaEspera = (function () {
     t.textContent = texto;
     a.appendChild(t);
     a.dataset.estado = estado;
+    a.classList.remove('aviso-espera--con-accion');
     a.hidden = false;
     // forzar el reflujo para que la transición de entrada corra cada vez
     void a.offsetWidth;
@@ -146,6 +148,35 @@ const KodamaEspera = (function () {
     if (estado !== 'espera') {
       temporizador = setTimeout(ocultar, estado === 'ok' ? 1600 : 3200);
     }
+  }
+
+  /** Un toque corto en el celular al terminar bien (si el equipo lo permite). */
+  function vibrar() {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+    } catch (err) {
+      // sin vibración: nada
+    }
+  }
+
+  /**
+   * Aviso con un botón ("Archivado · Deshacer"), unos segundos. Al tocarlo
+   * corre alHacer() y el aviso se va.
+   */
+  function ofrecer(texto, boton, alHacer, ms) {
+    mostrar(texto, 'ok');
+    clearTimeout(temporizador);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'aviso-espera__accion';
+    b.textContent = boton;
+    b.addEventListener('click', function () {
+      ocultar();
+      alHacer();
+    });
+    aviso.appendChild(b);
+    aviso.classList.add('aviso-espera--con-accion');
+    temporizador = setTimeout(ocultar, ms || 5000);
   }
 
   function ocultar() {
@@ -190,11 +221,12 @@ const KodamaEspera = (function () {
       if (boton && boton.getAttribute('aria-busy')) ocupar(boton, false);
       if (ok) {
         if (enCurso === 0) mostrar(t.listo, 'ok');
+        vibrar();
       } else {
         mostrar(sinRed ? 'Sin conexión: no se guardó' : 'No se pudo: revisa el mensaje', 'error');
       }
     };
   }
 
-  return { textos: textos, cargador: cargador, ocupar: ocupar, empezar: empezar, mostrar: mostrar };
+  return { textos: textos, cargador: cargador, ocupar: ocupar, empezar: empezar, mostrar: mostrar, ofrecer: ofrecer };
 })();

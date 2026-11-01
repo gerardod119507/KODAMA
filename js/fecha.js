@@ -42,11 +42,6 @@ const KodamaFecha = (function () {
     return minutosATexto(Math.min(redondeado, 23 * 60 + 30));
   }
 
-  function sumarMinutos(hora, minutos) {
-    const [h, m] = hora.split(':').map(Number);
-    return minutosATexto(Math.min(h * 60 + m + minutos, 23 * 60 + 59));
-  }
-
   function minutosATexto(total) {
     const h = String(Math.floor(total / 60)).padStart(2, '0');
     const m = String(total % 60).padStart(2, '0');
@@ -129,7 +124,6 @@ const KodamaFecha = (function () {
     hoy: hoy,
     legible: legible,
     proximaMediaHora: proximaMediaHora,
-    sumarMinutos: sumarMinutos,
     sumarDias: sumarDias,
     inicioDeSemana: inicioDeSemana,
     diasDeSemana: diasDeSemana,

@@ -147,6 +147,12 @@
    * dispositivo) y pide la semana a la base por detrás, en una sola
    * llamada. Solo muestra "Cargando..." si no hay nada guardado.
    */
+  /** Los bloques de una semana recién llegada entran suave (css: .vista--entrando). */
+  function entrar() {
+    contenedor.classList.add('vista--entrando');
+    setTimeout(function () { contenedor.classList.remove('vista--entrando'); }, 400);
+  }
+
   async function cargar() {
     const numero = ++cargaActual;
     const s = semana(fecha);
@@ -157,7 +163,8 @@
     const dibujar = op ? function () { op.render(renderizar); } : renderizar;
     pintarEncabezado();
 
-    if (semanaEnPantalla !== s.lunes) {
+    const cambioDeSemana = semanaEnPantalla !== s.lunes;
+    if (cambioDeSemana) {
       const guardados = KodamaState.leerSemana(s.lunes);
       if (guardados) {
         bloquesSemana = guardados;
@@ -167,7 +174,8 @@
         semanaEnPantalla = null;
       }
     }
-    if (semanaEnPantalla === s.lunes) {
+        if (semanaEnPantalla === s.lunes) {
+      if (cambioDeSemana) entrar();
       dibujar();
       if (op) op.marcarVista(); // lo guardado ya se ve, antes de la red
     } else {
@@ -181,6 +189,7 @@
         if (op) op.terminar(true);
         return;
       }
+      if (semanaEnPantalla !== s.lunes) entrar(); // venía de los fantasmas
       bloquesSemana = datos;
       semanaEnPantalla = s.lunes;
       // Recordatorios: se programan con lo recién llegado de la base (no con
@@ -255,6 +264,12 @@
 
   async function archivar(id) {
     aplicarLocal(await pedir('archivarBloque', { id: id }));
+    // Unos segundos para arrepentirse.
+    KodamaEspera.ofrecer('Archivado', 'Deshacer', function () {
+      pedir('desarchivarBloque', { id: id }).then(function (bloque) {
+        aplicarLocal(bloque);
+      }).catch(function () { /* el aviso ya dijo que no se pudo */ });
+    });
   }
 
   KodamaFormulario.iniciar({
@@ -370,6 +385,17 @@
   // detrás y, cuando llega, se vuelven a pintar los nombres.
   KodamaAlumnos.alCambiar(function () {
     if (semanaEnPantalla) renderizar(); // mientras dice "Cargando..." no hay nada que repintar
+  });
+
+  // El ícono de resumen: lo que queda de hoy y los próximos días, con lo
+  // que ya está en el dispositivo (la semana en pantalla o las guardadas).
+  KodamaResumenUI.iniciar({
+    bloquesDe: function (dia) {
+      const s = semana(dia);
+      if (s.lunes === semanaEnPantalla) return bloquesSemana;
+      return KodamaState.leerSemana(s.lunes);
+    },
+    nombre: function (b) { return KodamaAlumnos.tituloDeBloque(b) || b.titulo || b.area; }
   });
 
   await cargar();
