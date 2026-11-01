@@ -7,10 +7,11 @@
  * 1. El atractor de Lorenz se dibuja en tiempo real desde un punto al azar
  *    (nunca igual) y tres esferas lo recorren a distinta velocidad, con
  *    estela.
- * 2. Se asienta en el logo: el trazo se encoge sobre el atractor del
- *    símbolo (icons/simbolo.svg) mientras este aparece, y las tres esferas
- *    vuelan a los tres puntos del símbolo (la más grande, al centro).
- * 3. Se dibuja la circunferencia y después aparece la palabra KODAMA.
+ * 2. Se asienta en el logo: el MISMO trazo se transforma en el atractor
+ *    del símbolo (icons/simbolo.svg) — cada punto de la trayectoria viaja a
+ *    un punto de los trazos del logo —, la línea se dibuja y las tres
+ *    esferas vuelan a los tres puntos del símbolo (la más grande, al centro).
+ * 3. Se dibuja la circunferencia y aparece "Fractal" y, debajo, KODAMA.
  *
  * - Se ve entera una vez (~4,3 s + una pausa corta): la página llama a
  *   KodamaCarga.listo() cuando tiene algo que mostrar, y la pantalla se
@@ -87,9 +88,17 @@ const KodamaCarga = (function () {
   const ectx = lienzoEsferas.getContext('2d');
   const logo = document.createElement('div');
   logo.className = 'carga__logo';
-  const palabra = document.createElement('p');
+  // Fractal (la identidad) grande, y KODAMA (esta app) debajo.
+  const palabra = document.createElement('div');
   palabra.className = 'carga__palabra';
-  palabra.textContent = 'KODAMA';
+  const marca = document.createElement('p');
+  marca.className = 'carga__marca';
+  marca.textContent = 'Fractal';
+  const app = document.createElement('p');
+  app.className = 'carga__app';
+  app.textContent = 'KODAMA';
+  palabra.appendChild(marca);
+  palabra.appendChild(app);
   logo.appendChild(palabra);
   raiz.appendChild(logo);
 
@@ -189,24 +198,108 @@ const KodamaCarga = (function () {
     return { x: r.left, y: r.top, w: r.width, h: r.height };
   }
 
+  // --- Morfo: del trazo en vivo a los trazos del símbolo ---------------
+  const PUNTOS_MORFO = 1400;
+  let morfo = null;
+
+  /** Puntos a lo largo de un polilínea, a distancias iguales (n puntos). */
+  function remuestrear(lista, n) {
+    if (lista.length < 2) return Array.from({ length: n }, function () { return lista[0] || [ancho / 2, alto / 2]; });
+    const acum = [0];
+    for (let i = 1; i < lista.length; i++) {
+      acum.push(acum[i - 1] + Math.hypot(lista[i][0] - lista[i - 1][0], lista[i][1] - lista[i - 1][1]));
+    }
+    const total = acum[acum.length - 1] || 1;
+    const salida = [];
+    let j = 1;
+    for (let k = 0; k < n; k++) {
+      const d = total * k / (n - 1);
+      while (j < acum.length - 1 && acum[j] < d) j++;
+      const tramo = acum[j] - acum[j - 1] || 1;
+      const f = Math.max(0, Math.min(1, (d - acum[j - 1]) / tramo));
+      const a = lista[j - 1];
+      const b = lista[j];
+      salida.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
+    }
+    return salida;
+  }
+
+  /** Los trazos del atractor del símbolo, en píxeles de pantalla. */
+  function trazosDelLogo() {
+    const caminos = Array.prototype.slice.call(svg.querySelectorAll('[data-parte="atractor"]'))
+      .filter(function (p) { return typeof p.getTotalLength === 'function'; });
+    const largos = caminos.map(function (p) { return p.getTotalLength(); });
+    const total = largos.reduce(function (a, b) { return a + b; }, 0) || 1;
+    const caja = svg.getBoundingClientRect();
+    const vista = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width ? svg.viewBox.baseVal.width : 635;
+    const aPx = caja.width / vista;
+    return caminos.map(function (p, i) {
+      const n = Math.max(8, Math.round(PUNTOS_MORFO * largos[i] / total));
+      const m = p.getScreenCTM();
+      const pts = [];
+      for (let k = 0; k < n; k++) {
+        const q = p.getPointAtLength(largos[i] * k / (n - 1));
+        pts.push(m ? [m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f] : [q.x, q.y]);
+      }
+      const grosor = parseFloat(p.getAttribute('stroke-width') || p.parentNode.getAttribute('stroke-width') || '2');
+      return { puntos: pts, grosor: grosor * aPx };
+    });
+  }
+
+  /** Reparte la trayectoria (los últimos puntos dibujados) entre los trazos del logo. */
+  function prepararMorfo() {
+    if (puntos.length < 2) return null;
+    const destino = trazosDelLogo();
+    if (!destino.length) return null;
+    const total = destino.reduce(function (a, t) { return a + t.puntos.length; }, 0);
+    const origen = remuestrear(puntos, total);
+    let i = 0;
+    const tramos = destino.map(function (t) {
+      const desde = origen.slice(i, i + t.puntos.length);
+      i += t.puntos.length;
+      return { desde: desde, hasta: t.puntos, grosor: t.grosor };
+    });
+    return { tramos: tramos, listo: false };
+  }
+
+  /** Un cuadro del morfo: avance 0 = el trazo en vivo, 1 = el símbolo. */
+  function dibujarMorfo(avance) {
+    ctx.save();
+    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+    ctx.clearRect(0, 0, ancho, alto);
+    ctx.strokeStyle = TINTA;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = 0.5 + 0.5 * avance;
+    morfo.tramos.forEach(function (t) {
+      ctx.lineWidth = 0.8 + (t.grosor - 0.8) * avance;
+      ctx.beginPath();
+      for (let k = 0; k < t.hasta.length; k++) {
+        const a = t.desde[k];
+        const b = t.hasta[k];
+        const x = a[0] + (b[0] - a[0]) * avance;
+        const y = a[1] + (b[1] - a[1]) * avance;
+        if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    });
+    ctx.restore();
+    if (avance >= 1) {
+      // Llegó: el símbolo de verdad toma su lugar (están en el mismo sitio).
+      morfo.listo = true;
+      raiz.classList.add('carga--atractor-listo');
+      ctx.clearRect(0, 0, ancho, alto);
+    }
+  }
+
   /** Empieza a asentarse: el trazo hacia el atractor del logo, las esferas hacia sus puntos. */
   function asentar(ahora) {
     asentarDesde = ahora;
     raiz.classList.add('carga--logo');
-    // Rectángulo del trazo en vivo y el del atractor del símbolo.
-    let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
-    puntos.forEach(function (p) {
-      x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]);
-    });
-    let lx0 = Infinity; let ly0 = Infinity; let lx1 = -Infinity; let ly1 = -Infinity;
-    svg.querySelectorAll('[data-parte="atractor"]').forEach(function (p) {
-      const r = rect(p);
-      lx0 = Math.min(lx0, r.x); ly0 = Math.min(ly0, r.y); lx1 = Math.max(lx1, r.x + r.w); ly1 = Math.max(ly1, r.y + r.h);
-    });
-    if (puntos.length > 1 && isFinite(lx0)) {
-      const a = ajuste({ x: x0, y: y0, w: x1 - x0 || 1, h: y1 - y0 || 1 }, { x: lx0, y: ly0, w: lx1 - lx0, h: ly1 - ly0 });
-      lienzo.style.transform = 'translate(' + a.tx + 'px, ' + a.ty + 'px) scale(' + a.k + ')';
-    }
+    // El trazo en vivo se TRANSFORMA en el atractor del logo: cada punto de
+    // la trayectoria viaja a un punto de los trazos del símbolo. Así el logo
+    // sale de la misma animación, sin un corte entre uno y otro.
+    morfo = prepararMorfo();
     raiz.classList.add('carga--asentar');
 
     // Cada esfera, de donde está al punto que le toca (por tamaño).
@@ -254,6 +347,7 @@ const KodamaCarga = (function () {
       if (t >= TIEMPOS.asentar && svg) asentar(ahora);
     } else {
       const avance = suavizar((ahora - asentarDesde) / DURACION_ASENTAR);
+      if (morfo && !morfo.listo) dibujarMorfo(avance);
       if (ahora - asentarDesde <= TIEMPOS.circulo - TIEMPOS.asentar) {
         ectx.clearRect(0, 0, ancho, alto);
         esferas.forEach(function (e) {

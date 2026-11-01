@@ -36,10 +36,6 @@ const KodamaClases = (function () {
     return e;
   }
 
-  function esCancelada(bloque) {
-    return estado(bloque) === 'cancelada';
-  }
-
   /**
    * "Movida del jue 24 al sáb 26"; si solo cambió la hora, "Movida de
    * 15:00 a 17:00 (jue 24)". Vacío si nunca se movió.
@@ -60,7 +56,7 @@ const KodamaClases = (function () {
   }
 
   return {
-    estado: estado, puedeDictarse: puedeDictarse, esMateria: esMateria, esCancelada: esCancelada,
+    estado: estado, puedeDictarse: puedeDictarse, esMateria: esMateria,
     textoMovida: textoMovida, textoEstado: textoEstado, NOMBRES: NOMBRES
   };
 })();

@@ -191,6 +191,16 @@ test('archivarBloque marca la fila y deja de mostrarla en el día y en la semana
   assert.strictEqual((await env.post({ action: 'listarBloquesRango', desde: '2026-09-21', hasta: '2026-09-27' })).data.length, 0);
 });
 
+test('desarchivarBloque lo devuelve a la semana (Deshacer)', async () => {
+  const env = crearEntorno();
+  const creado = (await env.post({ action: 'crearBloque', bloque: bloque() })).data;
+  await env.post({ action: 'archivarBloque', id: creado.id });
+  const respuesta = await env.post({ action: 'desarchivarBloque', id: creado.id });
+  assert.strictEqual(respuesta.ok, true);
+  assert.strictEqual(respuesta.data.archivado, '');
+  assert.strictEqual((await env.post({ action: 'listarBloquesRango', desde: '2026-09-21', hasta: '2026-09-27' })).data.length, 1);
+});
+
 test('archivarBloque no borra la fila', async () => {
   const env = crearEntorno();
   const creado = (await env.post({ action: 'crearBloque', bloque: bloque() })).data;

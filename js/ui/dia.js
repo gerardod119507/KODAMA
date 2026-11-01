@@ -27,12 +27,28 @@ const KodamaDia = (function () {
     return COLOR_POR_AREA[bloque.area] || 'var(--fg)';
   }
 
+  /**
+   * Mientras llega una semana que no está guardada: bloques "fantasma"
+   * (grises, sin texto) en vez de una pantalla vacía, así se ve que algo
+   * viene. El texto queda para los lectores de pantalla.
+   */
   function renderCargando(contenedor) {
     contenedor.replaceChildren();
-    const p = document.createElement('p');
-    p.className = 'estado estado--carga';
-    p.textContent = 'Cargando...';
-    contenedor.appendChild(p);
+    const caja = document.createElement('div');
+    caja.className = 'esqueletos';
+    caja.setAttribute('role', 'status');
+    const texto = document.createElement('span');
+    texto.className = 'solo-lectores';
+    texto.textContent = 'Cargando…';
+    caja.appendChild(texto);
+    [5.5, 3.5, 4.5].forEach(function (alto) {
+      const f = document.createElement('div');
+      f.className = 'esqueleto';
+      f.style.setProperty('--alto-fantasma', alto + 'rem');
+      f.setAttribute('aria-hidden', 'true');
+      caja.appendChild(f);
+    });
+    contenedor.appendChild(caja);
   }
 
   function renderError(contenedor, mensaje) {

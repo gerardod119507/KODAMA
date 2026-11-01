@@ -242,6 +242,15 @@
     return bloque;
   };
 
+  /** Deshace un archivado (el "Deshacer" del aviso, unos segundos después). */
+  B.desarchivarBloque = async function (id) {
+    const bloque = await buscarBloque(id);
+    bloque.archivado = '';
+    bloque.actualizado = B.ahora();
+    await escribirBloque(bloque);
+    return bloque;
+  };
+
   /**
    * Borra DE VERDAD una clase suelta (para las de Fractal marcadas "fijo"
    * por error). Una clase de un horario fijo no se borra aquí: el generador
