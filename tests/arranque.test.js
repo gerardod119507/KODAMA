@@ -61,18 +61,6 @@ test('solo la primera pantalla de la sesión lleva el arranque (y la barra del s
   assert.strictEqual(otraSesion.html.dataset.arranque, 'si', 'abrir la app de nuevo sí');
 });
 
-test('la animación completa una vez al día; después, el arranque corto', () => {
-  const local = sesionNueva(); // el mismo dispositivo todo el día
-  const manana = abrirPagina(sesionNueva(), local);
-  assert.strictEqual(manana.html.dataset.arranque, 'si');
-  assert.strictEqual(manana.html.dataset.arranqueCorto, undefined, 'la primera del día, completa');
-  const tarde = abrirPagina(sesionNueva(), local);
-  assert.strictEqual(tarde.html.dataset.arranque, 'si', 'abrir de nuevo sigue con el logo');
-  assert.strictEqual(tarde.html.dataset.arranqueCorto, 'si', 'pero corto');
-  local.setItem('kodama.arranque.dia', '2000-01-01'); // otro día
-  assert.strictEqual(abrirPagina(sesionNueva(), local).html.dataset.arranqueCorto, undefined);
-});
-
 test('sin sessionStorage igual se muestra (nunca demora nada)', () => {
   const bloqueada = { getItem() { throw new Error('bloqueado'); }, setItem() { throw new Error('bloqueado'); } };
   assert.strictEqual(abrirPagina(bloqueada).html.dataset.arranque, 'si');

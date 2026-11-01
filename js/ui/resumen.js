@@ -56,7 +56,7 @@ const KodamaResumenUI = (function () {
     if (nativo) {
       animarIcono(true);
       try {
-        await nativo.speak({ text: texto, lang: 'es-MX', rate: 1.0, pitch: 1.0, volume: 1.0, category: 'playback' });
+        await nativo.speak({ text: texto, lang: 'es-US', rate: 0.95, pitch: 1.0, volume: 1.0, category: 'playback' });
       } catch (err) { /* sin voz: queda el texto */ }
       animarIcono(false);
       return;
@@ -67,9 +67,9 @@ const KodamaResumenUI = (function () {
     animarIcono(true);
     frases.forEach(function (frase, i) {
       const u = new SpeechSynthesisUtterance(frase.trim());
-      u.lang = voz ? voz.lang : 'es-MX';
+      u.lang = voz ? voz.lang : 'es-US';
       if (voz) u.voice = voz;
-      u.rate = 1.0;
+      u.rate = 0.95;
       if (i === frases.length - 1) {
         u.onend = function () { animarIcono(false); };
         u.onerror = function () { animarIcono(false); };
