@@ -949,6 +949,26 @@ en el celular y Claude no las ve de otra forma.
   página y sus scripts, o esperar).
 - Los promedios y el peor caso no cuentan las que fallaron.
 
+## Esperas visibles (noviembre 2026)
+
+Ninguna acción que escribe deja la pantalla "congelada". `js/ui/espera.js`
+(`KodamaEspera`), cargado justo antes de `js/api.js` en cada página:
+
+- **Cargador:** el símbolo en chico (trazos de `icons/simbolo-chico.svg`),
+  tenue, y un punto que recorre la mariposa de Lorenz, un ala y después la
+  otra (`<animateMotion>`, sin JS por cuadro). Toma el color del texto. Con
+  "reducir movimiento", el punto queda quieto en el centro.
+- **Automático desde `KodamaApi.llamar`:** cada acción que escribe (crear,
+  actualizar, guardar, cambiar, mover, archivar, borrar, generar,
+  importar) pone el cargador en el **último botón tocado** (lo desactiva y
+  después lo deja como estaba) y muestra un aviso abajo: "Guardando…" →
+  "Guardado ✓", o "No se pudo" / "Sin conexión: no se guardó". Las
+  lecturas (`listar…`, `ping`) no avisan. Por eso una pantalla nueva no
+  tiene que hacer nada para tenerlo.
+- `tests/espera.test.js`: palabras por acción, que toda acción de
+  `acciones.js` sea o lectura o escritura con aviso, el enganche en
+  `KodamaApi.llamar` y el orden de los scripts.
+
 ## Escritura desde la app (Checkpoint 5)
 
 Desde el Checkpoint 5 **no hace falta abrir el Sheet para nada de uso
@@ -1357,6 +1377,7 @@ KODAMA/
 │       ├── rendimiento.js         # panel "Rendimiento" de Configuración
 │       ├── horas.js               # conecta inicio/fin/área/tipo de un formulario
 │       ├── dias.js                # botones Lun–Dom
+│       ├── espera.js              # cargador fractal + aviso Guardando/Guardado
 │       ├── carga.js               # pantalla de arranque: el atractor se asienta en el logo
 │       ├── navegacion.js          # barra de abajo, hoja "Más" y navegación de arriba
 │       ├── iconos.js              # formas SVG por tipo de bloque

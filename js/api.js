@@ -23,6 +23,11 @@ const KodamaApi = (function () {
   const medir = typeof KodamaMedicion !== 'undefined'
     ? KodamaMedicion.llamada
     : function () { return function () {}; };
+  // Cada acción que escribe muestra su espera (js/ui/espera.js): el
+  // cargador en el botón tocado y el aviso "Guardando…" → "Guardado".
+  const esperar = typeof KodamaEspera !== 'undefined'
+    ? KodamaEspera.empezar
+    : function () { return function () {}; };
 
   /** ¿Hay una sesión iniciada en este dispositivo? */
   function haySesion() {
@@ -31,13 +36,16 @@ const KodamaApi = (function () {
 
   async function llamar(accion, parametros) {
     const terminar = medir();
+    const fin = esperar(accion, parametros);
     let respuesta;
     try {
       respuesta = await KodamaBackend.ejecutar(accion, parametros);
     } catch (error) {
       terminar(accion, null, false); // sin red: también se anota (falló)
+      fin(false, true);
       throw error;
     }
+    fin(Boolean(respuesta && respuesta.ok), false);
     // Un error de la acción (ok: false) igual fue un viaje completo: su
     // tiempo cuenta. "Falló" es solo sin red.
     terminar(accion, null, true);

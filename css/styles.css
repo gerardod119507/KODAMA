@@ -2594,3 +2594,69 @@ dialog.hoja::backdrop {
 .ficha__enlace-materia a {
   color: var(--fg);
 }
+
+/* ---------- Esperas (js/ui/espera.js) ----------
+   Cargador: el símbolo en chico, tenue, con un punto que recorre la
+   mariposa. Toma el color del texto (currentColor), así sirve dentro del
+   botón principal (hueso sobre marino) y en el aviso, en los dos temas. */
+.cargador {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  vertical-align: -0.2em;
+  margin-right: var(--espacio-2);
+}
+button[aria-busy="true"] {
+  cursor: progress;
+}
+/* Un botón ocupado no se ve "apagado" como uno desactivado: está trabajando. */
+button[aria-busy="true"]:disabled {
+  opacity: 1;
+}
+
+/* Aviso de abajo: "Guardando…" → "Guardado ✓" (o el error). Encima de la
+   barra de navegación en el celular; nunca tapa el botón +. */
+.aviso-espera {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + var(--espacio-5));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-1);
+  max-width: calc(100% - 2 * var(--espacio-4));
+  padding: var(--espacio-2) var(--espacio-4);
+  border-radius: 999px;
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+  font-size: var(--texto-sm);
+  box-shadow: var(--sombra-sm);
+  opacity: 0;
+  transform: translate(-50%, var(--espacio-2));
+  transition: opacity 200ms ease, transform 200ms ease;
+  pointer-events: none;
+}
+body.con-barra-inferior .aviso-espera {
+  bottom: calc(var(--alto-barra) + env(safe-area-inset-bottom) + var(--espacio-3));
+}
+.aviso-espera--visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.aviso-espera .cargador {
+  margin-right: var(--espacio-1);
+}
+.aviso-espera__marca {
+  font-weight: 700;
+  margin-right: var(--espacio-1);
+}
+/* El error no es solo color: lleva "!" y el texto lo dice. */
+.aviso-espera[data-estado="error"] {
+  background: var(--tipo-reunion);
+  color: var(--bg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .aviso-espera {
+    transition: none;
+  }
+}
