@@ -13,7 +13,7 @@
  * - VERSION solo hay que cambiarla si cambia la LISTA de archivos (una
  *   pantalla o script nuevo); tests/pwa.test.js avisa si falta alguno.
  */
-const VERSION = 'kodama-v7';
+const VERSION = 'kodama-v8';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -40,6 +40,7 @@ const ARCHIVOS = [
   './js/backend/importar.js',
   './js/backend/pagos.js',
   './js/backend/acciones.js',
+  './js/ui/espera.js',
   './js/api.js',
   './js/state.js',
   './js/capas.js',
