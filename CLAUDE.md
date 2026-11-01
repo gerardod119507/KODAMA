@@ -1000,10 +1000,16 @@ encima (Gerardo no quiere "Mi día" ni etiquetas fijas).
   "Próximos días": una frase por cada uno de los 3 días siguientes. Usa
   lo que ya está en el dispositivo (la semana en pantalla y las guardadas,
   que la precarga mantiene al día); sin datos de un día, lo dice.
+- **Escrito para escucharse:** números en palabras ("a la una de la
+  tarde", "una sola cosa", "media hora"), nunca cifras (la voz leía "1
+  cosa" como "uno cosa"), y en frases ("Empiezas… Después… Y cierras el
+  día…"), no en lista. `tests/resumen.test.js` verifica que no haya
+  ninguna cifra.
 - **Voz:** en la APK, el plugin `@capacitor-community/text-to-speech`
-  (la voz de Google del celular; se instala en `build-kodama.yml`, hace
-  falta la APK nueva); en el navegador, `speechSynthesis`, frase por
-  frase. Se prefiere español latino (es-US, es-MX, es-419). Sin voz,
+  con `es-US` (la voz de Google que Gerardo instaló y eligió en su
+  celular: Ajustes → buscar "Velocidad de voz" → Motor preferido: Google →
+  Instalación de archivos de voz → Español (Estados Unidos)); en el
+  navegador, `speechSynthesis`, frase por frase, también es-US primero. Sin voz,
   queda el texto. Si algún día suena muy robótica: voces neuronales de
   Google Cloud (piden tarjeta aunque no cobren).
 
@@ -1293,11 +1299,10 @@ ecuaciones, Runge-Kutta 4, lógica pura con pruebas) + `js/ui/carga.js`
   `fetch` y `DOMParser` (sin `innerHTML`); sus partes están marcadas con
   `data-parte` (`circulo`, `linea`, `atractor`, `punto`). Si no llega a
   tiempo, sigue el atractor hasta que llegue o hasta `listo()`.
-- **Completa una vez al día** (noviembre 2026): `js/tema.js` anota la
-  fecha de La Paz en `kodama.arranque.dia`. Las otras aperturas de ese día
-  llevan `html[data-arranque-corto="si"]`: el logo quieto, que se va apenas
-  la pantalla tiene algo que mostrar (sin duración mínima). Antes la
-  animación entera en cada apertura sumaba ~2 s de espera ("resto").
+- **Completa en cada apertura** (noviembre 2026): se probó verla entera
+  una vez al día y las demás veces solo el logo quieto, pero en la APK ese
+  "pantallazo" se veía mal. Gerardo prefiere la animación entera siempre
+  que abre la app: es la identidad.
 - **Se ve entera una vez** (pedido de Gerardo, octubre 2026): cada
   pantalla llama a `KodamaCarga.listo()` cuando tiene algo que mostrar,
   pero se desvanece (450 ms) recién al terminar la secuencia. **Un toque
