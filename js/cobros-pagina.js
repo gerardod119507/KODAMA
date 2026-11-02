@@ -123,7 +123,7 @@
     if (!/^\d{4}-\d{2}$/.test(mes.value)) return;
     const rango = KodamaCobros.rangoDelMes(mes.value);
     const numero = ++carga;
-    estado.textContent = 'Cargando…';
+    KodamaEspera.cargando(estado);
     try {
       const datos = await Promise.all([
         pedir('listarBloquesRango', { desde: rango.desde, hasta: rango.hasta }),

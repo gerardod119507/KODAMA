@@ -1017,7 +1017,7 @@
     }
     const anterior = KodamaEstadisticas.periodoAnterior(desde.value, hasta.value);
     const numero = ++carga;
-    estado.textContent = 'Cargando…';
+    KodamaEspera.cargando(estado);
     try {
       const datos = await Promise.all([
         pedir('listarBloquesRango', { desde: anterior.desde, hasta: hasta.value }),

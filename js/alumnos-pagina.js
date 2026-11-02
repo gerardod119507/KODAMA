@@ -222,7 +222,7 @@
   pintarTodo();
   const habiaGuardados = KodamaAlumnos.actual().alumnos.length > 0;
   if (habiaGuardados) KodamaCarga.listo(); // lo guardado ya se ve
-  else estado.textContent = 'Cargando...';
+  else KodamaEspera.cargando(estado);
   try {
     await KodamaAlumnos.cargar();
   } catch (error) {

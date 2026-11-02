@@ -989,9 +989,13 @@ Ninguna acción que escribe deja la pantalla "congelada". `js/ui/espera.js`
 - **Deshacer:** archivar un bloque deja el aviso "Archivado · Deshacer"
   5 s (acción `desarchivarBloque`). Un toque corto de vibración al
   terminar bien cada acción (si el celular lo permite).
-- **Esqueleto:** una semana sin guardar muestra bloques grises que
-  brillan (`.esqueleto`) en vez de "Cargando..."; al llegar, los bloques
-  entran con un fundido corto (`.vista--entrando`).
+- **Carga de pantalla** (noviembre 2026): una pantalla que espera datos y
+  no tiene nada guardado muestra el cargador grande al centro (la mariposa
+  con su punto) y "Cargando" debajo (`KodamaEspera.cargando`,
+  `.carga-centro`), en Día/Semana, Alumnos, Horario, Cobros y
+  Estadísticas. Con algo guardado se ve eso. (Los bloques grises
+  `.esqueleto` se quitaron.) Al llegar, los bloques entran con un fundido
+  corto (`.vista--entrando`).
 
 ## Resumen del día (noviembre 2026)
 
