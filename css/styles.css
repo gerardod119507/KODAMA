@@ -2671,23 +2671,22 @@ body.con-barra-inferior .aviso-espera {
   }
 }
 
-/* Bloques "fantasma" (esqueleto) mientras llega una semana sin guardar (js/ui/dia.js). */
-.esqueletos {
+/* Carga de pantalla (KodamaEspera.cargando): el cargador grande al centro. */
+.carga-centro {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--espacio-3);
-  padding: var(--espacio-3) 0;
+  padding: var(--espacio-6) 0;
 }
-.esqueleto {
-  height: var(--alto-fantasma, 4rem);
-  border-radius: var(--radio-md);
-  background: linear-gradient(90deg, var(--superficie) 0%, var(--borde) 50%, var(--superficie) 100%);
-  background-size: 200% 100%;
-  animation: esqueleto-brillo 1.4s ease-in-out infinite;
+.carga-centro .cargador {
+  width: 5rem;
+  height: 5rem;
+  margin: 0;
 }
-@keyframes esqueleto-brillo {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
+.carga-centro__texto {
+  font-size: var(--texto-sm);
+  letter-spacing: 0.04em;
 }
 
 /* Entrada suave de los bloques cuando llega una semana nueva (app.js pone
@@ -2701,7 +2700,6 @@ body.con-barra-inferior .aviso-espera {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .esqueleto,
   .vista--entrando .bloque-semana {
     animation: none;
   }

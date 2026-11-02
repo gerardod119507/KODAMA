@@ -91,3 +91,15 @@ test('cada página que usa la API carga espera.js justo antes', () => {
     assert.ok(i < html.indexOf('js/api.js'), pagina + ': espera.js va antes de api.js');
   });
 });
+
+test('la carga de pantalla es el cargador grande al centro, en todas las que esperan datos', () => {
+  const E = cargarEspera();
+  assert.strictEqual(typeof E.cargaCentrada, 'function');
+  assert.strictEqual(typeof E.cargando, 'function');
+  assert.match(leer('css/styles.css'), /\.carga-centro\s*\{/);
+  assert.match(leer('js/ui/dia.js'), /KodamaEspera\.cargando\(/, 'día y semana');
+  ['js/estadisticas-pagina.js', 'js/cobros-pagina.js', 'js/alumnos-pagina.js', 'js/horario.js'].forEach((f) => {
+    assert.match(leer(f), /KodamaEspera\.cargando\(/, f);
+    assert.doesNotMatch(leer(f), /textContent = 'Cargando|avisar\('Cargando/, f + ' sin texto suelto');
+  });
+});

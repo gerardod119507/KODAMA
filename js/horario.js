@@ -209,7 +209,7 @@
   campoMes.addEventListener('change', function () { if (cargado) pintar(); });
 
   async function cargar() {
-    avisar('Cargando…');
+    KodamaEspera.cargando(estado);
     try {
       const datos = await Promise.all([pedir('listarHorario'), pedir('listarFijosSueltos')]);
       reglas = datos[0];

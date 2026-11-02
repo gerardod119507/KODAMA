@@ -85,6 +85,28 @@ const KodamaEspera = (function () {
     return svg;
   }
 
+  /**
+   * Carga de pantalla: el cargador grande al centro con "Cargando" debajo.
+   * Es lo que se ve cuando una pantalla espera datos y no hay nada guardado
+   * en el dispositivo que mostrar (con algo guardado se muestra eso).
+   */
+  function cargaCentrada(texto) {
+    const caja = document.createElement('span');
+    caja.className = 'carga-centro';
+    caja.setAttribute('role', 'status');
+    const palabra = document.createElement('span');
+    palabra.className = 'carga-centro__texto';
+    palabra.textContent = texto || 'Cargando';
+    caja.appendChild(cargador());
+    caja.appendChild(palabra);
+    return caja;
+  }
+
+  /** Pone la carga centrada dentro de un contenedor (reemplaza lo que haya). */
+  function cargando(contenedor, texto) {
+    contenedor.replaceChildren(cargaCentrada(texto));
+  }
+
   // ---------- botón ocupado ----------
 
   /** Pone o quita el cargador en un botón (y lo desactiva mientras tanto). */
@@ -228,5 +250,5 @@ const KodamaEspera = (function () {
     };
   }
 
-  return { textos: textos, cargador: cargador, ocupar: ocupar, empezar: empezar, mostrar: mostrar, ofrecer: ofrecer };
+  return { textos: textos, cargador: cargador, cargaCentrada: cargaCentrada, cargando: cargando, ocupar: ocupar, empezar: empezar, mostrar: mostrar, ofrecer: ofrecer };
 })();
